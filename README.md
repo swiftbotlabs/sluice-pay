@@ -7,7 +7,7 @@ their Solana wallet. Nothing is delivered until Sluice has seen that USDC land o
 short, expires or fails, the buyer is refunded to their own address automatically.
 
 - **Live checkout:** https://swiftbotlab.github.io/sluice-pay/ (static page; quotes, deposit addresses and status come live from Aurora Intents, settlement is checked live on Solana mainnet)
-- **Demo video:** _coming with the final submission_
+- **Demo video (2:59, mainnet, real money):** [youtu.be/plLIFTpuF8c](https://youtu.be/plLIFTpuF8c)
 - Built by Swift Bot Labs for the Encode Club Solana Hackathon 2026, Aurora Intents track.
 
 ## The problem
