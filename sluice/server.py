@@ -38,7 +38,7 @@ WEB_DIR = Path(__file__).resolve().parent.parent / "docs"  # also served by GitH
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"), "/app.js": ("app.js", "text/javascript; charset=utf-8"),
           "/style.css": ("style.css", "text/css; charset=utf-8"), "/qrcode.min.js": ("qrcode.min.js", "text/javascript; charset=utf-8")}
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
-       "connect-src 'self' https://intents-api.aurora.dev https://solana-mainnet.gateway.tatum.io https://api.mainnet-beta.solana.com; "
+       "connect-src 'self' https://intents-api.aurora.dev https://solana-mainnet.gateway.tatum.io https://solana.leorpc.com https://api.mainnet-beta.solana.com; "
        "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 
 

@@ -12,7 +12,7 @@ import re
 import time
 import urllib.request
 
-RPCS = ("https://solana-mainnet.gateway.tatum.io", "https://api.mainnet-beta.solana.com")
+RPCS = ("https://solana-mainnet.gateway.tatum.io", "https://solana.leorpc.com/?api_key=FREE", "https://api.mainnet-beta.solana.com")
 USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 ATA_PROGRAM = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"

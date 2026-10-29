@@ -7,7 +7,7 @@
   if (window.top !== window.self) { document.documentElement.textContent = 'Open this checkout in its own tab.'; return; }
   const AURORA = 'https://intents-api.aurora.dev';
   const API_KEY = '53042395-08f3-4382-a78e-b2208d0397c1'; // public integrator key for this page only (Aurora: keys are non-secret); the server uses its own key
-  const RPCS = ['https://solana-mainnet.gateway.tatum.io', 'https://api.mainnet-beta.solana.com'];
+  const RPCS = ['https://solana-mainnet.gateway.tatum.io', 'https://solana.leorpc.com/?api_key=FREE', 'https://api.mainnet-beta.solana.com']; // keyless public endpoints with CORS
   const SOL_USDC = 'nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near';
   const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
   const ORIGINS = [
@@ -93,15 +93,18 @@
     throw new Error('rate limited, try again in a minute');
   }
   async function rpc(method, params) {
-    let last;
+    let last; let sawNull = false;
     for (const u of RPCS) {
       try {
-        const r = await fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+        const r = await fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(7000) });
+        if (r.status === 429) throw new Error('RPC busy');
         const j = await r.json();
         if (j.error) throw new Error(j.error.message);
+        if (j.result === null && method === 'getTransaction') { sawNull = true; continue; } // node may lag: ask the next one
         return j.result;
       } catch (e) { last = e; }
     }
+    if (sawNull) return null;
     throw last;
   }
 
@@ -397,6 +400,7 @@
     } catch (e) { text($('c-error'), e.message); show($('c-error')); }
   }
 
+  let proofQueue = Promise.resolve();
   function renderProof() {
     const t = document.createElement('table');
     const hd = t.createTHead().insertRow();
@@ -409,10 +413,9 @@
       const c = r.insertCell(); if (p.sol) c.append(link(EXPLORER.sol + p.sol, short(p.sol))); else c.textContent = 'none (refunded)';
       const cl = r.insertCell(); const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ghost small'; btn.textContent = 'Check live';
       const out = document.createElement('div'); out.className = 'small';
-      btn.onclick = async () => {
-        btn.disabled = true; text(out, 'Asking Aurora and Solana…');
+      const check = async () => {
         try {
-          const st = await fetch(`${AURORA}/api/status/${API_KEY}?depositAddress=${encodeURIComponent(p.addr)}`).then((x) => x.json());
+          const st = await fetch(`${AURORA}/api/status/${API_KEY}?depositAddress=${encodeURIComponent(p.addr)}`, { signal: AbortSignal.timeout(10000) }).then((x) => x.json());
           let msg = `Aurora: ${st.status}`;
           const d = st.swapDetails || {};
           if (st.status === 'REFUNDED') msg += ` (${d.refundedAmountFormatted || '?'} refunded, ${String(d.refundReason || '').toLowerCase().replace(/_/g, ' ')})`;
@@ -421,9 +424,10 @@
             msg += v ? ` · Solana: merchant +${fromUnits(v.delta, 6)} USDC ✓` : ' · Solana: not verified';
           }
           text(out, msg);
-        } catch (e) { text(out, 'Check failed: ' + e.message); }
+        } catch (e) { text(out, 'Check failed (' + e.message + '), try again'); }
         btn.disabled = false;
       };
+      btn.onclick = () => { btn.disabled = true; text(out, 'Asking Aurora and Solana…'); proofQueue = proofQueue.then(check); };
       cl.append(btn, out);
     }
     $('proof-table').replaceChildren(t);
