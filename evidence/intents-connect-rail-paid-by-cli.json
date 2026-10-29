@@ -1,0 +1,94 @@
+{
+ "run": "intents-connect-rail-paid-by-cli",
+ "note": "Sluice server (price 0.15 USDC) + cli/sluice_buy.py --rail connect --pay arb:ETH on mainnet. The payer's deposit was bridged by Intents Connect into the payer's own Solana intermediary, which then ran TransferChecked(0.15 USDC -> merchant) carrying the order's reference account. The merchant finds the payment with getSignaturesForAddress(reference).",
+ "order": {
+  "order_id": "ord_oDUi3dtBBUIp2OKq",
+  "rail": "connect",
+  "state": "DELIVERED",
+  "message": "Paid and delivered",
+  "resource": "report",
+  "confidential": false,
+  "price": {
+   "amount": "0.15",
+   "asset": "USDC",
+   "chain": "solana",
+   "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR"
+  },
+  "deposit": {
+   "address": "0xBE59F73BB339EA403102cDCb17f85Bd807a469fE",
+   "memo": null,
+   "pay_with": "ETH on Arbitrum",
+   "amount": "0.000071028266525738",
+   "amount_raw": "71028266525738",
+   "deadline": "2026-10-29T19:38:58Z",
+   "transfer_requirements": "Send only ETH from the Arbitrum network to this address. Send exactly 0.000071028266525738 before 2026-10-29T19:38:58Z. Less is refunded to 0x8d9716A9f13FE82BA59E74b3Ce032842EB357818 after the deadline; any excess is refunded after settlement. Other assets or networks may be lost."
+  },
+  "refund_to": "0x8d9716A9f13FE82BA59E74b3Ce032842EB357818",
+  "provider_status": "SUCCESS",
+  "provider": {
+   "status": "SUCCESS",
+   "transaction": null
+  },
+  "deposit_tx": "0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc",
+  "settlement": {
+   "solana_tx": "3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs",
+   "explorer": "https://solscan.io/tx/3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs",
+   "merchant_delta": 150000,
+   "slot": 462997783,
+   "reference": "AAkRmupGJAVXAhWhrijDMptDU79jVB2F9FVBzTjjMDM6"
+  }
+ },
+ "execution_id": "0403b665-1ead-4a29-9f3f-7cff6b40476a",
+ "order_reference_account": "AAkRmupGJAVXAhWhrijDMptDU79jVB2F9FVBzTjjMDM6",
+ "receipt": {
+  "payload": {
+   "body_sha256": "0dfc06ede97b0ccadb6c9292abac4ad701f8dc9894de6e9fbc35d7c12cd8910d",
+   "deposit_address": "0xBE59F73BB339EA403102cDCb17f85Bd807a469fE",
+   "deposit_tx": "0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc",
+   "issued_at": 1793301902,
+   "kind": "sluice.receipt",
+   "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+   "merchant_delta": 150000,
+   "order": "ord_oDUi3dtBBUIp2OKq",
+   "origin_asset": "nep141:arb.omft.near",
+   "price": {
+    "amount": 150000,
+    "asset": "USDC",
+    "chain": "solana",
+    "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+   },
+   "rail": "connect",
+   "reference": "AAkRmupGJAVXAhWhrijDMptDU79jVB2F9FVBzTjjMDM6",
+   "request_hash": "946c0d62e2e6affa42bd8c2cfe58fde1cc8efe9acd12c9c002e4b72b0a08bee6",
+   "resource": "report",
+   "signer": "xr1EUADeCKSEEWYAHr4GhTt6L8WPQe67iQjD2yztam2",
+   "solana_slot": 462997783,
+   "solana_tx": "3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs",
+   "v": 1
+  },
+  "signature": "D7MQF2TeMj8BuaKM4LGWSsgx9ECisCwDu2dTNuMbHFRPa8p91m5rbocxBqni75coCqwarVLJwwj6znsqaWLpb6s"
+ },
+ "settle_proof": {
+  "sig": "3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs",
+  "slot": 462997783,
+  "blockTime": 1793301884,
+  "delta": 150000,
+  "owner": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "explorer": "https://solscan.io/tx/3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs",
+  "memos": [],
+  "reference": "AAkRmupGJAVXAhWhrijDMptDU79jVB2F9FVBzTjjMDM6",
+  "ok": true
+ },
+ "cli_transcript": [
+  "402: price 0.15 USDC on Solana -> 9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "order ord_oDUi3dtBBUIp2OKq: send 0.000071028266525738 via arb:ETH (~$0.1653) to 0xBE59F73BB339EA403102cDCb17f85Bd807a469fE",
+  "  quote independently checked with NEAR Intents: recipient, amount, asset, refund address",
+  "signed the audited Solana transaction (pay merchant + order reference)",
+  "deposit ok: https://arbiscan.io/tx/0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc",
+  "  19:24:10Z AWAITING_DEPOSIT: Waiting for your deposit",
+  "  19:24:22Z PROCESSING: Routing to Solana",
+  "  19:24:56Z SETTLED: Paid: verified on Solana",
+  "receipt signature valid: True; body hash matches: True; receipt terms match: True; Solana settlement re-verified: True (https://solscan.io/tx/3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs)"
+ ]
+}

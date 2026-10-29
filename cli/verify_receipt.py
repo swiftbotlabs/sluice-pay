@@ -31,10 +31,11 @@ def main():
     if a.body:
         ok = receipts.sha256_hex(open(a.body, "rb").read()) == p["body_sha256"]
         print(f"delivered body hash: {'matches' if ok else 'MISMATCH'}")
-    memo = None
+    ref = None
     if p.get("rail") == "connect":
-        memo = f"sluice:{p['order']}"
-    v = sol.verify_payment(sol.Rpc(), p["solana_tx"], p["merchant"], int(p["price"]["amount"]), memo=memo)
+        from sluice import connect as cn
+        ref = cn.reference_key(p["order"])
+    v = sol.verify_payment(sol.Rpc(), p["solana_tx"], p["merchant"], int(p["price"]["amount"]), reference=ref)
     print(f"Solana settlement {p['solana_tx'][:16]}...: {'verified' if v.get('ok') else 'NOT verified: ' + v.get('reason', '')}"
           f" (merchant +{v.get('delta', 0) / 1e6} USDC, slot {v.get('slot')})")
     sys.exit(0 if sig_ok and v.get("ok") else 1)

@@ -19,7 +19,9 @@ from sluice.engine import OrderError  # noqa: E402
 import fakes  # noqa: E402
 from test_core import make_engine  # noqa: E402
 
-FIX = json.load(open(os.path.join(HERE, "fixture_connect_payload.json")))
+# Real payloads returned by Intents Connect on mainnet: the steps-only execution that SETTLED (reference account)
+FIX = json.load(open(os.path.join(HERE, "fixture_connect_payload_ref.json")))
+FIX_MEMO = json.load(open(os.path.join(HERE, "fixture_connect_payload.json")))  # first design, never executed by the relayer
 PAYER = "0x8d9716A9f13FE82BA59E74b3Ce032842EB357818"
 
 
@@ -52,8 +54,8 @@ class TestConnectAudit(unittest.TestCase):
 
     def test_wrong_amount_memo_signer_price_rejected(self):
         bad_amt = mutate(FIX["payload"], bytes.fromhex("0ce093040000000000"), bytes.fromhex("0c40420f0000000000"))
-        bad_memo = mutate(FIX["payload"], b"sluice:ord_demo_t4", b"sluice:ord_demo_t5")
-        for payload in (bad_amt, bad_memo):
+        bad_ref = mutate(FIX["payload"], sol.b58decode(cn.reference_key(FIX["order"])), sol.b58decode(cn.reference_key("ord_other_order")))
+        for payload in (bad_amt, bad_ref):
             with self.assertRaises(cn.PayloadRejected):
                 self.audit(payload)
         with self.assertRaises(cn.PayloadRejected):
@@ -61,11 +63,13 @@ class TestConnectAudit(unittest.TestCase):
         with self.assertRaises(cn.PayloadRejected):
             self.audit(FIX["payload"], price=299999)
         with self.assertRaises(cn.PayloadRejected):
-            self.audit(FIX["payload"], max_fee=1000)  # the real fee (1558) is above this cap
+            self.audit(FIX["payload"], max_fee=1000)  # the real fee (1555) is above this cap
+        with self.assertRaises(cn.PayloadRejected):
+            self.audit(FIX_MEMO["payload"])  # old memo design: no reference account, Memo program not allowed
 
     def test_memo_hex_in_metadata_is_not_enough(self):
         p = json.loads(FIX["payload"])
-        p["note"] = cn.memo_text("ord_attackerxx").encode().hex()
+        p["note"] = cn.reference_key("ord_attackerxx")
         with self.assertRaises(cn.PayloadRejected):
             self.audit(json.dumps(p), order_id="ord_attackerxx")
 

@@ -186,8 +186,10 @@ class Engine:
             raise OrderError(f"execution failed: {e}", 502)
         qq, det = x["quote"], x["details"]
         payload = (det.get("payload") or {}).get("payload_json") or ""
-        if cn.memo_text(oid).encode().hex() not in payload:
-            raise OrderError("execution payload does not carry the order memo", 502)
+        try:
+            cn.audit_payload(payload, payer=refund_to, intermediary=inter, merchant=self.merchant, price=price, order_id=oid)
+        except cn.PayloadRejected as e:
+            raise OrderError(f"execution payload failed our audit: {e}", 502)
         order = self.store.create(
             id=oid, rail="connect", resource=resource, params=json.dumps(params, sort_keys=True), request_hash=rh,
             price_raw=price, merchant=self.merchant, origin_asset=o["assetId"], refund_to=refund_to,
@@ -271,18 +273,18 @@ class Engine:
         return time.time() > dl + self.expire_grace_s
 
     def _settle(self, o: dict, dest_sigs: list[str]):
-        memo = cn.memo_text(o["id"]) if o["rail"] == "connect" else None
+        ref = cn.reference_key(o["id"]) if o["rail"] == "connect" else None
         not_before = o["created"]
         proof = None
         for sig in dest_sigs:
             if sol.is_signature(sig):
-                v = sol.verify_payment(self.rpc, sig, o["merchant"], o["price_raw"], not_before=not_before, memo=memo)
+                v = sol.verify_payment(self.rpc, sig, o["merchant"], o["price_raw"], not_before=not_before, reference=ref)
                 if v.get("ok"):
                     proof = v
                     break
-        if proof is None and o["confidential"]:
-            proof = sol.find_payment(self.rpc, o["merchant"], o["price_raw"], not_before, memo=memo, exact=True,
-                                     exclude=self.store.claimed_sigs())
+        if proof is None and (o["confidential"] or ref):
+            proof = sol.find_payment(self.rpc, o["merchant"], o["price_raw"], not_before, exact=bool(o["confidential"]),
+                                     exclude=self.store.claimed_sigs(), reference=ref)
         if proof is None:
             self.store.update(o["id"], provider_view=json.dumps({**json.loads(self._get(o["id"])["provider_view"] or "{}"),
                                                                 "note": "provider SUCCESS, Solana credit not verified yet"}))
@@ -346,7 +348,7 @@ class Engine:
             "refund_to": None if o["confidential"] else o["refund_to"], "provider_status": o["provider_status"], "provider": pv,
             "deposit_tx": None if o["confidential"] else o["deposit_tx"],
             "settlement": proof and {"solana_tx": proof["sig"], "explorer": proof["explorer"], "merchant_delta": proof["delta"],
-                                     "slot": proof["slot"], "memos": proof.get("memos")},
+                                     "slot": proof["slot"], "reference": proof.get("reference")},
         }
         if o["state"] == "REFUNDED":
             v["refund"] = {"amount": pv.get("refundedAmount"), "reason": pv.get("refundReason"),

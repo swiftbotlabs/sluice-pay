@@ -112,8 +112,8 @@ order ord_…: send 0.410… USDC on Base to 0x…
 deposit ok: https://basescan.org/tx/0x…
   SETTLED: Paid: verified on Solana
 receipt signature valid: True; body hash matches: True; Solana settlement re-verified: True</code></pre>
-    <p class="small muted">Add <code>--rail connect</code> to settle through Aurora Intents Connect: the buyer's deposit triggers one Solana transaction that pays the merchant
-      and writes the order id in an on-chain memo, so the payment proves which order it was for.</p>
+    <p class="small muted">Add <code>--rail connect</code> to settle through Aurora Intents Connect: the buyer's deposit lands in the buyer's own Solana account, which
+      pays the merchant in one transaction that carries a reference account derived from the order id, so the payment proves which order it was for.</p>
   </section>
 
   <section id="proof" class="card">

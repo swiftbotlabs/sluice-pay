@@ -57,6 +57,9 @@ class TestSolana(unittest.TestCase):
         self.assertTrue(sol.verify_payment(rpc, fakes.SIG_A, fakes.MERCHANT, 300000, memo="sluice:ord_abcdefghijkl")["ok"])
         self.assertFalse(sol.verify_payment(rpc, fakes.SIG_A, fakes.MERCHANT, 300000, memo="sluice:ord_other0000000")["ok"])
         self.assertFalse(sol.verify_payment(rpc, fakes.SIG_A, fakes.MERCHANT, 299999, exact=True)["ok"])
+        rpc.txs[fakes.SIG_A]["transaction"]["message"]["accountKeys"] = [{"pubkey": "RefKey1111111111111111111111111111111111111"}]
+        self.assertTrue(sol.verify_payment(rpc, fakes.SIG_A, fakes.MERCHANT, 300000, reference="RefKey1111111111111111111111111111111111111")["ok"])
+        self.assertFalse(sol.verify_payment(rpc, fakes.SIG_A, fakes.MERCHANT, 300000, reference=fakes.MERCHANT)["ok"])
         self.assertFalse(sol.verify_payment(rpc, fakes.SIG_A, fakes.MERCHANT, 1, not_before=2_000_000_000 + 10_000)["ok"])
 
     def test_wrong_mint_not_counted(self):
@@ -323,18 +326,19 @@ class TestConnectSteps(unittest.TestCase):
     def test_receipt_steps_shape(self):
         inter = "Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr"
         steps = cn.receipt_steps(inter, fakes.MERCHANT, "ord_abcdefghijkl")
-        self.assertEqual([s["programId"] for s in steps], [sol.ATA_PROGRAM, sol.TOKEN_PROGRAM, sol.MEMO_PROGRAM])
+        self.assertEqual([s["programId"] for s in steps], [sol.ATA_PROGRAM, sol.TOKEN_PROGRAM])
         pay = steps[1]
         self.assertEqual(pay["discriminator"], "0c")
         self.assertEqual(pay["accounts"][2]["pubkey"], sol.ata(fakes.MERCHANT))
         self.assertEqual(pay["accounts"][0]["pubkey"], sol.ata(inter))
-        self.assertEqual(bytes.fromhex(steps[2]["discriminator"]).decode(), "sluice:ord_abcdefghijkl")
+        self.assertEqual(pay["accounts"][4], {"pubkey": cn.reference_key("ord_abcdefghijkl"), "isSigner": False, "isWritable": False})
+        self.assertNotEqual(cn.reference_key("ord_abcdefghijkl"), cn.reference_key("ord_abcdefghijkm"))
         for s in steps:  # only the intermediary may sign (service rule)
             for acc in s["accounts"]:
                 if acc["isSigner"]:
                     self.assertEqual(acc["pubkey"], "{INTERMEDIARY}")
         with self.assertRaises(ValueError):
-            cn.memo_text("bad id with spaces")
+            cn.reference_key("bad id with spaces")
 
     def test_erc191_wire_format(self):
         try:

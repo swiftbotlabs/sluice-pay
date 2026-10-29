@@ -1,6 +1,6 @@
 {
- "run": "intents-connect-bridge-in-with-receipt-steps",
- "summary": "Base USDC deposit bridged by Intents Connect into the payer's Solana intermediary (verified on Solana). The Solana operation (pay merchant 0.30 USDC + memo sluice:ord_demo_t4) was signed by the payer but Intents Connect never broadcast it: status went OPERATION_FAILED after ~21 min. Funds stayed in the payer-controlled intermediary; a steps-only retry was submitted.",
+ "run": "intents-connect-design-history",
+ "summary": "First design (bridge-in + steps TransferChecked + SPL Memo 'sluice:<order>'): the bridge leg settled (Solana credit QNGfeEiq...), but Intents Connect never broadcast the Solana operation (OPERATION_FAILED after ~21 min); a steps-only retry with the same Memo step failed the same way. The same transfer WITHOUT the Memo program, carrying a Solana-Pay-style reference account instead, settled in ~25 s (tx kuQhdJdh...). Sluice therefore binds orders with reference accounts; see intents-connect-rail-paid-by-cli.json for the full rail working end to end.",
  "execution_id": "d3d2ca99-07fe-400e-adbe-15f1e1c888c7",
  "quote": {
   "amount": "302000",
@@ -97,5 +97,15 @@
    "t": "2026-10-29T18:57:14Z",
    "status": "OPERATION_FAILED"
   }
+ ],
+ "steps_only_reference_success": {
+  "execution_id": "fad2067e-ceb3-4028-a5d3-13fbb3daf2d7",
+  "solana_tx": "kuQhdJdhdpi1rbmuExnnoh467oRpMMPvvVqASn4KvskFrPqUNLhkNuYKMQiuTxovGVR3zkWuwkuEi6LeqWQxXKH",
+  "reference_account": "BdUbzJP8JAx7ZJK77ibjuYb5DevHkarhWsqMEVgMkZ8X",
+  "amount_to_merchant": "0.30 USDC"
+ },
+ "failed_executions": [
+  "d3d2ca99-07fe-400e-adbe-15f1e1c888c7 (bridge-in + memo)",
+  "7d90cec1-033d-4cca-bcb5-b408208df1f6 (steps-only + memo)"
  ]
 }

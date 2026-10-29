@@ -14,8 +14,8 @@ Sluice moves real money, so the design assumes every input is hostile and every 
 - **The buyer does not trust the seller.** The CLI pins token contracts/decimals, takes prices from the public NEAR
   Intents token list, and checks the deposit address with the public NEAR Intents status API before paying
   (recipient, amount, origin asset, refund address, amountIn must all match). On the Intents Connect rail it decodes
-  the Solana transaction it is asked to authorise and refuses anything but: pay the merchant the price, this order's
-  memo, the service's compute-budget/nonce instructions and one fee transfer of at most 0.02 USDC.
+  the Solana transaction it is asked to authorise and refuses anything but: pay the merchant the price with this order's
+  reference account, the service's compute-budget/nonce instructions and one fee transfer of at most 0.02 USDC.
 - **Private payments stay private in our records.** For confidential orders the order view and the receipt omit the
   payer's refund address, source-chain tx and deposit address.
 

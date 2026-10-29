@@ -174,8 +174,16 @@ def memos(tx: dict) -> list[str]:
     return out
 
 
+def account_keys(tx: dict) -> list[str]:
+    keys = []
+    for k in ((tx.get("transaction") or {}).get("message") or {}).get("accountKeys") or []:
+        keys.append(k.get("pubkey") if isinstance(k, dict) else k)
+    return keys
+
+
 def verify_payment(rpc: Rpc, sig: str, owner: str, min_amount: int, mint: str = USDC_MINT,
-                   not_before: int | None = None, memo: str | None = None, exact: bool = False) -> dict:
+                   not_before: int | None = None, memo: str | None = None, exact: bool = False,
+                   reference: str | None = None) -> dict:
     """Check one destination tx. Returns a dict with ok + evidence; never raises for a merely-wrong tx."""
     tx = rpc.tx(sig)
     if not tx:
@@ -195,19 +203,25 @@ def verify_payment(rpc: Rpc, sig: str, owner: str, min_amount: int, mint: str = 
         return {**res, "ok": False, "reason": "tx predates the order"}
     if memo is not None and not any(memo in m for m in res["memos"]):
         return {**res, "ok": False, "reason": "order memo missing"}
+    if reference is not None:
+        if reference not in account_keys(tx):
+            return {**res, "ok": False, "reason": "order reference missing"}
+        res["reference"] = reference
     return {**res, "ok": True}
 
 
 def find_payment(rpc: Rpc, owner: str, min_amount: int, not_before: int, mint: str = USDC_MINT,
-                 exclude: set | None = None, memo: str | None = None, limit: int = 15, exact: bool = False) -> dict | None:
-    """Fallback when no destination hash is known: scan the merchant ATA's recent txs for a matching credit."""
+                 exclude: set | None = None, memo: str | None = None, limit: int = 15, exact: bool = False,
+                 reference: str | None = None) -> dict | None:
+    """Find a matching credit without a known destination hash: by the order's reference account if there is one
+    (Solana Pay pattern, exact), else by scanning the merchant ATA's recent transactions."""
     exclude = exclude or set()
-    for s in rpc.signatures(ata(owner, mint), limit) or []:
+    for s in rpc.signatures(reference or ata(owner, mint), limit) or []:
         if s.get("err") is not None or s.get("signature") in exclude:
             continue
         if s.get("blockTime") and s["blockTime"] < not_before - 120:
             break
-        v = verify_payment(rpc, s["signature"], owner, min_amount, mint, not_before, memo, exact)
+        v = verify_payment(rpc, s["signature"], owner, min_amount, mint, not_before, memo, exact, reference)
         if v.get("ok"):
             return v
     return None

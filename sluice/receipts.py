@@ -73,7 +73,7 @@ def make_receipt(signer: Signer, order: dict, body: bytes) -> str:
         "merchant": order["merchant"], "deposit_address": None if order.get("confidential") else order["deposit_address"],
         "origin_asset": order["origin_asset"],
         "deposit_tx": None if order.get("confidential") else order["deposit_tx"], "solana_tx": order["settle_sig"], "solana_slot": proof.get("slot"),
-        "merchant_delta": proof.get("delta"), "memos": proof.get("memos") or [], "issued_at": int(time.time()),
+        "merchant_delta": proof.get("delta"), "reference": proof.get("reference"), "issued_at": int(time.time()),
     }
     return json.dumps(signer.sign(payload), sort_keys=True)
 

@@ -11,7 +11,7 @@ The seller is NOT trusted with your money:
     999 micro-USDC privacy tag), EXACT_OUTPUT, origin = your pinned asset, refundTo = your own address, and
     amountIn = exactly what you are asked to send;
   * on the Intents Connect rail the Solana transaction you authorise is decoded and must only pay the merchant the
-    price, write this order's memo, and pay at most a 0.02 USDC service fee.
+    price with this order's reference account attached, and pay at most a 0.02 USDC service fee.
 After delivery the receipt signature, body hash and Solana settlement are re-verified locally.
 The key file must be chmod 600 and contain one hex private key; it is never printed or sent anywhere.
 """
@@ -208,7 +208,7 @@ def main():
         code, _, b = http("POST", f"{root}/api/orders/{oid}/signature", {"signature": sig})
         if code != 200:
             sys.exit(f"signature submit failed {code}: {clean(b[:200])}")
-        print("signed the audited Solana transaction (pay merchant + on-chain memo)")
+        print("signed the audited Solana transaction (pay merchant + order reference)")
 
     tx = evm.send(chain, key, dep["address"], amount_raw, token=contract, max_amount=amount_raw)
     print(f"deposit {tx['status']}: {tx['explorer']}")
@@ -239,7 +239,7 @@ def main():
     ok_body = p.get("body_sha256") == receipts.sha256_hex(body)
     ok_terms = p.get("merchant") == merchant and p.get("order") == oid and int((p.get("price") or {}).get("amount", 0)) >= price
     onchain = sol.verify_payment(sol.Rpc(), p.get("solana_tx", ""), merchant, price,
-                                 memo=cn.memo_text(oid) if a.rail == "connect" else None)
+                                 reference=cn.reference_key(oid) if a.rail == "connect" else None)
     print(f"receipt signature valid: {ok_sig}; body hash matches: {ok_body}; receipt terms match: {ok_terms}; "
           f"Solana settlement re-verified: {onchain.get('ok')} ({onchain.get('explorer')})")
     if a.out:

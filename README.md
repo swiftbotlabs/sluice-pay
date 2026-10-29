@@ -23,7 +23,7 @@ agents, backends) have it worst: there is no human to recover a half-finished br
 |---|---|
 | **Pay links** for people | A merchant makes a link (`amount + Solana address + reference`), optionally **signed with their Solana wallet** so the amount and address cannot be edited. The payer picks one of 12 assets on 9 networks, gets a deposit address with a QR code and Aurora's transfer-requirements block, pays from any wallet, and watches the payment move to Solana. |
 | **402 pay-per-call** for software | A Sluice API answers `402 Payment Required` with its price in USDC on Solana. A buyer creates an order, pays the quoted deposit from any supported chain, and calls again with `X-Sluice-Order`. The response comes with a **receipt signed by the server** that binds the request, the delivered bytes, the source-chain deposit and the Solana settlement. |
-| **On-chain order receipts** (Intents Connect) | With `--rail connect`, the buyer's deposit triggers ONE Solana transaction, run by the buyer's own Intents Connect account, that pays the merchant **and** writes `sluice:<order id>` in an SPL Memo. The payment proves which order it was for, from Solana alone. |
+| **On-chain order references** (Intents Connect) | With `--rail connect`, the buyer's deposit is bridged into the buyer's own Solana account (Intents Connect intermediary), which then runs ONE Solana transaction paying the merchant exactly the price and carrying a **reference account derived from the order id** (the Solana Pay pattern). The merchant finds the payment for an order with `getSignaturesForAddress(reference)`, from Solana alone. |
 | **Private payments** (Confidential Intents) | One toggle routes the payment through Confidential Intents, so the payer's source wallet is not linkable to the Solana settlement. Sluice still verifies the settlement on Solana. |
 
 ## Live on mainnet (real money, real links)
@@ -37,8 +37,9 @@ Every row below is a real payment made while building Sluice. The checkout page 
 | **Refund** | Payer sent 0.40 USDC for a 1.00 USDC invoice: `INCOMPLETE_DEPOSIT`, then **refunded 0.3976 USDC** to the payer's own address 30 s after the deadline ([refund tx](https://basescan.org/tx/0x7654c9edaf4e4dc2f4dbca8e23638b8570baa736d3ea1b532836b0471314071b)) | [0x926b1cce...b6ed](https://basescan.org/tx/0x926b1cce75dac5750c8cbe0364519987aa3d56d93f7bfaae6bad08fe9084b6ed) | none (refunded) |
 | Private payment | **ETH on Arbitrum** -> 0.50 USDC on Solana with Confidential Intents. Aurora's status shows no hashes at all; Sluice found and verified the credit on Solana | [0x51fdff2a...564a](https://arbiscan.io/tx/0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a) | [44GN5eYQ...B6Cj](https://solscan.io/tx/44GN5eYQhed3UHLkwCXxi2nJU53xeHot1Ff5x4YQNNZn9PG4vy8XVMhrvof6V4fJ9C2SEKCJ9ev8dAXUDZtuB6Cj) |
 | Checkout page | A signed 0.15 USDC pay link opened in the checkout: the page quoted Base USDC, showed the deposit address with QR and transfer requirements, the payer sent from another wallet, and the page itself confirmed the 0.15 USDC on Solana | [0x1f0c7e5f...0852](https://basescan.org/tx/0x1f0c7e5f28450751799f7594f0ba5272b4b883c9efdd95b6c2f812017b240852) | [49Uz6rAs...VAxZV](https://solscan.io/tx/49Uz6rAsJMQEx2qcX9JdCJqSzCdbpWSKBttYaJNrjaPKjAfZ5qH6SdLr3mwAw34rucxM6hy2i91FcAJe1nVVAxZV) |
+| Recorded for the demo video | Same flow on the published GitHub Pages checkout, filmed in one take: quote cross-checked with NEAR Intents, paid from another wallet, verified on Solana by the page | [0x4c578940...e7b9](https://basescan.org/tx/0x4c5789409a649fd11ed158476265c9230beda4104fa595944acfc96651a2e7b9) | [4oPn2qbt...L9Hs](https://solscan.io/tx/4oPn2qbtaHY2JiDi88BAFivHjDcHJs8QbmBDhbPezWuuZT2VVPcU7m5tb7kSwxxeY7pN6CNPj448xEZT3q7PL9Hs) |
 | API call | `cli/sluice_buy.py` against a Sluice server: 402 -> order -> deposit -> settled on Solana -> report delivered with a signed receipt, re-verified by the client (~55 s) | [0x7fb64970...0708](https://basescan.org/tx/0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708) | [45WMgPZt...cMaX](https://solscan.io/tx/45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX) |
-| Intents Connect (bridge leg) | Base USDC bridged by Intents Connect into the payer's own Solana intermediary; the payer then signed the Solana transaction *pay the merchant 0.30 USDC + memo `sluice:ord_demo_t4`* (decoded and audited before signing, see evidence). **Honest status:** Intents Connect has not broadcast that Solana operation yet (`OPERATION_FAILED` after ~21 min, a steps-only retry is pending); the funds are safe in the payer-controlled intermediary | [0x1ee25e0b...5c8e](https://basescan.org/tx/0x1ee25e0b10549e2402e356d6a82cfe76c16733e09a54f0d84586c7f8110f5c8e) | bridge credit [QNGfeEiq...g1wQ](https://solscan.io/tx/QNGfeEiqtNMyQ4GLAzLGChLZtzGEGQ9Yi53YTfvFGHxoQgTUVuQUgkWfgTPbNN6DSgdTx6oi5YctbxubFahg1wQ) |
+| **Intents Connect rail** | `cli/sluice_buy.py --rail connect --pay arb:ETH`: ETH on Arbitrum bridged into the payer's Solana intermediary, which paid the merchant 0.15 USDC with the order's reference account `AAkRmupG...MDM6` attached; the buyer audited the exact Solana transaction before signing; delivered with a signed receipt (~50 s) | [0xb990e1e3...91fc](https://arbiscan.io/tx/0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc) | [3za9WNav...W9zCs](https://solscan.io/tx/3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs) |
 
 Raw records (quotes, status timelines, the signed receipt and the delivered body) are in [`evidence/`](evidence/).
 Verify the API-call receipt yourself:
@@ -97,7 +98,8 @@ Refunds always go to the payer's own address on the paying chain (`refundTo`), n
   and that it is not older than the order. The browser checkout does the same check client-side.
 - **Programmable settlement via Intents Connect.** The Connect rail runs Solana instructions from the payer's MPC-controlled
   intermediary right after the bridge lands: `ATA CreateIdempotent` (only if the merchant has no USDC account yet),
-  `TransferChecked` of exactly the price, and an SPL Memo with the order id, all in one atomic transaction.
+  `TransferChecked` of exactly the price with a read-only reference account derived from the order id, in one atomic
+  transaction. Looking up that reference on Solana returns the payment for the order.
 - **Solana keys for trust.** Pay links are signed with the merchant's Solana ed25519 key and verified in the browser
   (WebCrypto Ed25519). Delivery receipts are ed25519 signatures with a Solana-format key published at
   `/.well-known/sluice.json`.
@@ -114,7 +116,7 @@ Refunds always go to the payer's own address on the paying chain (`refundTo`), n
 payment with the public NEAR Intents token list, and looks the deposit address up in the public NEAR Intents status API
 before sending anything: recipient, amount, origin asset, refund address and amountIn must match. On the Connect rail it
 decodes the exact Solana transaction it is asked to authorise and refuses anything except paying the merchant the price,
-this order's memo and one service fee of at most 0.02 USDC (tested against the real mainnet payload and edited copies).
+this order's reference account and one service fee of at most 0.02 USDC (tested against the real mainnet payload and edited copies).
 
 Following Aurora's integration guidance: 429s honour `Retry-After` with jitter, the token list is cached, status polling
 runs every 6 s per order (the server's background poller makes at most one status call every 3 s in total), the
@@ -144,7 +146,7 @@ python3 -m sluice.server --config sluice.env --port 8402
 # 3) pay for a call from Base USDC (key file: one hex EVM key, chmod 600)
 python3 cli/sluice_buy.py http://127.0.0.1:8402/api/report/<solana-address> \
   --pay base:USDC --key-file payer.key --max-usd 0.60
-# --rail connect                       settle through Intents Connect (pay + on-chain memo in one Solana tx)
+# --rail connect                       settle through Intents Connect (pay + order reference in one Solana tx)
 # --confidential --accept-unverifiable-quote   private payment (quote cannot be cross-checked publicly; loss capped by --max-usd)
 
 # 4) signed pay link for the checkout page
@@ -158,7 +160,7 @@ The checkout page is plain HTML/JS in `docs/` (served by the server at `/` and b
 ```
 sluice/aurora.py    Swap API client (validation, quote echo checks, 429 handling)
 sluice/connect.py   Intents Connect bridge-in + Solana receipt steps + ERC-191 signing
-sluice/solana.py    base58, PDA/ATA derivation, RPC, settlement verification, memo parsing
+sluice/solana.py    base58, PDA/ATA derivation, RPC, settlement verification, reference lookups
 sluice/engine.py    order state machine, refunds, settlement claim, exactly-once delivery
 sluice/store.py     SQLite ledger with UNIQUE deposit address and settlement signature
 sluice/receipts.py  ed25519 receipts and signed pay links
@@ -168,6 +170,17 @@ docs/               the checkout page (GitHub Pages)
 tests/              offline unit and HTTP tests
 evidence/           records of the mainnet runs
 ```
+
+## Builder notes for the Aurora team
+
+- **Intents Connect + SPL Memo on Solana.** Our first design wrote the order id with the SPL Memo program inside the
+  Connect steps. The bridge leg settled, but the Solana operation was never broadcast (`OPERATION_FAILED` after about
+  21 minutes, twice: once as a bridge-in, once as a steps-only retry), with no 400 at create time. The same transfer with
+  a read-only reference account instead of the Memo instruction settled in about 25 seconds. If Memo is intentionally not
+  allowed by the relayer, a validation error at create time would save integrators a lot of time. Details in
+  `evidence/intents-connect.json`.
+- **Confidential quotes are invisible to public status APIs**, so a buyer cannot cross-check a server-made private quote.
+  Sluice's CLI therefore asks for explicit consent (`--accept-unverifiable-quote`) for private payments.
 
 ## Honest notes
 

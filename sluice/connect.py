@@ -9,13 +9,16 @@ Flow (docs: docs.intents.aurora.dev/intents-connect/developer-guides/solana):
   5. GET  /api/v1/executions/{wallet}?id=...             -> poll until SUCCESS / *_FAILED / EXPIRED
 
 The steps run on Solana from the intermediary once the bridged USDC lands:
-  a) ATA CreateIdempotent for the merchant (no-op if it exists)
-  b) SPL TransferChecked {MIN_AMOUNT_OUT} USDC  intermediary -> merchant
-  c) SPL Memo "sluice:<order_id>" signed by the intermediary
-so the payment and its order reference are inseparable on Solana.
+  a) ATA CreateIdempotent for the merchant (only if the merchant has no USDC account yet)
+  b) SPL TransferChecked of exactly the price, intermediary -> merchant, carrying a read-only REFERENCE account
+     derived from the order id (the Solana Pay reference pattern)
+so the payment and its order are inseparable on Solana: getSignaturesForAddress(reference) finds the payment.
+(An SPL Memo step was our first design; Intents Connect's Solana relayer never executed transactions containing
+the Memo program in our mainnet tests, while the reference-account form settled in ~25 s.)
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import urllib.error
@@ -36,10 +39,15 @@ class ConnectError(Exception):
         self.status, self.body = status, body
 
 
-def memo_text(order_id: str) -> str:
+def order_tag(order_id: str) -> str:
     if not _ORDER_RE.match(order_id or ""):
         raise ValueError("bad order id")
     return f"sluice:{order_id}"
+
+
+def reference_key(order_id: str) -> str:
+    """Deterministic read-only reference account for an order (sha256, base58). Never a signer, never funded."""
+    return sol.b58encode(hashlib.sha256(order_tag(order_id).encode()).digest())
 
 
 def receipt_steps(intermediary: str, merchant: str, order_id: str, mint: str = sol.USDC_MINT, decimals: int = 6) -> list[dict]:
@@ -66,10 +74,8 @@ def receipt_steps(intermediary: str, merchant: str, order_id: str, mint: str = s
              {"pubkey": src, "isSigner": False, "isWritable": True},
              {"pubkey": mint, "isSigner": False, "isWritable": False},
              {"pubkey": dst, "isSigner": False, "isWritable": True},
-             {"pubkey": "{INTERMEDIARY}", "isSigner": True, "isWritable": False}]},
-        {"metadata": {"name": "On-chain order receipt", "description": memo_text(order_id)},
-         "programId": sol.MEMO_PROGRAM, "discriminator": memo_text(order_id).encode().hex(), "args": [],
-         "accounts": [{"pubkey": "{INTERMEDIARY}", "isSigner": True, "isWritable": False}]},
+             {"pubkey": "{INTERMEDIARY}", "isSigner": True, "isWritable": False},
+             {"pubkey": reference_key(order_id), "isSigner": False, "isWritable": False}]},
     ]
 
 
@@ -211,16 +217,16 @@ def solana_message_from_payload(payload_json: str) -> bytes:
 def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant: str, price: int, order_id: str,
                   max_fee: int = 20000, mint: str = sol.USDC_MINT) -> dict:
     """Refuse to sign unless the Solana transaction does exactly: (optional ATA create for the merchant),
-    TransferChecked `price` USDC intermediary -> merchant, Memo `sluice:<order>`, plus the service's own
-    compute-budget / nonce instructions and ONE fee transfer of at most `max_fee`."""
+    TransferChecked `price` USDC intermediary -> merchant carrying this order's reference account, plus the
+    service's own compute-budget / nonce instructions and ONE fee transfer of at most `max_fee`."""
     p = json.loads(payload_json)
     if (p.get("signer_id") or "").lower() != payer.lower():
         raise PayloadRejected("payload is for another signer")
     m = decode_solana_message(solana_message_from_payload(payload_json))
     if intermediary not in m["signers"]:
         raise PayloadRejected("intermediary is not a signer")
-    src, dst, memo = sol.ata(intermediary, mint), sol.ata(merchant, mint), memo_text(order_id)
-    paid = fees = memos = 0
+    src, dst, ref = sol.ata(intermediary, mint), sol.ata(merchant, mint), reference_key(order_id)
+    paid = fees = 0
     for ix in m["instructions"]:
         prog, acc, data = ix["program"], ix["accounts"], ix["data"]
         if prog == COMPUTE_BUDGET:
@@ -233,11 +239,6 @@ def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant:
             if data not in (b"\x01",) or len(acc) < 4 or acc[1] != dst or acc[2] != merchant or acc[3] != mint:
                 raise PayloadRejected("unexpected token-account creation")
             continue
-        if prog == sol.MEMO_PROGRAM:
-            if data.decode("utf-8", "replace") != memo:
-                raise PayloadRejected("memo does not match this order")
-            memos += 1
-            continue
         if prog == sol.TOKEN_PROGRAM:
             op = data[:1]
             if op == b"\x0c" and len(data) == 10 and len(acc) >= 4:  # TransferChecked
@@ -245,6 +246,8 @@ def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant:
                 if acc[0] != src or acc[1] != mint or acc[3] != intermediary or dec != 6:
                     raise PayloadRejected("unexpected TransferChecked")
                 if acc[2] == dst and amt == price:
+                    if acc[4:] != [ref]:
+                        raise PayloadRejected("payment does not carry this order's reference")
                     paid += 1
                 elif amt <= max_fee:
                     fees += 1
@@ -259,6 +262,6 @@ def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant:
                 continue
             raise PayloadRejected("unexpected Token instruction")
         raise PayloadRejected(f"unexpected program {prog}")
-    if paid != 1 or memos != 1 or fees > 1:
-        raise PayloadRejected(f"expected one payment, one memo, at most one fee (got {paid}/{memos}/{fees})")
+    if paid != 1 or fees > 1:
+        raise PayloadRejected(f"expected one payment and at most one fee (got {paid}/{fees})")
     return {"ok": True, "instructions": len(m["instructions"]), "fee_transfers": fees}
