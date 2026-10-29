@@ -1,0 +1,159 @@
+{
+ "run": "success-base-usdc",
+ "note": "Recorded live on mainnet by tmp runner using sluice.aurora + sluice.evm. Keys are never logged.",
+ "timeline": [
+  {
+   "t": "2026-10-29T18:25:19Z",
+   "status": "PENDING_DEPOSIT",
+   "updatedAt": "2026-10-29T18:25:14.950Z",
+   "amountIn": null,
+   "amountOut": null,
+   "depositedAmount": null,
+   "refundedAmount": "0",
+   "refundReason": null,
+   "originTx": [],
+   "destinationTx": [],
+   "originExplorer": [],
+   "destinationExplorer": [],
+   "nearTx": [],
+   "intentHashes": []
+  },
+  {
+   "t": "2026-10-29T18:25:36Z",
+   "status": "PROCESSING",
+   "updatedAt": "2026-10-29T18:25:34.000Z",
+   "amountIn": null,
+   "amountOut": null,
+   "depositedAmount": "0.773463",
+   "refundedAmount": "0",
+   "refundReason": null,
+   "originTx": [
+    "0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52"
+   ],
+   "destinationTx": [],
+   "originExplorer": [
+    ""
+   ],
+   "destinationExplorer": [],
+   "nearTx": [
+    "Cg5h3V1gkaCAfw7ohEGC4BV35LgK3b6EWXWct6nTE18p"
+   ],
+   "intentHashes": []
+  },
+  {
+   "t": "2026-10-29T18:26:01Z",
+   "status": "SUCCESS",
+   "updatedAt": "2026-10-29T18:25:56.000Z",
+   "amountIn": "0.768404",
+   "amountOut": "0.5",
+   "depositedAmount": "0.773463",
+   "refundedAmount": "0.002659",
+   "refundReason": null,
+   "originTx": [
+    "0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52",
+    "0x291a1b7a6eb2af6acc8a62da930f74c9a7fb92e123a42a0d943dfb81a87fe9d4"
+   ],
+   "destinationTx": [
+    "3uyHowgryQxRWjsC9DrxMSxFd1nvpEtq3xsrR6iGJfodAdsRC6TyVN8Zk1GgUWunsLH1j6dnz9Tz2tsMhu3xiSG2"
+   ],
+   "originExplorer": [
+    "",
+    ""
+   ],
+   "destinationExplorer": [
+    ""
+   ],
+   "nearTx": [
+    "Cg5h3V1gkaCAfw7ohEGC4BV35LgK3b6EWXWct6nTE18p",
+    "4oGpmHrN1PP6vjXxwNVVju53NMwo7inG54Vd3RSaSJEz"
+   ],
+   "intentHashes": [
+    "CsiVakeQxWXyFtkStRJtubPaL5NLhzVm82esGTFggqir"
+   ]
+  },
+  {
+   "t": "2026-10-29T18:26:01Z",
+   "status": "SUCCESS",
+   "updatedAt": "2026-10-29T18:25:56.000Z",
+   "amountIn": "0.768404",
+   "amountOut": "0.5",
+   "depositedAmount": "0.773463",
+   "refundedAmount": "0.002659",
+   "refundReason": null,
+   "originTx": [
+    "0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52",
+    "0x291a1b7a6eb2af6acc8a62da930f74c9a7fb92e123a42a0d943dfb81a87fe9d4"
+   ],
+   "destinationTx": [
+    "3uyHowgryQxRWjsC9DrxMSxFd1nvpEtq3xsrR6iGJfodAdsRC6TyVN8Zk1GgUWunsLH1j6dnz9Tz2tsMhu3xiSG2"
+   ],
+   "originExplorer": [
+    "",
+    ""
+   ],
+   "destinationExplorer": [
+    ""
+   ],
+   "nearTx": [
+    "Cg5h3V1gkaCAfw7ohEGC4BV35LgK3b6EWXWct6nTE18p",
+    "4oGpmHrN1PP6vjXxwNVVju53NMwo7inG54Vd3RSaSJEz"
+   ],
+   "intentHashes": [
+    "CsiVakeQxWXyFtkStRJtubPaL5NLhzVm82esGTFggqir"
+   ]
+  }
+ ],
+ "quote_request": {
+  "dry": false,
+  "swapType": "EXACT_OUTPUT",
+  "depositType": "ORIGIN_CHAIN",
+  "depositMode": "SIMPLE",
+  "quoteWaitingTimeMs": 0,
+  "sessionId": "t2_base_usdc",
+  "confidentiality": "public",
+  "amount": "500000",
+  "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+  "destinationAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+  "slippageTolerance": 100,
+  "refundTo": "0x8d9716A9f13FE82BA59E74b3Ce032842EB357818",
+  "refundType": "ORIGIN_CHAIN",
+  "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "recipientType": "DESTINATION_CHAIN",
+  "deadline": "2026-10-29T18:40:14.000Z",
+  "referral": "aurora-rl3dwebb6d",
+  "appFees": [
+   {
+    "recipient": "2da316c13fcafc3a6c957ca6a9143622119a1a747bae0975c41a579d21a4cb6e",
+    "fee": 2
+   }
+  ]
+ },
+ "quote": {
+  "timeEstimate": 32,
+  "deadline": "2026-11-01T18:40:14.000Z",
+  "timeWhenInactive": "2026-11-01T18:40:14.000Z",
+  "depositAddress": "0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5",
+  "amountIn": "773463",
+  "amountInFormatted": "0.773463",
+  "amountInUsd": "0.773101019316",
+  "minAmountIn": "768411",
+  "amountOut": "500000",
+  "amountOutFormatted": "0.5",
+  "amountOutUsd": "0.499766000000",
+  "minAmountOut": "500000",
+  "refundFee": "2400",
+  "withdrawFee": "268287"
+ },
+ "correlationId": "3d96a864-62c3-4c32-9c77-5a48deeea2eb",
+ "deposit_tx": {
+  "chain": "base",
+  "tx": "0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52",
+  "from": "0x8d9716A9f13FE82BA59E74b3Ce032842EB357818",
+  "to": "0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5",
+  "amount": "773463",
+  "token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "explorer": "https://basescan.org/tx/0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52",
+  "status": "ok",
+  "block": 53254486
+ }
+}

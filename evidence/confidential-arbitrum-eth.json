@@ -1,0 +1,127 @@
+{
+ "run": "confidential-arbitrum-eth",
+ "note": "Recorded live on mainnet by tmp runner using sluice.aurora + sluice.evm. Keys are never logged.",
+ "timeline": [
+  {
+   "t": "2026-10-29T18:32:43Z",
+   "status": "PENDING_DEPOSIT",
+   "updatedAt": null,
+   "amountIn": null,
+   "amountOut": null,
+   "depositedAmount": null,
+   "refundedAmount": null,
+   "refundReason": null,
+   "originTx": [],
+   "destinationTx": [],
+   "originExplorer": [],
+   "destinationExplorer": [],
+   "nearTx": [],
+   "intentHashes": []
+  },
+  {
+   "t": "2026-10-29T18:32:51Z",
+   "status": "PROCESSING",
+   "updatedAt": null,
+   "amountIn": null,
+   "amountOut": null,
+   "depositedAmount": null,
+   "refundedAmount": null,
+   "refundReason": null,
+   "originTx": [],
+   "destinationTx": [],
+   "originExplorer": [],
+   "destinationExplorer": [],
+   "nearTx": [],
+   "intentHashes": []
+  },
+  {
+   "t": "2026-10-29T18:33:25Z",
+   "status": "SUCCESS",
+   "updatedAt": null,
+   "amountIn": null,
+   "amountOut": null,
+   "depositedAmount": null,
+   "refundedAmount": null,
+   "refundReason": null,
+   "originTx": [],
+   "destinationTx": [],
+   "originExplorer": [],
+   "destinationExplorer": [],
+   "nearTx": [],
+   "intentHashes": []
+  },
+  {
+   "t": "2026-10-29T18:33:25Z",
+   "status": "SUCCESS",
+   "updatedAt": null,
+   "amountIn": null,
+   "amountOut": null,
+   "depositedAmount": null,
+   "refundedAmount": null,
+   "refundReason": null,
+   "originTx": [],
+   "destinationTx": [],
+   "originExplorer": [],
+   "destinationExplorer": [],
+   "nearTx": [],
+   "intentHashes": []
+  }
+ ],
+ "quote_request": {
+  "dry": false,
+  "swapType": "EXACT_OUTPUT",
+  "depositType": "ORIGIN_CHAIN",
+  "depositMode": "SIMPLE",
+  "quoteWaitingTimeMs": 0,
+  "sessionId": "t3_arb_eth_conf",
+  "confidentiality": "advanced",
+  "amount": "500000",
+  "originAsset": "nep141:arb.omft.near",
+  "destinationAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+  "slippageTolerance": 100,
+  "refundTo": "0x8d9716A9f13FE82BA59E74b3Ce032842EB357818",
+  "refundType": "ORIGIN_CHAIN",
+  "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "recipientType": "DESTINATION_CHAIN",
+  "deadline": "2026-10-29T18:47:34.000Z",
+  "referral": "aurora-rl3dwebb6d",
+  "appFees": [
+   {
+    "recipient": "widget_collect.sputnik-dao.near",
+    "fee": 25
+   },
+   {
+    "recipient": "2238fd089f1c92b206c218cd16b8676cb98964e0d50f8ab729c6396a81e07805",
+    "fee": 20
+   }
+  ]
+ },
+ "quote": {
+  "timeEstimate": 24,
+  "deadline": "2026-11-01T18:47:34.000Z",
+  "timeWhenInactive": "2026-11-01T18:47:34.000Z",
+  "depositAddress": "0xFAae838d6717EBE699118255Ae94e0a970064CC1",
+  "amountIn": "222930139609761",
+  "amountInFormatted": "0.000222930139609761",
+  "amountInUsd": "0.520136143135",
+  "minAmountIn": "220743698173033",
+  "amountOut": "500000",
+  "amountOutFormatted": "0.5",
+  "amountOutUsd": "0.499755500000",
+  "minAmountOut": "500000",
+  "refundFee": "1200000000000",
+  "withdrawFee": "10005"
+ },
+ "correlationId": "4d3065d6-e1ac-47b2-bbf3-b359b6135ff9",
+ "deposit_tx": {
+  "chain": "arb",
+  "tx": "0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a",
+  "from": "0x8d9716A9f13FE82BA59E74b3Ce032842EB357818",
+  "to": "0xFAae838d6717EBE699118255Ae94e0a970064CC1",
+  "amount": "222930139609761",
+  "token": null,
+  "explorer": "https://arbiscan.io/tx/0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a",
+  "status": "ok",
+  "block": 519437820
+ }
+}

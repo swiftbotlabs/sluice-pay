@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sluice Pay</title>
+<meta name="description" content="Pay any Solana merchant in USDC from 30+ chains. Settlement verified on Solana, refunds automatic.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap row">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>Sluice</div>
+    <nav><a href="#create" id="nav-create">Create a pay link</a><a href="#agents">For APIs &amp; agents</a><a href="#proof">Live proof</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- PAY MODE -->
+  <section id="pay" class="card hidden" aria-live="polite">
+    <div class="invoice">
+      <div class="muted small">You are paying</div>
+      <div class="amount"><span id="inv-amount">0.00</span> <span class="unit">USDC on Solana</span></div>
+      <div class="to">to <code id="inv-to"></code></div>
+      <div class="ref" id="inv-ref-row">Reference <code id="inv-ref"></code></div>
+      <div id="inv-badge" class="badge"></div>
+    </div>
+
+    <div id="step-choose">
+      <h2>Pay with</h2>
+      <p class="muted small" id="origin-count">Loading supported assets…</p>
+      <div id="origins" class="chips" role="radiogroup" aria-label="Asset to pay with"></div>
+      <div id="estimate" class="estimate muted small"></div>
+
+      <label class="field">
+        <span>Your refund address on <b id="refund-chain">the paying chain</b></span>
+        <input id="refund" autocomplete="off" spellcheck="false" placeholder="0x…">
+        <small class="muted">If anything goes wrong (too little sent, route failure, expiry) the funds go back here automatically.</small>
+      </label>
+      <label class="toggle"><input type="checkbox" id="confidential"> <span><b>Private payment</b> (Confidential Intents): your source wallet is not linkable to the Solana payment.</span></label>
+      <button id="btn-quote" class="primary" disabled>Get deposit address</button>
+      <div id="quote-error" class="error hidden"></div>
+    </div>
+
+    <div id="step-deposit" class="hidden">
+      <div class="grid2">
+        <div>
+          <div class="kv"><span>Sending from chain</span><b id="d-chain"></b></div>
+          <div class="kv"><span>Supported asset</span><b id="d-asset"></b> <span class="pill">1 asset supported</span></div>
+          <div class="kv"><span>Send exactly</span><b id="d-amount" class="big"></b></div>
+          <div class="kv"><span>Deposit address</span></div>
+          <div class="addr"><code id="d-address"></code><button id="btn-copy" class="ghost" type="button">Copy</button></div>
+        </div>
+        <div class="qrbox"><div id="qr" aria-label="QR code of the deposit address"></div><div class="small muted" id="qr-caption"></div></div>
+      </div>
+      <div class="req">
+        <b>Transfer requirements</b>
+        <p id="d-req"></p>
+        <ul class="small" id="d-facts"></ul>
+      </div>
+      <div class="row gap">
+        <button id="btn-wallet" class="primary hidden" type="button">Pay with browser wallet</button>
+        <span class="muted small" id="wallet-note"></span>
+      </div>
+      <details class="small"><summary>Already sent it from another wallet? Paste the tx hash (optional, speeds up detection)</summary>
+        <div class="row gap"><input id="txhash" placeholder="0x…" spellcheck="false"><button id="btn-tx" class="ghost" type="button">Submit</button></div>
+      </details>
+    </div>
+
+    <ol id="timeline" class="timeline hidden">
+      <li data-k="AWAIT">Waiting for your deposit <span class="t" id="countdown"></span></li>
+      <li data-k="SEEN">Deposit detected on the source chain</li>
+      <li data-k="ROUTE">Routing through NEAR Intents</li>
+      <li data-k="SOLANA">Verified on Solana (merchant balance checked directly)</li>
+    </ol>
+    <div id="result" class="hidden"></div>
+  </section>
+
+  <!-- CREATE MODE -->
+  <section id="create" class="card">
+    <h1>Get paid in USDC on Solana, by anyone, from any chain</h1>
+    <p class="lead">Make a link, share it. Your customer pays with what they hold on Base, Arbitrum, Ethereum, BNB Chain, Bitcoin, Tron and more.
+      You receive exactly the invoiced USDC in your Solana wallet. If a payment comes up short or a route fails, the customer is refunded automatically.</p>
+    <label class="field"><span>Your Solana address (receives USDC)</span><input id="c-to" spellcheck="false" placeholder="Solana address"></label>
+    <div class="row gap">
+      <label class="field grow"><span>Amount (USDC)</span><input id="c-amt" inputmode="decimal" placeholder="25.00"></label>
+      <label class="field grow"><span>Reference</span><input id="c-ref" maxlength="40" placeholder="invoice-1042"></label>
+    </div>
+    <div class="row gap">
+      <button id="btn-link" class="primary" type="button">Create link</button>
+      <button id="btn-sign" class="ghost" type="button">Create signed link with Phantom</button>
+    </div>
+    <div id="c-out" class="hidden">
+      <div class="addr"><code id="c-link"></code><button id="btn-copy-link" class="ghost" type="button">Copy</button></div>
+      <p class="small muted" id="c-note"></p>
+    </div>
+    <div id="c-error" class="error hidden"></div>
+  </section>
+
+  <section id="agents" class="card">
+    <h2>For APIs and agents</h2>
+    <p>The same rail works without a browser. A Sluice-protected API answers <code>402 Payment Required</code> with its price in USDC on Solana.
+      The buyer creates an order, pays the quoted deposit from any supported chain, and calls again with <code>X-Sluice-Order</code>.
+      The server delivers exactly once, only after it has seen the USDC land in the merchant's Solana account, and returns a receipt signed with
+      its published key.</p>
+<pre><code>$ python3 cli/sluice_buy.py https://api.example.com/api/report/&lt;solana-address&gt; \
+    --pay base:USDC --key-file payer.key --max-usd 0.60
+402: price 0.40 USDC on Solana -> 9cYF…DReR
+order ord_…: send 0.410… USDC on Base to 0x…
+deposit ok: https://basescan.org/tx/0x…
+  SETTLED: Paid: verified on Solana
+receipt signature valid: True; body hash matches: True; Solana settlement re-verified: True</code></pre>
+    <p class="small muted">Add <code>--rail connect</code> to settle through Aurora Intents Connect: the buyer's deposit triggers one Solana transaction that pays the merchant
+      and writes the order id in an on-chain memo, so the payment proves which order it was for.</p>
+  </section>
+
+  <section id="proof" class="card">
+    <h2>Live proof (Solana mainnet)</h2>
+    <div id="proof-table"></div>
+  </section>
+</main>
+<footer class="wrap small muted">Sluice by Swift Bot Labs. Routing by Aurora Intents (powered by NEAR Intents). Settlement verified on Solana mainnet. Open source.</footer>
+<script src="qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

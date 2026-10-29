@@ -1,0 +1,17 @@
+{
+  "address": "B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW",
+  "executable": false,
+  "exists": false,
+  "generated_at": 1793299595,
+  "owner_program": null,
+  "recent_activity": {
+    "failed_in_last_100": 0,
+    "newest_tx_time": null,
+    "oldest_in_window": null,
+    "tx_count_last_100": 0
+  },
+  "sol": 0.0,
+  "source": "Solana mainnet RPC (read-only)",
+  "token_accounts_nonzero": 0,
+  "top_holdings": []
+}

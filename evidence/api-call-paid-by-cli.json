@@ -1,0 +1,118 @@
+{
+ "run": "api-call-paid-by-cli",
+ "note": "Local Sluice server + cli/sluice_buy.py on mainnet. Order view as served by GET /api/orders/{id}; receipt as returned in X-Sluice-Receipt.",
+ "order": {
+  "order_id": "ord_aBizGuCl9oOVECtX",
+  "rail": "swap",
+  "state": "DELIVERED",
+  "message": "Paid and delivered",
+  "resource": "report",
+  "confidential": false,
+  "price": {
+   "amount": "0.4",
+   "asset": "USDC",
+   "chain": "solana",
+   "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR"
+  },
+  "deposit": {
+   "address": "0x0497bb48C0335f1D22f147B2983ffDC6dA054042",
+   "memo": null,
+   "pay_with": "USDC on Base",
+   "amount": "0.414193",
+   "amount_raw": "414193",
+   "deadline": "2026-10-29T19:00:32.000Z",
+   "transfer_requirements": "Send only USDC from the Base network to this address. Send exactly 0.414193 before 2026-10-29T19:00:32.000Z. Less is refunded to 0x8d9716A9f13FE82BA59E74b3Ce032842EB357818 after the deadline; any excess is refunded after settlement. Other assets or networks may be lost."
+  },
+  "refund_to": "0x8d9716A9f13FE82BA59E74b3Ce032842EB357818",
+  "provider_status": "SUCCESS",
+  "provider": {
+   "status": "SUCCESS",
+   "updatedAt": "2026-10-29T18:46:25.000Z",
+   "amountIn": "0.410154",
+   "amountOut": "0.4",
+   "depositedAmount": "0.414193",
+   "refundedAmount": "0",
+   "refundReason": null,
+   "originTx": [
+    "0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708"
+   ],
+   "destinationTx": [
+    "45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX"
+   ],
+   "originExplorer": [
+    ""
+   ],
+   "destinationExplorer": [
+    ""
+   ],
+   "nearTx": [
+    "4zUETuzYkMzn4TqEb4vveBDJjZuq7GdY7RxJk9S6yjGD",
+    "Ea4PfEF5zhqnyBr9kutjUmwvfbbL1EvGwKBYAdeRYrSy",
+    "4UEJDHsrqLyY59Rqchx3ZaL3ZzFnmda4cMkEqUUqD5sf",
+    "DT9uq8eAUFUYg494yknJ5r2cnFgUo451vuokhP2BPqAQ"
+   ],
+   "intentHashes": [
+    "CyGdWaTq7qtB7GzDcgCmfLKnpgQQw3vorG3Td9zs39aE",
+    "9fDhyrrgyQHJFVntCACg7RXf74kw7cLfRaVciALFRfWq",
+    "HTpZkrrMqZnuSURGd5pzo5nJUzy8KYVmCRqnrm9rAzZx"
+   ]
+  },
+  "deposit_tx": "0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708",
+  "settlement": {
+   "solana_tx": "45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX",
+   "explorer": "https://solscan.io/tx/45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX",
+   "merchant_delta": 400000,
+   "slot": 462986998,
+   "memos": []
+  }
+ },
+ "receipt": {
+  "payload": {
+   "body_sha256": "bc646f5aa405d31b7c95576ba1fbd17b60f93d7a7966e44a8deb1b89de1a9d51",
+   "deposit_address": "0x0497bb48C0335f1D22f147B2983ffDC6dA054042",
+   "deposit_tx": "0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708",
+   "issued_at": 1793299595,
+   "kind": "sluice.receipt",
+   "memos": [],
+   "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+   "merchant_delta": 400000,
+   "order": "ord_aBizGuCl9oOVECtX",
+   "origin_asset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+   "price": {
+    "amount": 400000,
+    "asset": "USDC",
+    "chain": "solana",
+    "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+   },
+   "rail": "swap",
+   "request_hash": "98e9b98258993e6311c4c1c5c1584b8e6c5121dc037a2d5ae49bc124485f160c",
+   "resource": "report",
+   "signer": "xr1EUADeCKSEEWYAHr4GhTt6L8WPQe67iQjD2yztam2",
+   "solana_slot": 462986998,
+   "solana_tx": "45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX",
+   "v": 1
+  },
+  "signature": "WqMZEG2TsZEkrRnNt9DyqssRW21jNUSWPnVkPWmUDxiEFpfQXcs2CxiTwU2RERrBTW9d7aZWpjeDtWxTrLfgWe1"
+ },
+ "settle_proof": {
+  "sig": "45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX",
+  "slot": 462986998,
+  "blockTime": 1793299582,
+  "delta": 400000,
+  "owner": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "explorer": "https://solscan.io/tx/45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX",
+  "memos": [],
+  "ok": true
+ },
+ "cli_transcript": [
+  "402: price 0.4 USDC on Solana -> 9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "order ord_aBizGuCl9oOVECtX: send 0.414193 USDC on Base (~$0.4140) to 0x0497bb48C0335f1D22f147B2983ffDC6dA054042 before 2026-10-29T19:00:32.000Z",
+  "  transfer requirements: Send only USDC from the Base network to this address. Send exactly 0.414193 before 2026-10-29T19:00:32.000Z. Less is refunded to 0x8d9716A9f13FE82BA59E74b3Ce032842EB357818 after the deadline; any excess is refunded after settlement. Other assets or networks may be lost.",
+  "deposit ok: https://basescan.org/tx/0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708",
+  "  00:15:37 AWAITING_DEPOSIT: Waiting for your deposit",
+  "  00:15:57 PROCESSING: Routing to Solana",
+  "  00:16:30 SETTLED: Paid: verified on Solana",
+  "receipt signature valid: True; body hash matches: True; Solana settlement re-verified: True (https://solscan.io/tx/45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX)"
+ ]
+}

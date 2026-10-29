@@ -1,0 +1,4 @@
+# Server: receipts (ed25519)
+PyNaCl==1.6.2
+# Buyer CLI only: EVM signing
+eth-account==0.13.7
