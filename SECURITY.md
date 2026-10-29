@@ -11,13 +11,20 @@ Sluice moves real money, so the design assumes every input is hostile and every 
 - **One settlement, one order.** The ledger enforces `UNIQUE(deposit_address)` and `UNIQUE(settle_sig)`; a Solana
   transaction can never pay for two orders. Delivery runs once per order; retries return the stored bytes.
 - **Refunds go to the payer.** `refundTo` is the buyer's own address on the paying chain, validated per chain family.
-- **Intents Connect signing.** The buyer CLI refuses to sign an execution payload that does not contain this order's
-  memo. Only the buyer's key signs; the server never sees private keys.
+- **The buyer does not trust the seller.** The CLI pins token contracts/decimals, takes prices from the public NEAR
+  Intents token list, and checks the deposit address with the public NEAR Intents status API before paying
+  (recipient, amount, origin asset, refund address, amountIn must all match). On the Intents Connect rail it decodes
+  the Solana transaction it is asked to authorise and refuses anything but: pay the merchant the price, this order's
+  memo, the service's compute-budget/nonce instructions and one fee transfer of at most 0.02 USDC.
+- **Private payments stay private in our records.** For confidential orders the order view and the receipt omit the
+  payer's refund address, source-chain tx and deposit address.
 
 ## Inputs and limits
 - Request bodies: JSON only, max 8 KB, unknown fields rejected; order ids, Solana addresses, tx hashes, refund
   addresses and asset ids are validated with strict patterns (base58 length checks, per-family regexes).
-- Rate limits per client IP: 6 order creations/min (burst 3), 60 status reads/min, 120 GET/min; at most 50 open orders.
+- Rate limits per client (IPv4 address or IPv6 /64): 6 order creations/min (burst 3), 60 status reads/min,
+  120 GET/min; LRU-bounded so flooding new keys cannot reset other clients. Behind a proxy only the right-most
+  `X-Forwarded-For` entry is used. Socket timeout 10 s, at most 32 requests in flight.
 - Upstream calls go only to fixed hosts (Aurora API, Intents Connect API, two Solana RPCs, fixed EVM RPCs in the CLI):
   no user-controlled URLs, so no SSRF. Responses are size-capped.
 - Static files are served from a fixed allow-list (no path joins), with CSP, `nosniff`, `X-Frame-Options: DENY`,
@@ -34,8 +41,11 @@ Sluice moves real money, so the design assumes every input is hostile and every 
 ## Known limits
 - Single-process SQLite reference server; run behind a TLS proxy and set `SLUICE_TRUST_PROXY=1` only if the proxy
   sets `X-Forwarded-For`.
-- Confidential payments are matched by an exact tagged amount; two concurrent private orders cannot share a tag
-  because the tag is random per order and the settlement signature is claimed once.
+- Confidential payments are matched by an exact tagged amount (base price + 1..999 micro-USDC). The tag is unique among
+  open private orders for the same price, and already-claimed settlement signatures are skipped when scanning.
+- An order id works like a bearer token for its delivered response; do not publish order ids of private calls.
+- Unpaid orders expire 30 minutes after the quote deadline and stop counting toward the open-order limits (50 total,
+  5 per client); an expired order is still re-checked every 5 minutes, so a late deposit can settle or be refunded.
 - The checkout page trusts the browser's WebCrypto Ed25519 to verify signed links; older browsers show the link as
   "cannot verify" instead of "signed".
 

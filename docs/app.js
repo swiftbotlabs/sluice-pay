@@ -4,6 +4,7 @@
  */
 'use strict';
 (() => {
+  if (window.top !== window.self) { document.documentElement.textContent = 'Open this checkout in its own tab.'; return; }
   const AURORA = 'https://intents-api.aurora.dev';
   const API_KEY = '53042395-08f3-4382-a78e-b2208d0397c1'; // public integrator key for this page only (Aurora: keys are non-secret); the server uses its own key
   const RPCS = ['https://solana-mainnet.gateway.tatum.io', 'https://api.mainnet-beta.solana.com'];
@@ -138,11 +139,15 @@
       const [m, s] = h.slice(2).split('.');
       const msgBytes = unb64u(m); const sig = unb64u(s || '');
       const f = JSON.parse(new TextDecoder().decode(msgBytes));
-      let sigOk = null;
-      try {
-        const key = await crypto.subtle.importKey('raw', b58decode(f.k), { name: 'Ed25519' }, false, ['verify']);
-        sigOk = await crypto.subtle.verify({ name: 'Ed25519' }, key, sig, msgBytes);
-      } catch { sigOk = null; } // browser without WebCrypto Ed25519
+      let sigOk = false; // any decode/length problem = not valid
+      let key = null;
+      try { key = b58decode(f.k); } catch { key = null; }
+      if (key && key.length === 32 && sig.length === 64) {
+        try {
+          const k = await crypto.subtle.importKey('raw', key, { name: 'Ed25519' }, false, ['verify']);
+          sigOk = await crypto.subtle.verify({ name: 'Ed25519' }, k, sig, msgBytes);
+        } catch (e) { sigOk = (e && e.name === 'NotSupportedError') ? null : false; } // null = browser lacks Ed25519
+      }
       return { to: f.to, amt: f.amt, ref: f.ref || '', exp: f.exp, signer: f.k, sigOk, signed: true };
     }
     if (h.startsWith('to=')) {
@@ -239,7 +244,8 @@
       const raw = confidential ? invoice.raw + BigInt(1 + Math.floor(Math.random() * 998)) : invoice.raw;
       const q = await aurora('/api/quote', quoteBody(false, refundTo, raw, confidential));
       const r = q.quoteRequest || {};
-      if (r.recipient !== invoice.to || r.refundTo !== refundTo || r.amount !== raw.toString() || r.destinationAsset !== SOL_USDC) throw new Error('quote did not match the invoice; not showing it');
+      if (r.recipient !== invoice.to || r.refundTo !== refundTo || r.amount !== raw.toString() || r.destinationAsset !== SOL_USDC || r.originAsset !== choice.token.assetId || r.swapType !== 'EXACT_OUTPUT') throw new Error('quote did not match the invoice; not showing it');
+      if (!/^0x[0-9a-fA-F]{40}$/.test(q.quote.depositAddress || '') && choice.fam === 'evm') throw new Error('unexpected deposit address format');
       order = { createdAt: Math.floor(Date.now() / 1000), chain: choice.chain, sym: choice.sym, net: choice.net, chainId: choice.chainId,
         token: { assetId: choice.token.assetId, decimals: choice.token.decimals, contract: choice.token.contractAddress || null },
         refundTo, confidential, raw: raw.toString(), quote: q.quote, deadline: r.deadline };
@@ -271,7 +277,7 @@
     const img = new Image(); img.src = qr.createDataURL(5, 8); img.alt = 'QR: ' + q.depositAddress;
     $('qr').replaceChildren(img);
     text($('qr-caption'), `${order.sym} on ${order.net} only`);
-    const evm = order.chainId && window.ethereum;
+    const evm = order.chainId && window.ethereum && Date.now() < new Date(order.deadline).getTime();
     show($('btn-wallet'), !!evm);
     text($('wallet-note'), evm ? '' : (order.chainId ? 'No browser wallet found: send from any wallet or exchange that supports ' + order.net + '.' : 'Send from your ' + order.net + ' wallet.'));
   }
@@ -279,15 +285,20 @@
   async function payWithWallet() {
     const eth = window.ethereum; const q = order.quote;
     try {
+      if (Date.now() > new Date(order.deadline).getTime()) throw new Error('this deposit address has expired; get a new one');
+      if (!/^0x[0-9a-fA-F]{40}$/.test(q.depositAddress)) throw new Error('unexpected deposit address');
       const [from] = await eth.request({ method: 'eth_requestAccounts' });
       if (from.toLowerCase() !== order.refundTo.toLowerCase()) {
         text($('wallet-note'), 'Heads up: the connected wallet differs from your refund address. Refunds still go to ' + short(order.refundTo) + '.');
       }
-      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + order.chainId.toString(16) }] });
+      const want = '0x' + order.chainId.toString(16);
+      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: want }] });
+      const got = await eth.request({ method: 'eth_chainId' });
+      if (parseInt(got, 16) !== order.chainId) throw new Error(`wallet is on chain ${parseInt(got, 16)}, expected ${order.net}`);
       const amt = BigInt(q.amountIn);
       const tx = order.token.contract
-        ? { from, to: order.token.contract, data: '0xa9059cbb' + q.depositAddress.slice(2).toLowerCase().padStart(64, '0') + amt.toString(16).padStart(64, '0') }
-        : { from, to: q.depositAddress, value: '0x' + amt.toString(16) };
+        ? { from, chainId: want, to: order.token.contract, data: '0xa9059cbb' + q.depositAddress.slice(2).toLowerCase().padStart(64, '0') + amt.toString(16).padStart(64, '0') }
+        : { from, chainId: want, to: q.depositAddress, value: '0x' + amt.toString(16) };
       const h = await eth.request({ method: 'eth_sendTransaction', params: [tx] });
       order.depositTx = h; save();
       text($('wallet-note'), 'Sent: ' + short(h));
@@ -434,7 +445,7 @@
     text($('inv-amount'), (() => { const v = fromUnits(invoice.raw, 6); const [i, f = ''] = v.split('.'); return i + '.' + f.padEnd(2, '0'); })()); text($('inv-to'), invoice.to); text($('inv-ref'), invoice.ref || '—');
     const bd = $('inv-badge');
     if (invoice.signed && invoice.sigOk === false) { text(bd, 'Tampered link: the signature does not match. Do not pay.'); bd.className = 'badge bad'; show($('step-choose'), false); return; }
-    if (invoice.signed && invoice.sigOk && invoice.signer === invoice.to) { text(bd, '✓ Signed by the receiving wallet'); bd.className = 'badge good'; }
+    if (invoice.signed && invoice.sigOk && invoice.signer === invoice.to) { text(bd, '✓ Signed by the receiving wallet: amount and reference cannot be changed. Confirm the address with the merchant.'); bd.className = 'badge good'; }
     else if (invoice.signed && invoice.sigOk) { text(bd, 'Signed by ' + short(invoice.signer) + ' (not the receiving wallet)'); bd.className = 'badge warn'; }
     else if (invoice.signed) { text(bd, 'Signed link (this browser cannot check Ed25519 signatures)'); bd.className = 'badge warn'; }
     else { text(bd, 'Unsigned link: check the address with the merchant'); bd.className = 'badge warn'; }

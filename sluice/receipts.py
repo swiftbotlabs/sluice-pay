@@ -70,8 +70,9 @@ def make_receipt(signer: Signer, order: dict, body: bytes) -> str:
         "v": 1, "kind": "sluice.receipt", "order": order["id"], "rail": order["rail"],
         "resource": order["resource"], "request_hash": order["request_hash"], "body_sha256": sha256_hex(body),
         "price": {"amount": order["price_raw"], "asset": "USDC", "chain": "solana", "mint": sol.USDC_MINT},
-        "merchant": order["merchant"], "deposit_address": order["deposit_address"], "origin_asset": order["origin_asset"],
-        "deposit_tx": order["deposit_tx"], "solana_tx": order["settle_sig"], "solana_slot": proof.get("slot"),
+        "merchant": order["merchant"], "deposit_address": None if order.get("confidential") else order["deposit_address"],
+        "origin_asset": order["origin_asset"],
+        "deposit_tx": None if order.get("confidential") else order["deposit_tx"], "solana_tx": order["settle_sig"], "solana_slot": proof.get("slot"),
         "merchant_delta": proof.get("delta"), "memos": proof.get("memos") or [], "issued_at": int(time.time()),
     }
     return json.dumps(signer.sign(payload), sort_keys=True)

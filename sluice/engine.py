@@ -78,13 +78,14 @@ class OrderError(Exception):
 class Engine:
     def __init__(self, store: Store, aurora: au.Aurora, rpc: sol.Rpc, signer: receipts.Signer, merchant: str,
                  catalog: dict, connect: cn.Connect | None = None, max_open: int = 50, deadline_s: int = 900,
-                 status_min_interval: float = 6.0):
+                 status_min_interval: float = 6.0, max_open_per_client: int = 5, expire_grace_s: int = 1800):
         if not sol.is_pubkey(merchant):
             raise ValueError("merchant must be a Solana address")
         self.store, self.au, self.rpc, self.signer, self.merchant = store, aurora, rpc, signer, merchant
         self.catalog = catalog  # resource -> {"price_raw": int, "validate": fn(params)->params, "produce": fn(params)->bytes}
         self.connect = connect
         self.max_open, self.deadline_s, self.status_min_interval = max_open, deadline_s, status_min_interval
+        self.max_open_per_client, self.expire_grace_s = max_open_per_client, expire_grace_s
 
     # -- catalogue / discovery ----------------------------------------------------------------
     def origins(self) -> list[dict]:
@@ -121,7 +122,7 @@ class Engine:
 
     # -- order creation -----------------------------------------------------------------------
     def create_order(self, *, resource: str, params: dict, pay_with: str, refund_to: str, confidential: bool = False,
-                     rail: str = "swap") -> dict:
+                     rail: str = "swap", client: str | None = None) -> dict:
         item = self.catalog.get(resource)
         if not item:
             raise OrderError("unknown resource", 404)
@@ -130,14 +131,21 @@ class Engine:
             raise OrderError("unsupported rail")
         if self.store.count_open() >= self.max_open:
             raise OrderError("too many open orders, try again later", 503)
+        if client and self.store.count_open(client) >= self.max_open_per_client:
+            raise OrderError("you have too many unpaid orders; pay or wait for them to expire", 429)
         o = self._origin(pay_with)
         if not valid_refund(o["refund_family"], refund_to):
             raise OrderError(f"refund_to must be your own address on the paying chain ({o['refund_family']})")
         price = int(item["price_raw"])
         if confidential:
             # Confidential mode hides provider tx hashes, so we tag the amount (+1..999 micro-USDC) to make the
-            # Solana credit uniquely attributable to this order when we scan the merchant account.
-            price += secrets.randbelow(999) + 1
+            # Solana credit uniquely attributable to this order when we scan the merchant account. The tag is
+            # unique among open private orders for the same base price.
+            used = self.store.open_tags(price)
+            free = [t for t in range(1, 1000) if price + t not in used]
+            if not free:
+                raise OrderError("too many private payments in flight, try again shortly", 503)
+            price += free[secrets.randbelow(len(free))]
         rh = receipts.request_hash(resource, params)
         oid = self.store.new_id()
         if rail == "swap":
@@ -154,7 +162,8 @@ class Engine:
                 price_raw=price, merchant=self.merchant, origin_asset=o["assetId"], refund_to=refund_to,
                 confidential=int(confidential), deposit_address=qq["depositAddress"], deposit_memo=qq.get("depositMemo"),
                 amount_in=qq["amountIn"], min_amount_in=qq.get("minAmountIn"),
-                deadline=q["quoteRequest"]["deadline"], quote=json.dumps({k: v for k, v in q.items() if k != "signature"}))
+                deadline=q["quoteRequest"]["deadline"], quote=json.dumps({k: v for k, v in q.items() if k != "signature"}),
+                client=client)
             return self.view(order)
         # rail == connect: the payer's EVM wallet (refund_to) owns a Solana intermediary that runs our steps
         if o["refund_family"] != "evm":
@@ -184,7 +193,7 @@ class Engine:
             price_raw=price, merchant=self.merchant, origin_asset=o["assetId"], refund_to=refund_to,
             confidential=0, deposit_address=qq["depositAddress"], amount_in=qq["amountIn"], min_amount_in=qq.get("minAmountIn"),
             deadline=qq.get("deadline"), quote=json.dumps({"execution": {k: x.get(k) for k in ("id", "status", "quote", "details")}}),
-            execution_id=x["id"])
+            execution_id=x["id"], client=client)
         v = self.view(order)
         v["sign"] = {"standard": det.get("signingStandard"), "payload_json": payload,
                      "submit": f"POST /api/orders/{oid}/signature"}
@@ -207,7 +216,8 @@ class Engine:
         o = self._get(oid)
         if not re.match(r"^(0x[0-9a-fA-F]{64}|[1-9A-HJ-NP-Za-km-z]{43,90}|[0-9a-fA-F]{64})$", tx_hash or ""):
             raise OrderError("bad tx hash")
-        self.store.update(oid, deposit_tx=tx_hash)
+        if not o["deposit_tx"]:
+            self.store.update(oid, deposit_tx=tx_hash)  # first value wins; receipts prefer provider-reported hashes
         try:
             if o["rail"] == "connect":
                 self.connect.record_deposit(o["deposit_address"], tx_hash)
@@ -215,14 +225,15 @@ class Engine:
                 self.au.submit_deposit(o["deposit_address"], tx_hash, o["deposit_memo"])
         except (au.AuroraError, cn.ConnectError):
             pass  # optional speed-up only; detection works without it
-        return self.refresh(oid, force=True)
+        return self.refresh(oid, force=time.time() - o["last_polled"] > self.status_min_interval)
 
     # -- status machine -----------------------------------------------------------------------
     def refresh(self, oid: str, force: bool = False) -> dict:
         o = self._get(oid)
-        if o["state"] in ("SETTLED", "DELIVERED", "REFUNDED", "FAILED", "EXPIRED"):
+        if o["state"] in ("SETTLED", "DELIVERED", "REFUNDED", "FAILED"):
             return self.view(o)
-        if not force and time.time() - o["last_polled"] < self.status_min_interval:
+        interval = 300 if o["state"] == "EXPIRED" else self.status_min_interval  # expired: slow re-check for late deposits
+        if (not force or o["state"] == "EXPIRED") and time.time() - o["last_polled"] < interval:
             return self.view(o)
         self.store.update(oid, last_polled=time.time())
         try:
@@ -239,6 +250,9 @@ class Engine:
         self.store.update(oid, provider_status=pstat, provider_view=json.dumps(pview))
         if pstat == "SUCCESS":
             self._settle(o, [d for d in dest if d])
+        elif pstat in ("PENDING_DEPOSIT", "CREATED", "DEPOSIT_PENDING") and self._past_deadline(o):
+            if o["state"] == "AWAITING_DEPOSIT":
+                self.store.transition(oid, "EXPIRED")
         else:
             new = PROVIDER_TO_STATE.get(pstat)
             if new and new != o["state"]:
@@ -247,6 +261,14 @@ class Engine:
                 except StateError:
                     pass
         return self.view(self._get(oid))
+
+    def _past_deadline(self, o: dict) -> bool:
+        try:
+            import datetime as _dt
+            dl = _dt.datetime.fromisoformat((o["deadline"] or "").replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            return False
+        return time.time() > dl + self.expire_grace_s
 
     def _settle(self, o: dict, dest_sigs: list[str]):
         memo = cn.memo_text(o["id"]) if o["rail"] == "connect" else None
@@ -259,7 +281,8 @@ class Engine:
                     proof = v
                     break
         if proof is None and o["confidential"]:
-            proof = sol.find_payment(self.rpc, o["merchant"], o["price_raw"], not_before, memo=memo, exact=True)
+            proof = sol.find_payment(self.rpc, o["merchant"], o["price_raw"], not_before, memo=memo, exact=True,
+                                     exclude=self.store.claimed_sigs())
         if proof is None:
             self.store.update(o["id"], provider_view=json.dumps({**json.loads(self._get(o["id"])["provider_view"] or "{}"),
                                                                 "note": "provider SUCCESS, Solana credit not verified yet"}))
@@ -316,11 +339,12 @@ class Engine:
                 "deadline": o["deadline"],
                 "transfer_requirements": f"Send only {label.replace(' on ', ' from the ')} network to this address. "
                                          f"Send exactly {amt.normalize() if amt is not None else o['amount_in']} before "
-                                         f"{o['deadline']}. Less is refunded to {o['refund_to']} after the deadline; "
+                                         f"{o['deadline']}. Less is refunded to "
+                                         f"{'your refund address' if o['confidential'] else o['refund_to']} after the deadline; "
                                          f"any excess is refunded after settlement. Other assets or networks may be lost.",
             },
-            "refund_to": o["refund_to"], "provider_status": o["provider_status"], "provider": pv,
-            "deposit_tx": o["deposit_tx"],
+            "refund_to": None if o["confidential"] else o["refund_to"], "provider_status": o["provider_status"], "provider": pv,
+            "deposit_tx": None if o["confidential"] else o["deposit_tx"],
             "settlement": proof and {"solana_tx": proof["sig"], "explorer": proof["explorer"], "merchant_delta": proof["delta"],
                                      "slot": proof["slot"], "memos": proof.get("memos")},
         }

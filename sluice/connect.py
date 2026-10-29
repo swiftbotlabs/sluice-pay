@@ -138,3 +138,127 @@ def sign_erc191(private_key: str, payload_json: str) -> str:
     if b[64] >= 27:
         b[64] -= 27
     return "secp256k1:" + sol.b58encode(bytes(b))
+
+
+# --- payload audit: decode the exact Solana message the buyer is asked to authorise -----------------
+COMPUTE_BUDGET = "ComputeBudget111111111111111111111111111111"
+
+
+class PayloadRejected(Exception):
+    pass
+
+
+def _cu16(b: bytes, i: int) -> tuple[int, int]:
+    v = s = 0
+    while True:
+        x = b[i]
+        i += 1
+        v |= (x & 0x7F) << s
+        if not x & 0x80:
+            return v, i
+        s += 7
+        if s > 14:
+            raise PayloadRejected("bad compact-u16")
+
+
+def decode_solana_message(raw: bytes) -> dict:
+    """Legacy or v0 Solana message -> static keys + instructions (lookup-table accounts are refused)."""
+    i = 0
+    version = None
+    if raw[0] & 0x80:
+        version = raw[0] & 0x7F
+        i = 1
+    n_sig, n_ro_signed, n_ro_unsigned = raw[i], raw[i + 1], raw[i + 2]
+    i += 3
+    n_keys, i = _cu16(raw, i)
+    keys = [sol.b58encode(raw[i + 32 * k:i + 32 * (k + 1)]) for k in range(n_keys)]
+    i += 32 * n_keys
+    i += 32  # recent blockhash / durable nonce value
+    n_ix, i = _cu16(raw, i)
+    ixs = []
+    for _ in range(n_ix):
+        prog = raw[i]
+        i += 1
+        n_acc, i = _cu16(raw, i)
+        accs = list(raw[i:i + n_acc])
+        i += n_acc
+        n_data, i = _cu16(raw, i)
+        data = raw[i:i + n_data]
+        i += n_data
+        if prog >= n_keys or any(a >= n_keys for a in accs):
+            raise PayloadRejected("instruction uses lookup-table accounts")
+        ixs.append({"program": keys[prog], "accounts": [keys[a] for a in accs], "data": data})
+    if version is not None and i < len(raw):
+        n_lut, i = _cu16(raw, i)
+        if n_lut:
+            raise PayloadRejected("address lookup tables not expected")
+    return {"version": version, "signers": keys[:n_sig], "keys": keys, "instructions": ixs,
+            "header": (n_sig, n_ro_signed, n_ro_unsigned)}
+
+
+def solana_message_from_payload(payload_json: str) -> bytes:
+    p = json.loads(payload_json)
+    intents = p.get("intents") or []
+    if len(intents) != 1 or intents[0].get("intent") != "auth_call":
+        raise PayloadRejected("expected exactly one auth_call intent")
+    msg = json.loads(intents[0]["msg"])
+    hexmsg = ((msg.get("request") or {}).get("payload_v2") or {}).get("Eddsa")
+    if not isinstance(hexmsg, str) or not re.fullmatch(r"[0-9a-f]{100,2600}", hexmsg):
+        raise PayloadRejected("no Solana message in payload")
+    return bytes.fromhex(hexmsg)
+
+
+def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant: str, price: int, order_id: str,
+                  max_fee: int = 20000, mint: str = sol.USDC_MINT) -> dict:
+    """Refuse to sign unless the Solana transaction does exactly: (optional ATA create for the merchant),
+    TransferChecked `price` USDC intermediary -> merchant, Memo `sluice:<order>`, plus the service's own
+    compute-budget / nonce instructions and ONE fee transfer of at most `max_fee`."""
+    p = json.loads(payload_json)
+    if (p.get("signer_id") or "").lower() != payer.lower():
+        raise PayloadRejected("payload is for another signer")
+    m = decode_solana_message(solana_message_from_payload(payload_json))
+    if intermediary not in m["signers"]:
+        raise PayloadRejected("intermediary is not a signer")
+    src, dst, memo = sol.ata(intermediary, mint), sol.ata(merchant, mint), memo_text(order_id)
+    paid = fees = memos = 0
+    for ix in m["instructions"]:
+        prog, acc, data = ix["program"], ix["accounts"], ix["data"]
+        if prog == COMPUTE_BUDGET:
+            continue
+        if prog == SYSTEM_PROGRAM:
+            if data[:4] != b"\x04\x00\x00\x00":  # only AdvanceNonceAccount
+                raise PayloadRejected("unexpected System instruction")
+            continue
+        if prog == sol.ATA_PROGRAM:
+            if data not in (b"\x01",) or len(acc) < 4 or acc[1] != dst or acc[2] != merchant or acc[3] != mint:
+                raise PayloadRejected("unexpected token-account creation")
+            continue
+        if prog == sol.MEMO_PROGRAM:
+            if data.decode("utf-8", "replace") != memo:
+                raise PayloadRejected("memo does not match this order")
+            memos += 1
+            continue
+        if prog == sol.TOKEN_PROGRAM:
+            op = data[:1]
+            if op == b"\x0c" and len(data) == 10 and len(acc) >= 4:  # TransferChecked
+                amt, dec = int.from_bytes(data[1:9], "little"), data[9]
+                if acc[0] != src or acc[1] != mint or acc[3] != intermediary or dec != 6:
+                    raise PayloadRejected("unexpected TransferChecked")
+                if acc[2] == dst and amt == price:
+                    paid += 1
+                elif amt <= max_fee:
+                    fees += 1
+                else:
+                    raise PayloadRejected("transfer to an unexpected account")
+                continue
+            if op == b"\x03" and len(data) == 9 and len(acc) >= 3:  # plain Transfer: only the service fee
+                amt = int.from_bytes(data[1:9], "little")
+                if acc[0] != src or acc[2] != intermediary or amt > max_fee:
+                    raise PayloadRejected("unexpected Transfer")
+                fees += 1
+                continue
+            raise PayloadRejected("unexpected Token instruction")
+        raise PayloadRejected(f"unexpected program {prog}")
+    if paid != 1 or memos != 1 or fees > 1:
+        raise PayloadRejected(f"expected one payment, one memo, at most one fee (got {paid}/{memos}/{fees})")
+    return {"ok": True, "instructions": len(m["instructions"]), "fee_transfers": fees}

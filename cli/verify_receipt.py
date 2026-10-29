@@ -24,6 +24,8 @@ def main():
     d = json.load(open(a.receipt))
     rc = d.get("receipt", d)
     p = rc["payload"]
+    if not a.key:
+        print("warning: no --key given; this only proves the receipt is self-consistent, not who issued it")
     sig_ok = receipts.verify(rc, a.key)
     print(f"signature by {p['signer']}: {'valid' if sig_ok else 'INVALID'}")
     if a.body:

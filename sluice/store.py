@@ -22,7 +22,8 @@ ALLOWED = {
     "DEPOSIT_SEEN": {"PROCESSING", "SETTLED", "REFUNDED", "FAILED"},
     "PROCESSING": {"SETTLED", "REFUNDED", "FAILED"},
     "SETTLED": {"DELIVERED"},
-    "DELIVERED": set(), "REFUNDED": set(), "FAILED": set(), "EXPIRED": set(),
+    "DELIVERED": set(), "REFUNDED": set(), "FAILED": set(),
+    "EXPIRED": {"SETTLED", "REFUNDED", "FAILED"},  # a late deposit can still settle or be refunded
 }
 
 SCHEMA = """
@@ -54,7 +55,8 @@ CREATE TABLE IF NOT EXISTS orders (
   settle_proof TEXT,                   -- JSON from solana.verify_payment
   delivered_body BLOB,
   receipt TEXT,
-  last_polled REAL NOT NULL DEFAULT 0
+  last_polled REAL NOT NULL DEFAULT 0,
+  client TEXT
 );
 CREATE INDEX IF NOT EXISTS orders_state ON orders(state);
 """
@@ -70,12 +72,16 @@ class Store:
         if path != ":memory:":
             os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         self._lock = threading.RLock()
+        self._order_locks: dict[str, threading.Lock] = {}
         self.db = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self.db.row_factory = sqlite3.Row
         if path != ":memory:":
             self.db.execute("PRAGMA journal_mode=WAL")
             os.chmod(path, 0o600)
         self.db.executescript(SCHEMA)
+        cols = {r[1] for r in self.db.execute("PRAGMA table_info(orders)")}
+        if "client" not in cols:  # migrate older ledgers
+            self.db.execute("ALTER TABLE orders ADD COLUMN client TEXT")
 
     @staticmethod
     def new_id() -> str:
@@ -107,9 +113,25 @@ class Store:
                 "ORDER BY last_polled ASC LIMIT ?", (limit,)).fetchall()
         return [dict(r) for r in rows]
 
-    def count_open(self) -> int:
+    def count_open(self, client: str | None = None) -> int:
+        q = "SELECT COUNT(*) FROM orders WHERE state IN ('AWAITING_DEPOSIT','DEPOSIT_SEEN','PROCESSING')"
         with self._lock:
-            return self.db.execute("SELECT COUNT(*) FROM orders WHERE state IN ('AWAITING_DEPOSIT','DEPOSIT_SEEN','PROCESSING')").fetchone()[0]
+            if client is None:
+                return self.db.execute(q).fetchone()[0]
+            return self.db.execute(q + " AND client=?", (client,)).fetchone()[0]
+
+    def open_tags(self, base_price: int) -> set:
+        """price_raw values in use by open confidential orders for the same base price (tag collision check)."""
+        with self._lock:
+            rows = self.db.execute("SELECT price_raw FROM orders WHERE confidential=1 AND state IN "
+                                   "('AWAITING_DEPOSIT','DEPOSIT_SEEN','PROCESSING','EXPIRED') AND price_raw BETWEEN ? AND ?",
+                                   (base_price, base_price + 999)).fetchall()
+        return {r[0] for r in rows}
+
+    def claimed_sigs(self, limit: int = 500) -> set:
+        with self._lock:
+            return {r[0] for r in self.db.execute("SELECT settle_sig FROM orders WHERE settle_sig IS NOT NULL "
+                                                  "ORDER BY updated DESC LIMIT ?", (limit,)).fetchall()}
 
     def update(self, oid: str, **f):
         f["updated"] = int(time.time())
@@ -143,17 +165,27 @@ class Store:
             try:
                 self.db.execute("BEGIN IMMEDIATE")
                 self.db.execute("UPDATE orders SET settle_sig=?, settle_proof=?, state='SETTLED', updated=? WHERE id=? "
-                                "AND state IN ('AWAITING_DEPOSIT','DEPOSIT_SEEN','PROCESSING')",
+                                "AND state IN ('AWAITING_DEPOSIT','DEPOSIT_SEEN','PROCESSING','EXPIRED')",
                                 (sig, json.dumps(proof), int(time.time()), oid))
                 self.db.execute("COMMIT")
             except sqlite3.IntegrityError:
                 self.db.execute("ROLLBACK")
                 return False
+            except Exception:
+                self.db.execute("ROLLBACK")
+                raise
             return self.get(oid)["state"] == "SETTLED"
 
-    def deliver_once(self, oid: str, make_body, make_receipt) -> tuple[bytes, str]:
-        """Run the paid work at most once; later calls return the stored body + receipt."""
+    def _order_lock(self, oid: str) -> threading.Lock:
         with self._lock:
+            if len(self._order_locks) > 5000:
+                self._order_locks.clear()
+            return self._order_locks.setdefault(oid, threading.Lock())
+
+    def deliver_once(self, oid: str, make_body, make_receipt) -> tuple[bytes, str]:
+        """Run the paid work at most once; later calls return the stored body + receipt.
+        A per-order lock serialises deliveries of one order; the global DB lock is never held during the work."""
+        with self._order_lock(oid):
             cur = self.get(oid)
             if cur["state"] == "DELIVERED":
                 return cur["delivered_body"], cur["receipt"]
@@ -161,9 +193,14 @@ class Store:
                 raise StateError(f"order not settled ({cur['state']})")
             body = make_body(cur)
             receipt = make_receipt(cur, body)
-            self.db.execute("BEGIN IMMEDIATE")
-            self.db.execute("UPDATE orders SET delivered_body=?, receipt=?, state='DELIVERED', updated=? WHERE id=? AND state='SETTLED'",
-                            (body, receipt, int(time.time()), oid))
-            self.db.execute("COMMIT")
+            with self._lock:
+                try:
+                    self.db.execute("BEGIN IMMEDIATE")
+                    self.db.execute("UPDATE orders SET delivered_body=?, receipt=?, state='DELIVERED', updated=? "
+                                    "WHERE id=? AND state='SETTLED'", (body, receipt, int(time.time()), oid))
+                    self.db.execute("COMMIT")
+                except Exception:
+                    self.db.execute("ROLLBACK")
+                    raise
             cur = self.get(oid)
             return cur["delivered_body"], cur["receipt"]

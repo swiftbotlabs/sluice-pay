@@ -1,0 +1,101 @@
+{
+ "run": "intents-connect-bridge-in-with-receipt-steps",
+ "summary": "Base USDC deposit bridged by Intents Connect into the payer's Solana intermediary (verified on Solana). The Solana operation (pay merchant 0.30 USDC + memo sluice:ord_demo_t4) was signed by the payer but Intents Connect never broadcast it: status went OPERATION_FAILED after ~21 min. Funds stayed in the payer-controlled intermediary; a steps-only retry was submitted.",
+ "execution_id": "d3d2ca99-07fe-400e-adbe-15f1e1c888c7",
+ "quote": {
+  "amount": "302000",
+  "amountIn": "575087",
+  "amountInUsd": "0.574810383153",
+  "amountOut": "303558",
+  "amountOutUsd": "0.303411988602",
+  "deadline": "2026-10-29T18:55:40Z",
+  "depositAddress": "0x421bF99CbC8DcBfE33A06BB54369538Eb18C94ae",
+  "depositMemo": null,
+  "destinationAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+  "minAmountIn": "572019",
+  "minAmountOut": "303558",
+  "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+  "recipient": "Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr",
+  "swapType": "EXACT_OUTPUT"
+ },
+ "network_fee": "1558",
+ "deposit_tx": {
+  "chain": "base",
+  "tx": "0x1ee25e0b10549e2402e356d6a82cfe76c16733e09a54f0d84586c7f8110f5c8e",
+  "amount": "575087",
+  "token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "explorer": "https://basescan.org/tx/0x1ee25e0b10549e2402e356d6a82cfe76c16733e09a54f0d84586c7f8110f5c8e",
+  "status": "ok"
+ },
+ "intermediary": "Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr",
+ "intermediary_usdc_account": "FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb",
+ "bridge_credit_solana_tx": "QNGfeEiqtNMyQ4GLAzLGChLZtzGEGQ9Yi53YTfvFGHxoQgTUVuQUgkWfgTPbNN6DSgdTx6oi5YctbxubFahg1wQ",
+ "bridge_credit_amount": 303558,
+ "signed_solana_transaction_decoded": [
+  {
+   "program": "System",
+   "accounts": [
+    "Ac2LSWMHFQxbYPzo7usW2ggW2GkGHoDMbnj3GPD811sj",
+    "SysvarRecentB1ockHashes11111111111111111111",
+    "6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n"
+   ],
+   "op": "AdvanceNonceAccount"
+  },
+  {
+   "program": "ComputeBudget",
+   "accounts": [],
+   "data_hex": "02400d0300"
+  },
+  {
+   "program": "ComputeBudget",
+   "accounts": [],
+   "data_hex": "030000000000000000"
+  },
+  {
+   "program": "SPL Token",
+   "accounts": [
+    "FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb",
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9",
+    "Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr"
+   ],
+   "op": "TransferChecked",
+   "amount": 300000
+  },
+  {
+   "program": "SPL Memo",
+   "accounts": [
+    "Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr"
+   ],
+   "memo": "sluice:ord_demo_t4"
+  },
+  {
+   "program": "SPL Token",
+   "accounts": [
+    "FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb",
+    "G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X",
+    "Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr"
+   ],
+   "op": "Transfer",
+   "amount": 1558
+  }
+ ],
+ "status_timeline": [
+  {
+   "t": "2026-10-29T18:35:56Z",
+   "status": "DEPOSIT_PENDING"
+  },
+  {
+   "t": "2026-10-29T18:36:13Z",
+   "status": "DEPOSIT_PROCESSING"
+  },
+  {
+   "t": "2026-10-29T18:36:48Z",
+   "status": "OPERATION_PROCESSING"
+  },
+  {
+   "t": "2026-10-29T18:57:14Z",
+   "status": "OPERATION_FAILED"
+  }
+ ]
+}

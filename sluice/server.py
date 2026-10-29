@@ -13,6 +13,8 @@ Stdlib only (+ PyNaCl for receipts). Binds 127.0.0.1 by default; put a TLS proxy
 """
 from __future__ import annotations
 
+import collections
+import ipaddress
 import json
 import os
 import re
@@ -40,24 +42,37 @@ CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' 
        "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 
 
-class RateLimiter:
-    """Token buckets per (ip, bucket). Memory-bounded."""
+def client_key(ip: str) -> str:
+    """Rate-limit key: the IPv4 address, or the /64 of an IPv6 address."""
+    try:
+        a = ipaddress.ip_address(ip)
+    except ValueError:
+        return "invalid"
+    if a.version == 6:
+        return str(ipaddress.ip_network(f"{a}/64", strict=False))
+    return str(a)
 
-    def __init__(self):
-        self.b: dict[tuple, list] = {}
+
+class RateLimiter:
+    """Token buckets per (client, bucket). Memory-bounded LRU: flooding new keys evicts the oldest, never resets all."""
+
+    def __init__(self, max_keys: int = 20000):
+        self.b: collections.OrderedDict = collections.OrderedDict()
+        self.max_keys = max_keys
         self.lock = threading.Lock()
 
     def allow(self, ip: str, bucket: str, rate_per_min: float, burst: int) -> bool:
         now = time.monotonic()
+        key = (client_key(ip), bucket)
         with self.lock:
-            if len(self.b) > 20000:
-                self.b.clear()
-            tokens, last = self.b.get((ip, bucket), [burst, now])
+            while len(self.b) >= self.max_keys:
+                self.b.popitem(last=False)
+            tokens, last = self.b.pop(key, [burst, now])
             tokens = min(burst, tokens + (now - last) * rate_per_min / 60.0)
             if tokens < 1:
-                self.b[(ip, bucket)] = [tokens, now]
+                self.b[key] = [tokens, now]
                 return False
-            self.b[(ip, bucket)] = [tokens - 1, now]
+            self.b[key] = [tokens - 1, now]
             return True
 
 
@@ -94,6 +109,7 @@ def build_engine(cfg: dict, store_path: str) -> Engine:
 class Handler(BaseHTTPRequestHandler):
     server_version = "sluice/0.1"
     sys_version = ""
+    timeout = 10  # slow clients cannot hold a thread
     engine: Engine = None  # set by serve()
     limiter = RateLimiter()
     trust_proxy = False
@@ -101,9 +117,10 @@ class Handler(BaseHTTPRequestHandler):
     # -- helpers --------------------------------------------------------------------------------
     def _ip(self) -> str:
         if self.trust_proxy:
+            # Only the entry appended by OUR proxy (the right-most one) is trustworthy.
             xf = self.headers.get("X-Forwarded-For", "")
             if xf:
-                return xf.split(",")[0].strip()[:64]
+                return xf.split(",")[-1].strip()[:64]
         return self.client_address[0]
 
     def _send(self, code: int, body, ctype="application/json", extra=None):
@@ -201,7 +218,8 @@ class Handler(BaseHTTPRequestHandler):
                     raise OrderError("unknown fields")
                 v = self.engine.create_order(resource=str(d.get("resource", "")), params=d.get("params") or {},
                                              pay_with=str(d.get("pay_with", "")), refund_to=str(d.get("refund_to", "")),
-                                             confidential=bool(d.get("confidential", False)), rail=str(d.get("rail", "swap")))
+                                             confidential=d.get("confidential") is True, rail=str(d.get("rail", "swap")),
+                                             client=client_key(self._ip()))
                 return self._send(201, v)
             m = re.fullmatch(r"/api/orders/(ord_[A-Za-z0-9]{10,24})/(deposit|signature)", path)
             if m:
@@ -229,14 +247,35 @@ def poller(engine: Engine, stop: threading.Event, every: float = 3.0):
             sys.stderr.write(f"poller: {type(e).__name__}\n")
 
 
+class BoundedServer(ThreadingHTTPServer):
+    """At most `max_conns` requests in flight; extra connections are closed immediately."""
+    daemon_threads = True
+    max_conns = 32
+
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._slots = threading.BoundedSemaphore(self.max_conns)
+
+    def process_request(self, request, client_address):
+        if not self._slots.acquire(blocking=False):
+            self.shutdown_request(request)
+            return
+        super().process_request(request, client_address)
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._slots.release()
+
+
 def serve(cfg_path: str, host: str = "127.0.0.1", port: int = 8402, db: str = "data/sluice.db"):
     cfg = load_env(cfg_path)
     Handler.engine = build_engine(cfg, db)
     Handler.trust_proxy = cfg.get("SLUICE_TRUST_PROXY") == "1"
     stop = threading.Event()
     threading.Thread(target=poller, args=(Handler.engine, stop), daemon=True).start()
-    httpd = ThreadingHTTPServer((host, port), Handler)
-    httpd.daemon_threads = True
+    httpd = BoundedServer((host, port), Handler)
     print(f"sluice listening on http://{host}:{port}  merchant={Handler.engine.merchant}  receipt_key={Handler.engine.signer.pubkey}")
     try:
         httpd.serve_forever()
