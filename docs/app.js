@@ -53,7 +53,8 @@
   async function aurora(path, body) {
     const url = `${AURORA}${path}/${API_KEY}`;
     for (let attempt = 0; attempt < 3; attempt++) {
-      const r = await fetch(url, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {});
+      const signal = AbortSignal.timeout(20000); // Aurora can stall; a page must never wait on it forever
+      const r = await fetch(url, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal } : { signal });
       if (r.status === 429) { await sleep(Math.min(Number(r.headers.get('Retry-After')) || 2, 10) * 1000 + Math.random() * 500); continue; }
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.message || `HTTP ${r.status}`);
@@ -166,11 +167,16 @@
   const load = () => { try { return JSON.parse(localStorage.getItem(storeKey()) || 'null'); } catch { return null; } };
 
   async function loadTokens() {
-    const [t, i, pub] = await Promise.allSettled([aurora('/api/tokens'), aurora('/api/incidents'), fetch(`${ONECLICK}/tokens`, { signal: AbortSignal.timeout(10000) }).then((r) => r.json())]);
-    if (t.status === 'rejected') throw t.reason;
-    if (pub.status === 'rejected') throw new Error('cannot cross-check routes with NEAR Intents right now');
-    tokens = C.agreedTokens(t.value.tokens || [], pub.value); // contract, decimals and price must agree with the public list
-    incidents = i.status === 'fulfilled' ? (i.value.incidents || []) : []; // the incident feed is advisory; quotes still validate each route
+    // The public list decides what can be paid with and is usually first. Aurora's list and incidents get a few seconds:
+    // the two lists have matched exactly, and each route is still quoted live, so a slow answer should not hold up the page.
+    const within = (p, ms) => Promise.race([p.catch(() => null), sleep(ms).then(() => null)]);
+    const [listed, feed, pub] = await Promise.all([
+      within(aurora('/api/tokens'), 6000), within(aurora('/api/incidents'), 6000),
+      fetch(`${ONECLICK}/tokens`, { signal: AbortSignal.timeout(12000) }).then((r) => r.json()).catch(() => null),
+    ]);
+    if (!Array.isArray(pub)) throw new Error('cannot cross-check routes with NEAR Intents right now');
+    tokens = C.agreedTokens(listed && listed.tokens ? listed.tokens : pub, pub); // contract, decimals and price must agree with the public list
+    incidents = (feed && feed.incidents) || []; // advisory: quotes still validate each route
     assets = C.listAssets(tokens, incidents);
   }
   const DIRECT = { blockchain: 'sol', symbol: 'USDC', assetId: SOL_USDC, decimals: 6, contractAddress: USDC_MINT, direct: true };
