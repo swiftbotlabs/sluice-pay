@@ -1046,7 +1046,7 @@
       if (order.rail === 'swap' && !order.confidential) aurora('/api/deposit/submit', { txHash: h, depositAddress: order.quote.depositAddress }).catch(() => {});
       else if (order.rail === 'connect') cx('POST', '/api/v1/executions/deposit/submit', { txHash: h, depositAddress: order.quote.depositAddress }).catch(() => {});
     };
-    try { await loadTokens(); renderOrigins(); } catch (e) { text($('origin-count'), 'Could not load assets: ' + e.message); }
+    try { await loadTokens(); renderOrigins(); if (wallet && !choice) preselect(); } catch (e) { text($('origin-count'), 'Could not load assets: ' + e.message); }
     if (C.settlementIncident(incidents)) {
       blocked = true; text($('banner'), 'Aurora reports an incident on Solana delivery. Payments are paused here until it clears, so no funds get stuck.'); show($('banner'));
     }
