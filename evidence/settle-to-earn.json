@@ -1,0 +1,59 @@
+{
+ "run": "settle-to-earn",
+ "note": "A signed invoice paid from Base through the checkout: one payer signature, one Base USDC transfer, then one atomic Solana transaction supplied the USDC to Kamino with the cUSDC going to the merchant, carrying the order's reference account. The page re-verified it on Solana.",
+ "order_id": "ord_HzziRX4Zqm7pUW4M",
+ "reference": "Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s",
+ "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+ "invoice_usdc": "0.15",
+ "deposit_address": "0xeE62051e14B6d668CD3A55fe6C3dC091572759CE",
+ "deposit_tx_base": "0x8e14bae0049ac8491469eac7087793f988bde603b515603095175b291f298379",
+ "solana_tx": "558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv",
+ "slot": 464097698,
+ "merchant_cusdc_delta_raw": 124074,
+ "kamino_usdc_vault_delta_raw": 150000,
+ "programs": [
+  "11111111111111111111111111111111",
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+  "ComputeBudget111111111111111111111111111111",
+  "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD",
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+ ],
+ "timeline": [
+  {
+   "t": "2026-11-01T12:45:42Z"
+  },
+  {
+   "t": "2026-11-01T12:46:10Z",
+   "exec_status": "DEPOSIT_PENDING"
+  },
+  {
+   "t": "2026-11-01T12:46:12Z",
+   "public_status": "PENDING_DEPOSIT"
+  },
+  {
+   "t": "2026-11-01T12:46:43Z",
+   "public_status": "PROCESSING"
+  },
+  {
+   "t": "2026-11-01T12:46:49Z",
+   "exec_status": "DEPOSIT_PROCESSING"
+  },
+  {
+   "t": "2026-11-01T12:48:10Z",
+   "exec_status": "OPERATION_PROCESSING"
+  },
+  {
+   "t": "2026-11-01T12:48:11Z",
+   "public_status": "SUCCESS"
+  },
+  {
+   "t": "2026-11-01T12:48:23Z",
+   "exec_status": "SUCCESS"
+  },
+  {
+   "t": "2026-11-01T12:48:24Z",
+   "end": "SUCCESS",
+   "seconds": 163
+  }
+ ]
+}

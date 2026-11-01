@@ -36,7 +36,7 @@
   <h2>Invoices that earn</h2>
   <p class="big">The payer's money lands in the <b>merchant's own</b> yield position, in one atomic transaction.</p>
   <ol class="flow"><li><b>Base</b><span>Payer signs once, sends USDC</span></li><li><b>NEAR Intents</b><span>Routes it to Solana</span></li><li><b>Kamino</b><span>Supplies USDC, mints cUSDC</span></li><li><b>Merchant</b><span>Owns the position</span></li></ol>
-  <p class="muted">Two legs through Intents Connect: the cross-chain swap, then a call into a Solana program, with the order reference attached. <span id="earn-status">Passes on live mainnet state with cli/simulate_earn.py; Aurora accepts the exact steps.</span></p>
+  <p class="muted">Two legs through Intents Connect: the cross-chain swap, then a call into a Solana program, with the order reference attached. <span id="earn-status">Live on mainnet: 0.124074 cUSDC to the merchant from one signature on Base.</span></p>
 </section>
 <section class="slide">
   <h2>Refunds and settlement, proven</h2>
