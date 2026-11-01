@@ -178,6 +178,8 @@ def main():
     if a.rail == "connect":
         c = cn.Connect("unused-for-reads")
         inter = c.intermediary(payer).get("solana")
+        if inter != cn.derive_intermediary(payer):
+            sys.exit("refusing to sign: the Solana account offered is not the one this wallet controls")
         try:
             cn.audit_payload(order["sign"]["payload_json"], payer=payer, intermediary=inter, merchant=merchant,
                              price=price, order_id=oid)

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Sluice deck</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="deck.css">
+</head>
+<body>
+<section class="slide cover">
+  <img src="icon.svg" alt="" width="72" height="72">
+  <h1>Sluice</h1>
+  <p class="big">Get paid in USDC on Solana, by anyone, from any chain.</p>
+  <p class="muted">Aurora Intents challenge · Encode Solana Hackathon 2026 · Swift Bot Labs</p>
+</section>
+<section class="slide">
+  <h2>The problem</h2>
+  <p class="big">A Solana merchant loses every customer whose money sits somewhere else.</p>
+  <ul><li>Customers must bridge, find gas on the right chain, and hope nothing breaks</li><li>Merchants get "paid" by a provider's status message, not by a balance they can check</li><li>When a payment comes up short, someone has to chase it by hand</li></ul>
+</section>
+<section class="slide">
+  <h2>Sluice</h2>
+  <img class="art" src="hero.svg" alt="Five chains flow through Sluice into the merchant's USDC on Solana, or into Kamino.">
+  <ul><li><b>Pay links</b> signed by the merchant's Solana wallet</li><li><b>202 assets on 34 networks</b>, live from Aurora</li><li><b>Nothing counts until Solana shows it</b></li></ul>
+</section>
+<section class="slide">
+  <h2>A page that never expires</h2>
+  <p class="big">One permanent address per network, for tips, top-ups and a QR on the counter.</p>
+  <ul><li>Any amount, any time, from whatever the customer holds</li><li>No quote, no wallet connect, no form</li><li>Each address is checked against Aurora's record before it is shown</li><li>Fixed prices stay on signed links, which keep refunds</li></ul>
+  <p class="muted">Status: addresses are live on mainnet. No real payment has been run through one yet.</p>
+</section>
+<section class="slide">
+  <h2>Invoices that earn</h2>
+  <p class="big">The payer's money lands in the <b>merchant's own</b> yield position, in one atomic transaction.</p>
+  <ol class="flow"><li><b>Base</b><span>Payer signs once, sends USDC</span></li><li><b>NEAR Intents</b><span>Routes it to Solana</span></li><li><b>Kamino</b><span>Supplies USDC, mints cUSDC</span></li><li><b>Merchant</b><span>Owns the position</span></li></ol>
+  <p class="muted">Two legs through Intents Connect: the cross-chain swap, then a call into a Solana program, with the order reference attached. <span id="earn-status">Passes on live mainnet state with cli/simulate_earn.py; Aurora accepts the exact steps.</span></p>
+</section>
+<section class="slide">
+  <h2>Refunds and settlement, proven</h2>
+  <table><thead><tr><th>Situation</th><th>What happens</th></tr></thead><tbody>
+    <tr><td>Exact payment</td><td>Delivered after the merchant's balance is read on Solana</td></tr>
+    <tr><td>Too much</td><td>Excess refunded automatically (0.002659 USDC, mainnet)</td></tr>
+    <tr><td>Too little</td><td>Top up in place, or refunded to the payer (0.3976 USDC, mainnet)</td></tr>
+    <tr><td>Route incident</td><td>Asset leaves the list; Solana delivery incidents pause payments</td></tr>
+    <tr><td>Provider says success, Solana disagrees</td><td>Not delivered</td></tr>
+  </tbody></table>
+</section>
+<section class="slide">
+  <h2>You should not have to trust us</h2>
+  <ul><li><b>Links:</b> amount, address and how it settles are signed. One changed character and the checkout refuses</li><li><b>Signatures:</b> the page decodes the exact Solana transaction before your wallet opens, and refuses anything else</li><li><b>Payments:</b> anyone can re-check seven mainnet runs from the browser, no server involved</li><li><b>Orders:</b> a reference account makes each payment findable from Solana alone</li></ul>
+</section>
+<section class="slide">
+  <h2>Beyond people: APIs and agents</h2>
+  <p class="big">An API answers <code>402</code>. The buyer pays from any chain. The server delivers exactly once, after Solana confirms, with a signed receipt.</p>
+  <p class="muted">The buyer does not trust the seller: it cross-checks the deposit address with public NEAR Intents data before paying.</p>
+</section>
+<section class="slide">
+  <h2>Aurora Intents products used</h2>
+  <table><tbody>
+    <tr><td><b>Swap API</b></td><td>Exact-output quotes, deposit addresses, status, refunds, incidents, history</td></tr>
+    <tr><td><b>Intents Connect</b></td><td>In the checkout and the CLI: Kamino supply, or pay with a reference</td></tr>
+    <tr><td><b>Intents Deposits</b></td><td>A permanent address per network on each merchant's pay page</td></tr>
+    <tr><td><b>Confidential Intents</b></td><td>Private-payment toggle, verified on Solana</td></tr>
+  </tbody></table>
+  <p class="muted">Next: an integrator fee for revenue (60% of the fee goes to the integrator), and pilot merchants.</p>
+</section>
+<section class="slide cover">
+  <h2>Try it</h2>
+  <p class="big">swiftbotlab.github.io/sluice-pay</p>
+  <p class="big">github.com/swiftbotlab/sluice-pay</p>
+  <p class="muted">No wallet needed to verify. Open the page, press Re-check all.</p>
+</section>
+</body>
+</html>

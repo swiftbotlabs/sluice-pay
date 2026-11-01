@@ -21,9 +21,12 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+from datetime import datetime
 
 from . import solana as sol
 
@@ -202,16 +205,89 @@ def decode_solana_message(raw: bytes) -> dict:
             "header": (n_sig, n_ro_signed, n_ro_unsigned)}
 
 
-def solana_message_from_payload(payload_json: str) -> bytes:
+MPC_ROOT = "G9hwngxWNKdmqMCmU1Yt6LPhFpayJeKFxyAV1HqMNLtF"      # v1.signer public_key, domain 1
+MPC_PREDECESSOR = "proxy-signer-dev.near"
+MPC_VERIFYING = "intents.near"
+_L = 2**252 + 27742317777372353535851937790883648493
+
+
+def _canonical(obj) -> str:
+    return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+
+
+def solana_message_from_payload(payload_json: str, now: float | None = None) -> bytes:
+    """The signature covers the whole JSON, so every field is checked, not only the Solana message inside it.
+    Re-serialising must give the same bytes, which rules out duplicate keys. Mirrors messageFromPayload() in docs/core.js."""
     p = json.loads(payload_json)
-    intents = p.get("intents") or []
-    if len(intents) != 1 or intents[0].get("intent") != "auth_call":
+    if _canonical(p) != payload_json:
+        raise PayloadRejected("payload is not in canonical form")
+    if set(p) != {"deadline", "intents", "nonce", "signer_id", "verifying_contract"} or p["verifying_contract"] != MPC_VERIFYING:
+        raise PayloadRejected("unexpected payload envelope")
+    until = datetime.fromisoformat(p["deadline"].replace("Z", "+00:00")).timestamp()
+    if until > (time.time() if now is None else now) + 8 * 86400:
+        raise PayloadRejected("payload stays valid for too long")
+    intents = p["intents"]
+    if not isinstance(intents, list) or len(intents) != 1:
         raise PayloadRejected("expected exactly one auth_call intent")
-    msg = json.loads(intents[0]["msg"])
-    hexmsg = ((msg.get("request") or {}).get("payload_v2") or {}).get("Eddsa")
+    it = intents[0]
+    if set(it) != {"contract_id", "intent", "min_gas", "msg"} or it["intent"] != "auth_call" or it["contract_id"] != MPC_PREDECESSOR:
+        raise PayloadRejected("expected exactly one auth_call intent")
+    msg = json.loads(it["msg"])
+    if _canonical(msg) != it["msg"] or set(msg) != {"request"}:
+        raise PayloadRejected("unexpected fields in signing request")
+    req = msg["request"]
+    if set(req) != {"domain_id", "path", "payload_v2"} or req["domain_id"] != 1 or set(req["payload_v2"]) != {"Eddsa"}:
+        raise PayloadRejected("unexpected signing request")
+    if str(req["path"]).lower() != str(p["signer_id"]).lower():
+        raise PayloadRejected("payload controls another account")
+    hexmsg = req["payload_v2"]["Eddsa"]
     if not isinstance(hexmsg, str) or not re.fullmatch(r"[0-9a-f]{100,2600}", hexmsg):
         raise PayloadRejected("no Solana message in payload")
     return bytes.fromhex(hexmsg)
+
+
+def derive_intermediary(payer: str) -> str:
+    """The Solana account Intents Connect controls for an EVM wallet, computed locally from the MPC root."""
+    if not re.fullmatch(r"0x[0-9a-fA-F]{40}", payer or ""):
+        raise ValueError("bad payer")
+    P, D = sol._P, sol._D
+    i = pow(2, (P - 1) // 4, P)
+
+    def dec(b: bytes):
+        y = int.from_bytes(b, "little") & ((1 << 255) - 1)
+        u, v = (y * y - 1) % P, (D * y * y + 1) % P
+        x2 = u * pow(v, P - 2, P) % P
+        x = pow(x2, (P + 3) // 8, P)
+        if (x * x - x2) % P:
+            x = x * i % P
+        if (x * x - x2) % P:
+            raise ValueError("not a curve point")
+        if x & 1 != b[31] >> 7:
+            x = P - x
+        return (x, y, 1, x * y % P)
+
+    def add(p, q):
+        a, b = (p[1] - p[0]) * (q[1] - q[0]) % P, (p[1] + p[0]) * (q[1] + q[0]) % P
+        c, d = 2 * p[3] * q[3] * D % P, 2 * p[2] * q[2] % P
+        e, f, g, h = b - a, d - c, d + c, b + a
+        return (e * f % P, g * h % P, f * g % P, e * h % P)
+
+    def mul(k, p):
+        r = (0, 1, 1, 0)
+        while k:
+            if k & 1:
+                r = add(r, p)
+            p = add(p, p)
+            k >>= 1
+        return r
+
+    h = hashlib.sha3_256(f"near-mpc-recovery v0.1.0 epsilon derivation:{MPC_PREDECESSOR},{payer.lower()}".encode()).digest()
+    t = int.from_bytes(h, "little") % _L
+    g = dec((4 * pow(5, P - 2, P) % P).to_bytes(32, "little"))
+    pt = add(dec(sol.b58decode(MPC_ROOT)), mul(t, g))
+    z = pow(pt[2], P - 2, P)
+    x, y = pt[0] * z % P, pt[1] * z % P
+    return sol.b58encode((y | ((x & 1) << 255)).to_bytes(32, "little"))
 
 
 def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant: str, price: int, order_id: str,
@@ -245,14 +321,11 @@ def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant:
                 amt, dec = int.from_bytes(data[1:9], "little"), data[9]
                 if acc[0] != src or acc[1] != mint or acc[3] != intermediary or dec != 6:
                     raise PayloadRejected("unexpected TransferChecked")
-                if acc[2] == dst and amt == price:
-                    if acc[4:] != [ref]:
-                        raise PayloadRejected("payment does not carry this order's reference")
-                    paid += 1
-                elif amt <= max_fee:
-                    fees += 1
-                else:
+                if acc[2] != dst or amt != price:
                     raise PayloadRejected("transfer to an unexpected account")
+                if acc[4:] != [ref]:
+                    raise PayloadRejected("payment does not carry this order's reference")
+                paid += 1
                 continue
             if op == b"\x03" and len(data) == 9 and len(acc) >= 3:  # plain Transfer: only the service fee
                 amt = int.from_bytes(data[1:9], "little")
@@ -264,4 +337,101 @@ def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant:
         raise PayloadRejected(f"unexpected program {prog}")
     if paid != 1 or fees > 1:
         raise PayloadRejected(f"expected one payment and at most one fee (got {paid}/{fees})")
+    return {"ok": True, "instructions": len(m["instructions"]), "fee_transfers": fees}
+
+
+# --- settle-to-earn: the invoice lands in the merchant's Kamino position, not idle in a wallet -------
+KLEND_PROGRAM = "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"
+KLEND_MARKET = "7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF"       # Kamino Main Market
+KLEND_AUTHORITY = "9DrvZvyWh1HuAoZxvYWMvkf2XCzryCpGgHqrMjyDWpmo"
+KLEND_USDC_RESERVE = "D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59"
+KLEND_USDC_SUPPLY = "Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6"
+KLEND_CUSDC_MINT = "B8V6WVjPxW1UGwVDfxH2d2r8SyT4cqn7dQRK6XneVa7D"
+KLEND_ORACLE = "3t4JZcueEzTbVP6kLxXrL3VpWx45jDer4eqysweBchNH"
+SYSVAR_INSTRUCTIONS = "Sysvar1nstructions1111111111111111111111111"
+
+
+def earn_steps(intermediary: str, merchant: str, order_id: str, price: int, create_ata: bool = True) -> list[dict]:
+    """Settle an invoice INTO Kamino for the merchant: the payer's intermediary supplies exactly `price` USDC to the
+    Kamino Main Market USDC reserve and the minted cUSDC goes straight to the MERCHANT's own token account.
+
+    klend only requires the destination to be a cUSDC token account, so the intermediary never holds the position;
+    the order's reference account rides on the deposit instruction, so the payment is still findable from Solana alone."""
+    if not (sol.is_pubkey(intermediary) and sol.is_pubkey(merchant)):
+        raise ValueError("bad pubkey")
+    if not isinstance(price, int) or price <= 0:
+        raise ValueError("bad price")
+    src = sol.ata(intermediary, sol.USDC_MINT)
+    dst = sol.ata(merchant, KLEND_CUSDC_MINT)
+    ro = lambda k: {"pubkey": k, "isSigner": False, "isWritable": False}  # noqa: E731
+    rw = lambda k: {"pubkey": k, "isSigner": False, "isWritable": True}  # noqa: E731
+    create = [{"metadata": {"name": "Create merchant cUSDC account (idempotent)"},
+               "programId": sol.ATA_PROGRAM, "discriminator": "01", "args": [],
+               "accounts": [{"pubkey": "{INTERMEDIARY}", "isSigner": True, "isWritable": True}, rw(dst), ro(merchant),
+                            ro(KLEND_CUSDC_MINT), ro(SYSTEM_PROGRAM), ro(sol.TOKEN_PROGRAM)]}] if create_ata else []
+    return create + [
+        {"metadata": {"name": "Refresh reserve", "description": "Refresh the Kamino USDC reserve"},
+         "programId": KLEND_PROGRAM, "discriminator": "02da8aeb4fc91966", "args": [],
+         "accounts": [rw(KLEND_USDC_RESERVE), ro(KLEND_MARKET), ro(KLEND_PROGRAM), ro(KLEND_PROGRAM), ro(KLEND_PROGRAM),
+                      ro(KLEND_ORACLE)]},
+        {"metadata": {"name": "Settle into Kamino for the merchant", "description": f"cUSDC to {merchant}"},
+         "programId": KLEND_PROGRAM, "discriminator": "a9c91e7e06cd6644",
+         "args": [{"name": "liquidity_amount", "type": "u64", "value": str(price)}],
+         "accounts": [{"pubkey": "{INTERMEDIARY}", "isSigner": True, "isWritable": False}, rw(KLEND_USDC_RESERVE),
+                      ro(KLEND_MARKET), ro(KLEND_AUTHORITY), ro(sol.USDC_MINT), rw(KLEND_USDC_SUPPLY),
+                      rw(KLEND_CUSDC_MINT), rw(src), rw(dst), ro(sol.TOKEN_PROGRAM), ro(sol.TOKEN_PROGRAM),
+                      ro(SYSVAR_INSTRUCTIONS), ro(reference_key(order_id))]},
+    ]
+
+
+def audit_earn_payload(payload_json: str, *, payer: str, intermediary: str, merchant: str, price: int, order_id: str,
+                       max_fee: int) -> dict:
+    """Refuse to sign unless the Solana transaction does exactly: (optional cUSDC account for the merchant), refresh the
+    Kamino USDC reserve, supply `price` USDC with the cUSDC going to the MERCHANT and this order's reference attached,
+    plus the service's compute-budget / nonce instructions and ONE fee transfer of at most `max_fee`.
+    Mirrors auditPayload() in docs/core.js."""
+    p = json.loads(payload_json)
+    if (p.get("signer_id") or "").lower() != payer.lower():
+        raise PayloadRejected("payload is for another signer")
+    m = decode_solana_message(solana_message_from_payload(payload_json))
+    if intermediary not in m["signers"]:
+        raise PayloadRejected("intermediary is not a signer")
+    src, dst, ref = sol.ata(intermediary, sol.USDC_MINT), sol.ata(merchant, KLEND_CUSDC_MINT), reference_key(order_id)
+    want = [intermediary, KLEND_USDC_RESERVE, KLEND_MARKET, KLEND_AUTHORITY, sol.USDC_MINT, KLEND_USDC_SUPPLY, KLEND_CUSDC_MINT,
+            src, dst, sol.TOKEN_PROGRAM, sol.TOKEN_PROGRAM, SYSVAR_INSTRUCTIONS, ref]
+    paid = fees = refreshed = 0
+    for ix in m["instructions"]:
+        prog, acc, data = ix["program"], ix["accounts"], ix["data"]
+        if prog == COMPUTE_BUDGET:
+            continue
+        if prog == SYSTEM_PROGRAM:
+            if data[:4] != b"\x04\x00\x00\x00":
+                raise PayloadRejected("unexpected System instruction")
+            continue
+        if prog == sol.ATA_PROGRAM:
+            if data != b"\x01" or len(acc) < 4 or acc[1] != dst or acc[2] != merchant or acc[3] != KLEND_CUSDC_MINT:
+                raise PayloadRejected("unexpected token-account creation")
+            continue
+        if prog == KLEND_PROGRAM:
+            if data == bytes.fromhex("02da8aeb4fc91966"):
+                if acc[:2] != [KLEND_USDC_RESERVE, KLEND_MARKET]:
+                    raise PayloadRejected("unexpected reserve refresh")
+                refreshed += 1
+                continue
+            if data[:8] == bytes.fromhex("a9c91e7e06cd6644") and len(data) == 16:
+                if acc != want:
+                    raise PayloadRejected("deposit does not go to the merchant with this order reference")
+                if int.from_bytes(data[8:], "little") != price:
+                    raise PayloadRejected("deposit amount differs from the invoice")
+                paid += 1
+                continue
+            raise PayloadRejected("unexpected lending instruction")
+        if prog == sol.TOKEN_PROGRAM and data[:1] == b"\x03" and len(data) == 9 and len(acc) >= 3:
+            if acc[0] != src or acc[2] != intermediary or int.from_bytes(data[1:], "little") > max_fee:
+                raise PayloadRejected("unexpected Transfer")
+            fees += 1
+            continue
+        raise PayloadRejected(f"unexpected program {prog}")
+    if paid != 1 or fees > 1 or refreshed != 1:
+        raise PayloadRejected(f"expected one deposit, one refresh, at most one fee (got {paid}/{refreshed}/{fees})")
     return {"ok": True, "instructions": len(m["instructions"]), "fee_transfers": fees}

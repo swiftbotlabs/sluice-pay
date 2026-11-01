@@ -88,11 +88,16 @@ def _unb64u(s: str) -> bytes:
 
 
 def make_pay_link(signer: Signer, *, to: str, amount: str, ref: str, ttl_s: int = 7 * 86400,
-                  base_url: str = "https://swiftbotlab.github.io/sluice-pay/") -> str:
+                  base_url: str = "https://swiftbotlab.github.io/sluice-pay/", settle: str = "usdc") -> str:
     """The link is signed by `signer`; the checkout shows a 'signed by the receiving wallet' badge when signer == to."""
     if not sol.is_pubkey(to):
         raise ValueError("bad Solana address")
-    msg = canonical({"v": 1, "to": to, "amt": amount, "ref": ref, "exp": int(time.time()) + ttl_s, "k": signer.pubkey})
+    if settle not in ("usdc", "earn"):
+        raise ValueError("settle must be usdc or earn")
+    fields = {"v": 1, "to": to, "amt": amount, "ref": ref, "exp": int(time.time()) + ttl_s, "k": signer.pubkey}
+    if settle == "earn":
+        fields["s"] = "earn"  # inside the signed bytes: a relay cannot change it. A payer with no wallet still pays plain USDC.
+    msg = canonical(fields)
     sig = signer._sk.sign(msg).signature
     return f"{base_url}#p={_b64u(msg)}.{_b64u(sig)}"
 
