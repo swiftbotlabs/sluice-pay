@@ -7,7 +7,7 @@ or has it supplied straight into Kamino, and nothing counts until Sluice has see
 payment that comes up short or expires goes back to the buyer automatically, and every failure path says exactly where the money is.
 
 - **Live checkout:** https://swiftbotlab.github.io/sluice-pay/ (static page, no backend: quotes, deposit addresses and status come live from Aurora Intents, settlement is checked live on Solana mainnet)
-- **Demo video:** [youtu.be/plLIFTpuF8c](https://youtu.be/plLIFTpuF8c)
+- **Demo video:** [youtu.be/fWHiFb4OXe8](https://youtu.be/fWHiFb4OXe8)
 - Built by Swift Bot Labs for the Encode Club Solana Hackathon 2026, Aurora Intents challenge. Category: consumer/payments, with an infra rail for APIs.
 
 ## Check it in 5 minutes
