@@ -17,7 +17,7 @@ from sluice import connect as cn  # noqa: E402
 from sluice import solana as sol  # noqa: E402
 from sluice import soltx  # noqa: E402
 
-RPCS = ("https://api.mainnet-beta.solana.com", "https://public.rpc.solanavibestation.com")
+RPCS = ("https://api.mainnet-beta.solana.com", "https://public.rpc.solanavibestation.com", "https://solana-mainnet.gateway.tatum.io")
 HOLDER = "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR"     # Sluice's demo merchant wallet, holds real USDC
 MERCHANT = "B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW"   # no cUSDC account yet, so the create step runs too
 FEE_PAYER = "vines1vzrYbzLMRdu58ou5XTby4qAqVRLmqo36NKPTg"   # any funded account: simulation only, nothing is signed

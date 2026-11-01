@@ -193,14 +193,14 @@
   function renderOrigins() {
     const pop = assets.filter(C.isPopular); const nets = new Set(assets.map((t) => t.blockchain)).size;
     text($('origin-count'), `${assets.length + 1} assets on ${nets} networks, live from Aurora. Pick what you hold.`);
-    $('origins').replaceChildren(...pop.map(chip), chip(DIRECT));
+    $('origins').replaceChildren(...pop.map((t) => chip(t)), chip(DIRECT));
     const rest = assets.length - pop.length;
     show($('btn-more'), rest > 0); text($('btn-more'), `More assets (${rest})`);
     renderSearch();
   }
   function renderSearch() {
     const q = $('asset-search').value; const hits = assets.filter((t) => !C.isPopular(t) && C.matchAsset(t, q));
-    $('asset-results').replaceChildren(...hits.slice(0, 60).map(chip));
+    $('asset-results').replaceChildren(...hits.slice(0, 60).map((t) => chip(t)));
     markChoice();
   }
   function markChoice() {
@@ -1015,7 +1015,11 @@
     invoice = await parseLink().catch(() => null);
     const bd = $('inv-badge'); const stop = (msg) => { text(bd, msg); bd.className = 'badge bad'; show($('step-choose'), false); };
     if (!invoice) { show($('pay')); text($('inv-to'), '—'); show($('inv-ref-row'), false); return stop('This pay link cannot be read.'); }
-    if (invoice.signed && invoice.sigOk === false) { show($('inv-ref-row'), false); return stop('Tampered link: the signature does not match. Do not pay.'); }
+    if (invoice.signed && invoice.sigOk === false) { // nothing from a forged link is worth showing as an invoice
+      show($('inv-ref-row'), false); show(document.querySelector('.invoice .to'), false); show(document.querySelector('.invoice .amount'), false);
+      text(document.querySelector('.invoice .muted'), 'This link was changed after it was signed');
+      return stop('Tampered link: the signature does not match. Do not pay.');
+    }
     try {
       if (!C.isSolAddr(invoice.to)) throw new Error('This link has an invalid Solana address.');
       if (typeof invoice.amt !== 'string') throw new Error('This link has an invalid amount.');

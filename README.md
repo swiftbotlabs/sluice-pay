@@ -3,8 +3,8 @@
 **Get paid in USDC on Solana by anyone, from any chain.** Sluice is a checkout link and a pay-per-call API rail for
 Solana merchants. The buyer pays with what they already hold (USDC on Base, ETH on Arbitrum, USDT on Tron, BTC and
 200 more assets). Aurora Intents, powered by NEAR Intents, routes it. The merchant receives exactly the invoiced USDC,
-or has it supplied straight into Kamino, and nothing counts until Sluice has seen it land on Solana itself. If a payment
-comes up short, expires or fails, the buyer gets their money back automatically.
+or has it supplied straight into Kamino, and nothing counts until Sluice has seen it land on Solana itself. On a pay link, a
+payment that comes up short or expires goes back to the buyer automatically, and every failure path says exactly where the money is.
 
 - **Live checkout:** https://swiftbotlab.github.io/sluice-pay/ (static page, no backend: quotes, deposit addresses and status come live from Aurora Intents, settlement is checked live on Solana mainnet)
 - **Demo video:** [youtu.be/plLIFTpuF8c](https://youtu.be/plLIFTpuF8c)

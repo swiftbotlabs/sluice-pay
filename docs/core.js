@@ -583,7 +583,7 @@
       case 'PENDING_DEPOSIT': case 'CREATED': case 'DEPOSIT_PENDING': return { step: 'AWAIT' };
       case 'KNOWN_DEPOSIT_TX': return { step: 'SEEN' };
       case 'INCOMPLETE_DEPOSIT': return { step: 'SEEN', tone: 'warn' };
-      case 'PROCESSING': case 'DEPOSIT_PROCESSING': case 'OPERATION_PENDING': case 'OPERATION_PROCESSING': return { step: 'ROUTE' };
+      case 'PROCESSING': case 'DEPOSIT_PROCESSING': case 'SIGNING': case 'OPERATION_PENDING': case 'OPERATION_PROCESSING': return { step: 'ROUTE' };
       case 'SUCCESS': return { step: 'SOLANA' };
       case 'REFUNDED': case 'DEPOSIT_FAILED': return { step: 'SEEN', end: 'refund' };
       case 'FAILED': case 'OPERATION_FAILED': return { step: 'ROUTE', end: 'fail' };

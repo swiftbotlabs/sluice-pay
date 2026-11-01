@@ -205,7 +205,7 @@ test('asset list: popular first, destination asset and unknown chains left out',
 });
 test('stages cover both APIs; short deposit computes the top-up', () => {
   assert.equal(C.stage('OPERATION_FAILED').end, 'fail'); assert.equal(C.stage('REFUNDED').end, 'refund'); assert.equal(C.stage('DEPOSIT_FAILED').end, 'refund');
-  assert.equal(C.stage('INCOMPLETE_DEPOSIT').tone, 'warn'); assert.equal(C.stage('OPERATION_PROCESSING').step, 'ROUTE');
+  assert.equal(C.stage('INCOMPLETE_DEPOSIT').tone, 'warn'); assert.equal(C.stage('OPERATION_PROCESSING').step, 'ROUTE'); assert.equal(C.stage('SIGNING').step, 'ROUTE');
   assert.equal(C.shortfall('1020349', '400000'), 620349n); assert.equal(C.shortfall('100', '200'), 0n); assert.equal(C.shortfall('100', null), 100n);
 });
 test('deposit addresses of every family pass, markup does not', () => {
