@@ -6,7 +6,7 @@ Solana merchants. The buyer pays with what they already hold (USDC on Base, ETH 
 or has it supplied straight into Kamino, and nothing counts until Sluice has seen it land on Solana itself. On a pay link, a
 payment that comes up short or expires goes back to the buyer automatically, and every failure path says exactly where the money is.
 
-- **Live checkout:** https://swiftbotlab.github.io/sluice-pay/ (static page, no backend: quotes, deposit addresses and status come live from Aurora Intents, settlement is checked live on Solana mainnet)
+- **Live checkout:** https://apps.swiftbotlab.workers.dev/sluice-pay/ (static page, no backend: quotes, deposit addresses and status come live from Aurora Intents, settlement is checked live on Solana mainnet)
 - **Demo video:** [youtu.be/fWHiFb4OXe8](https://youtu.be/fWHiFb4OXe8)
 - Built by Swift Bot Labs for the Encode Club Solana Hackathon 2026, Aurora Intents challenge. Category: consumer/payments, with an infra rail for APIs.
 
@@ -16,10 +16,10 @@ No account, no wallet and no money needed.
 
 | Time | Do this | You will see |
 |---|---|---|
-| 1 min | Open the [live demo invoice](https://swiftbotlab.github.io/sluice-pay/#p=eyJhbXQiOiIwLjUwIiwiZXhwIjoxODAwMDEzMzY3LCJrIjoiOWNZRnpybUhSY3NZekxoQVdzTmVtekN5NzVaaEVUbjJweDRNUzhvRERSZVIiLCJyZWYiOiJkZW1vLWludm9pY2UtMTA0MiIsInMiOiJlYXJuIiwidG8iOiI5Y1lGenJtSFJjc1l6TGhBV3NOZW16Q3k3NVpoRVRuMnB4NE1TOG9ERFJlUiIsInYiOjF9.XDSG4A7YmbS97B2hAIbGSnT3aJ3sOlasUS3qWgHLkXP8qTCp9P3Iqp71OrojPLT19vcn39eOTFU0IcZZ6b3PCQ) | A merchant-signed invoice, 202 assets on 34 networks from Aurora's live list, a live price for whichever asset you tap. Change one character of the link: the checkout refuses it. |
-| 1 min | Open the [home page](https://swiftbotlab.github.io/sluice-pay/), go to **Live proof**, press **Re-check all** | Eight real mainnet payments re-verified from your browser, against Aurora and Solana, right now. |
-| 1 min | Open a [refunded payment](https://swiftbotlab.github.io/sluice-pay/#s=0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56) and a [paid one](https://swiftbotlab.github.io/sluice-pay/#s=0xDF4FE7105893cB3BC78579A703b551d65eBa7c54) | Shareable records built only from Aurora and Solana data: what was sent, what came back, and the Solana check. |
-| 1 min | `git clone https://github.com/swiftbotlab/sluice-pay && cd sluice-pay && python3 cli/simulate_earn.py` | The Intents Connect transaction that settles an invoice into Kamino, run through Solana's simulator on live mainnet state. Standard library only. |
+| 1 min | Open the [live demo invoice](https://apps.swiftbotlab.workers.dev/sluice-pay/#p=eyJhbXQiOiIwLjUwIiwiZXhwIjoxODAwMDEzMzY3LCJrIjoiOWNZRnpybUhSY3NZekxoQVdzTmVtekN5NzVaaEVUbjJweDRNUzhvRERSZVIiLCJyZWYiOiJkZW1vLWludm9pY2UtMTA0MiIsInMiOiJlYXJuIiwidG8iOiI5Y1lGenJtSFJjc1l6TGhBV3NOZW16Q3k3NVpoRVRuMnB4NE1TOG9ERFJlUiIsInYiOjF9.XDSG4A7YmbS97B2hAIbGSnT3aJ3sOlasUS3qWgHLkXP8qTCp9P3Iqp71OrojPLT19vcn39eOTFU0IcZZ6b3PCQ) | A merchant-signed invoice, 202 assets on 34 networks from Aurora's live list, a live price for whichever asset you tap. Change one character of the link: the checkout refuses it. |
+| 1 min | Open the [home page](https://apps.swiftbotlab.workers.dev/sluice-pay/), go to **Live proof**, press **Re-check all** | Eight real mainnet payments re-verified from your browser, against Aurora and Solana, right now. |
+| 1 min | Open a [refunded payment](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56) and a [paid one](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0xDF4FE7105893cB3BC78579A703b551d65eBa7c54) | Shareable records built only from Aurora and Solana data: what was sent, what came back, and the Solana check. |
+| 1 min | `git clone https://github.com/swiftbotlabs/sluice-pay && cd sluice-pay && python3 cli/simulate_earn.py` | The Intents Connect transaction that settles an invoice into Kamino, run through Solana's simulator on live mainnet state. Standard library only. |
 | 1 min | `node --test tests/js/core.test.mjs` and, after `pip install -r requirements.txt`, `python3 -m unittest discover -s tests` | 27 checkout tests and 51 server, CLI and parity tests, offline. They include real Intents Connect payloads and tampered copies of them. |
 
 ## How it meets the judging criteria
@@ -57,7 +57,7 @@ agents, backends) have it worst: there is no human to recover a half-finished br
 ## Permanent pay pages
 
 Aurora's first promise for Solana apps is a persistent, any-chain deposit address. A pay link fits a fixed invoice; many merchants
-need the opposite: one address that always works, for any amount. `https://swiftbotlab.github.io/sluice-pay/#a=<solana address>` is that page.
+need the opposite: one address that always works, for any amount. `https://apps.swiftbotlab.workers.dev/sluice-pay/#a=<solana address>` is that page.
 
 - Addresses come from `POST /api/persistent-deposit-address`: deterministic per merchant and network, reused forever, and every EVM
   network shares one address.
@@ -212,7 +212,7 @@ deposit address is never shown without network, asset, exact amount, minimum, de
 Requirements: Python 3.10+, `pip install -r requirements.txt` (PyNaCl for receipts; eth-account only for the buyer CLI).
 
 ```bash
-git clone https://github.com/swiftbotlab/sluice-pay && cd sluice-pay
+git clone https://github.com/swiftbotlabs/sluice-pay && cd sluice-pay
 python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
 
 # 1) tests (offline, no network, no keys)
