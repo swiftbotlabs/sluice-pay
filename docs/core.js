@@ -727,26 +727,122 @@
   const AURORA_LIVE = new Set(['KNOWN_DEPOSIT_TX', 'INCOMPLETE_DEPOSIT', 'PROCESSING', 'SUCCESS', 'REFUNDED', 'FAILED']);
   const DUST = 10000n; // credits under 0.01 USDC are listed as dust and never counted: anyone can send them to flood the view
   const decimalText = (v) => (typeof v === 'string' && /^\d{1,20}(\.\d{1,18})?$/.test(v) ? v : null);
+  /** What one payment record (Aurora's status for one deposit address, the same source as the #s= record page) says the
+   *  customer sent, checked against the deposit address and merchant it is listed under. `paid` is the amount that reached
+   *  the deposit address (swapDetails.depositedAmount), never the transaction list's amountIn: that is what was swapped after
+   *  the slippage buffer, about 0.0015 USDC less than the customer sent. Nothing deposited yet means no amount. */
+  function recordAmounts(status, depositAddress, merchant) {
+    if (!status || typeof status !== 'object' || !isDepositAddr(depositAddress)) return null;
+    const q = status.quoteResponse || {}; const qr = q.quoteRequest || {}; const qq = q.quote || {}; const d = status.swapDetails || {};
+    const got = String(qq.depositAddress || ''); // EVM addresses are case-insensitive, base58 ones are not
+    const sameAddr = /^0x[0-9a-fA-F]{40}$/.test(got) ? got.toLowerCase() === depositAddress.toLowerCase() : got === depositAddress;
+    if (qr.recipient !== merchant || !sameAddr) return null;
+    const pos = (v) => { const t = decimalText(v); return t && /[1-9]/.test(t) ? t : null; };
+    const invoice = qr.swapType === 'EXACT_OUTPUT' && qr.destinationAsset === SOL_USDC && /^\d{1,20}$/.test(String(qr.amount)) ? BigInt(qr.amount) : null;
+    const sols = (d.destinationChainTxHashes || []).map((h) => (typeof h === 'string' ? h : h && h.hash)).filter((h) => typeof h === 'string');
+    return { paid: pos(d.depositedAmountFormatted), refunded: pos(d.refundedAmountFormatted), invoice, origin: qr.originAsset || null, status: status.status || null, sols };
+  }
   /** Newest-first rows for the merchant view. Every credit row comes from Solana; Aurora's list adds the source asset and a record
-   *  link when it routed that exact Solana transaction, and shows payments still on the way or refunded. Unpaid quotes are left out. */
-  function ledgerRows(credits, aurora, merchant) {
+   *  link when it routed that exact Solana transaction, and shows payments still on the way or refunded. Unpaid quotes are left out.
+   *  Amounts the customer sent come only from that payment's record (`records`, keyed by deposit address, see recordAmounts),
+   *  and only when the record names the same Solana transaction: no record, no amount. */
+  function ledgerRows(credits, aurora, merchant, records) {
     const bySig = new Map(); const mine = (aurora || []).filter((x) => x && x.recipient === merchant && isDepositAddr(x.depositAddress));
     for (const x of mine) for (const h of x.destinationChainTxHashes || []) { const s = typeof h === 'string' ? h : h && h.hash; if (s) bySig.set(s, x); }
+    const rec = (x) => (records && typeof records.get === 'function' ? records.get(x.depositAddress) : null) || null;
     const used = new Set(); const rows = [];
     for (const c of credits || []) {
       if (!c || (c.kind !== 'usdc' && c.kind !== 'earn')) continue;
       const x = bySig.get(c.sig) || null; if (x) used.add(x.depositAddress);
+      const r = x ? rec(x) : null; const same = !!(r && r.sols.includes(c.sig));
       const usdc = c.kind === 'earn' ? c.supplied : c.usdc;
       rows.push({ kind: c.kind, verified: true, dust: usdc < DUST, sig: c.sig, at: c.at, usdc, shares: c.shares || 0n,
-        origin: x ? x.originAsset : null, paidIn: x ? decimalText(x.amountInFormatted) : null,
+        origin: x ? x.originAsset : null, paidIn: same ? r.paid : null, refunded: same ? r.refunded : null,
         record: x ? `#s=${x.depositAddress}` : c.ref ? `#c=${c.ref}.${merchant}` : null });
     }
     for (const x of mine) {
       if (used.has(x.depositAddress) || !AURORA_LIVE.has(x.status)) continue;
+      const r = rec(x);
       rows.push({ kind: 'aurora', verified: false, status: x.status, at: Math.floor(Date.parse(x.createdAt || '') / 1000) || null, usdc: null,
-        out: decimalText(x.amountOutFormatted), origin: x.originAsset || null, paidIn: decimalText(x.amountInFormatted), record: `#s=${x.depositAddress}` });
+        out: r && r.invoice !== null ? fromUnits(r.invoice, 6) : null, origin: x.originAsset || null, paidIn: r ? r.paid : null,
+        refunded: r ? r.refunded : null, record: `#s=${x.depositAddress}` });
     }
     return rows.sort((p, q) => (q.at || 0) - (p.at || 0));
+  }
+
+  // ---------- merchant view: is a signature history complete? ----------
+  /** True when this transaction opened `account`: it held no lamports before and some after. A token account's first
+   *  transaction is the one that created it, so a history whose oldest entry did this has nothing older to miss. */
+  function createdIn(tx, account) {
+    if (!tx || !tx.meta || !tx.transaction || !tx.transaction.message) return false;
+    const keys = tx.transaction.message.accountKeys || [];
+    const i = keys.findIndex((k) => (typeof k === 'string' ? k : k && k.pubkey) === account);
+    const pre = tx.meta.preBalances || []; const post = tx.meta.postBalances || [];
+    return i >= 0 && pre[i] === 0 && typeof post[i] === 'number' && post[i] > 0;
+  }
+  /** Some public RPCs keep only recent history and answer getSignaturesForAddress with a short list and no error. A list
+   *  is complete for a window starting at `cutoff` (unix s) only when it proves it:
+   *   'window'  it reaches a signature older than the cutoff, so the node had history that far back;
+   *   'created' it ran out, and its oldest signature is the transaction that created the account (`createdBy`);
+   *   'none'    it is empty and the account does not exist.
+   *  Otherwise it is partial: 'cap' (more than we read), 'short' (ran out without that proof), 'error' (a page failed). */
+  function historyVerdict({ sigs, exhausted, cutoff, capped, createdBy, accountExists }) {
+    const list = Array.isArray(sigs) ? sigs : [];
+    const oldest = list.length ? list[list.length - 1] : null;
+    const from = oldest && oldest.blockTime ? oldest.blockTime : null;
+    if (list.some((s) => s && s.blockTime && s.blockTime < cutoff)) return { complete: true, reason: 'window', from };
+    if (capped) return { complete: false, reason: 'cap', from };
+    if (!exhausted) return { complete: false, reason: 'error', from };
+    if (!list.length) return accountExists === false ? { complete: true, reason: 'none', from } : { complete: false, reason: 'short', from };
+    if (createdBy && createdBy === oldest.signature) return { complete: true, reason: 'created', from };
+    return { complete: false, reason: 'short', from };
+  }
+  const SIG_RE = /^[1-9A-HJ-NP-Za-km-z]{64,90}$/;
+  /** Reads an account's signatures, newest first, from each endpoint in `urls` in turn, paging with `before` until the list
+   *  runs out, passes `cutoff` or reaches `cap`, and stops at the first endpoint whose list is proven complete (historyVerdict).
+   *  What every endpoint returned is merged, so a better answer is never thrown away; if none is complete the result says so.
+   *  `call(url, method, params)` and `getTx(sig)` are injected (fetch in the page, replayed fixtures in tests); `accountExists`
+   *  is a boolean or a function returning one, asked only when a list comes back empty. */
+  async function readHistory({ urls, account, cutoff, cap = 200, page = 100, call, getTx, accountExists }) {
+    const merged = new Map(); const tried = []; let best = null;
+    const add = (list) => { for (const s of list) if (!merged.has(s.signature)) merged.set(s.signature, s); };
+    for (const url of urls) {
+      const out = []; let exhausted = false; let capped = false; let failed = null;
+      try {
+        for (;;) {
+          const opts = { limit: page, commitment: 'confirmed' }; if (out.length) opts.before = out[out.length - 1].signature;
+          const got = await call(url, 'getSignaturesForAddress', [account, opts]);
+          if (!Array.isArray(got)) throw new Error('not a signature list');
+          const clean = got.filter((s) => s && typeof s.signature === 'string' && SIG_RE.test(s.signature));
+          const had = out.length;
+          out.push(...clean.filter((s) => !out.some((o) => o.signature === s.signature)));
+          if (got.length < page) { exhausted = true; break; }
+          if (out.length === had) throw new Error('a full page with nothing new'); // never loop on a node that repeats itself
+          if (out.some((s) => s.blockTime && s.blockTime < cutoff)) break;
+          if (out.length >= cap) { capped = true; break; }
+        }
+      } catch (e) { failed = e; }
+      if (failed && !out.length) { tried.push({ url, error: String((failed && failed.message) || failed) }); continue; }
+      add(out);
+      let createdBy = null;
+      if (exhausted && out.length && !out.some((s) => s.blockTime && s.blockTime < cutoff)) {
+        const oldest = out[out.length - 1].signature;
+        const tx = await Promise.resolve(getTx(oldest)).catch(() => null);
+        if (createdIn(tx, account)) createdBy = oldest;
+      }
+      const known = !out.length && exhausted && !failed // only an empty list needs to know whether the account exists
+        ? (typeof accountExists === 'function' ? await Promise.resolve().then(accountExists).catch(() => undefined) : accountExists) : undefined;
+      const v = historyVerdict({ sigs: out, exhausted: exhausted && !failed, cutoff, capped, createdBy, accountExists: known });
+      tried.push({ url, n: out.length, ...v });
+      if (!best || (v.from || Infinity) < (best.from || Infinity)) best = v;
+      if (v.complete || v.reason === 'cap') {
+        const sigs = [...merged.values()].sort((p, q) => (q.slot || 0) - (p.slot || 0));
+        return { sigs, complete: v.complete, reason: v.reason, from: v.from, url, tried };
+      }
+    }
+    const sigs = [...merged.values()].sort((p, q) => (q.slot || 0) - (p.slot || 0));
+    const from = sigs.length && sigs[sigs.length - 1].blockTime ? sigs[sigs.length - 1].blockTime : null;
+    return { sigs, complete: false, reason: best ? best.reason : 'error', from, url: null, tried };
   }
   /** Verified USDC received per local day, oldest first, ending today. tzOffsetMin = Date#getTimezoneOffset(). */
   function dailyTotals(rows, { days = 14, now = Date.now(), tzOffsetMin = 0 } = {}) {
@@ -778,6 +874,7 @@
 
   return {
     cleanName, looksSecret, payoutCheck, linkInput, linkMessage, permanentLink, merchantCredit, ledgerRows, dailyTotals, earnValue, rememberLink, kaminoDepositTo,
+    recordAmounts, createdIn, historyVerdict, readHistory,
     USDC_MINT, TOKEN_PROGRAM, ATA_PROGRAM, SYSTEM_PROGRAM, SOL_USDC, KLEND, CHAINS, POPULAR,
     b58decode, b58encode, isSolAddr, concat, utf8, toHex, fromHex, sha256, toUnits, fromUnits, short,
     validRefund, isEvmAddr, isDepositAddr, onCurve, findPda, ata, referenceKey, paySteps, earnSteps,

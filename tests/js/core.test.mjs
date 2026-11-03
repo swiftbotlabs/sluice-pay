@@ -357,7 +357,8 @@ test('ledger rows: Solana credits first-class, Aurora adds source and in-flight 
   const rows = C.ledgerRows(credits, aurora, MERCHANT);
   assert.equal(rows.length, 3);
   assert.deepEqual(rows.map((r) => r.kind), ['earn', 'aurora', 'usdc']); // newest first
-  const paid = rows[2]; assert.equal(paid.verified, true); assert.equal(paid.usdc, 500000n); assert.equal(paid.paidIn, '0.773463'); assert.equal(paid.record, '#s=0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5');
+  // Without the payment's own record there is no "paid with" amount: the list's amountIn is never shown as what the customer sent.
+  const paid = rows[2]; assert.equal(paid.verified, true); assert.equal(paid.usdc, 500000n); assert.equal(paid.paidIn, null); assert.equal(paid.record, '#s=0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5');
   assert.equal(rows[1].status, 'REFUNDED'); assert.equal(rows[1].verified, false); assert.equal(rows[1].usdc, null);
   assert.equal(rows[0].record, `#c=Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s.${MERCHANT}`);
 });
@@ -420,4 +421,148 @@ test('dust never counts, Aurora text fields must be plain numbers, and the Kamin
   assert.equal(days.reduce((s, d) => s + d.count, 0), 1);
   const aur = [{ recipient: MERCHANT, depositAddress: '0x1111111111111111111111111111111111111111', status: 'REFUNDED', amountInFormatted: '<b>9</b>', amountOutFormatted: '1e9', originAsset: 'x', createdAt: '2026-10-30T00:00:00Z' }];
   const r = C.ledgerRows([], aur, MERCHANT)[0]; assert.equal(r.paidIn, null); assert.equal(r.out, null);
+});
+
+// ---------- merchant view on real mainnet reads (tests/fixture_merchant_view.json) ----------
+const mv = JSON.parse(readFileSync(new URL('../fixture_merchant_view.json', import.meta.url)));
+const NOW_MV = Date.parse('2026-11-03T12:00:00Z');
+const CUTOFF_MV = Math.floor(NOW_MV / 1000) - 14 * 86400;
+/** A fake RPC endpoint that serves a fixed signature list the way getSignaturesForAddress does: newest first, limit, before. */
+const endpoint = (lists, log = []) => async (url, method, [acct, opts]) => {
+  log.push({ url, acct, before: opts.before || null, limit: opts.limit });
+  const all = lists[acct]; if (all instanceof Error) throw all; if (!all) return [];
+  const from = opts.before ? all.findIndex((s) => s.signature === opts.before) + 1 : 0;
+  return all.slice(from, from + opts.limit);
+};
+const fxTx = async (sig) => mv.txs[sig] || null;
+
+test('account creation is read from lamports: the oldest real transaction opened each account, a later one did not', () => {
+  const oldest = mv.sigs.usdc_full[mv.sigs.usdc_full.length - 1].signature;
+  assert.equal(C.createdIn(mv.txs[oldest], mv.usdcAta), true);
+  assert.equal(C.createdIn(mv.txs[mv.sigs.usdc_full[0].signature], mv.usdcAta), false); // today's payment
+  assert.equal(C.createdIn(mv.txs[mv.sigs.cusdc_full[0].signature], mv.cusdcAta), true); // the settle-to-earn run opened the cUSDC account
+  assert.equal(C.createdIn(mv.txs[oldest], mv.cusdcAta), false); // not in that transaction at all
+  assert.equal(C.createdIn(null, mv.usdcAta), false); assert.equal(C.createdIn({ meta: {} }, mv.usdcAta), false);
+});
+test('history verdict: complete only with proof, a short list without an error is partial', () => {
+  const sig = (n, t) => ({ signature: 'S'.repeat(64) + n, blockTime: t });
+  const c = 1000;
+  assert.deepEqual(C.historyVerdict({ sigs: [sig(1, 2000), sig(2, 999)], exhausted: false, cutoff: c }), { complete: true, reason: 'window', from: 999 });
+  assert.equal(C.historyVerdict({ sigs: [sig(1, 2000), sig(2, 1500)], exhausted: true, cutoff: c, createdBy: 'S'.repeat(64) + 2 }).reason, 'created');
+  assert.equal(C.historyVerdict({ sigs: [sig(1, 2000), sig(2, 1500)], exhausted: true, cutoff: c, createdBy: 'S'.repeat(64) + 1 }).complete, false);
+  assert.equal(C.historyVerdict({ sigs: [sig(1, 2000)], exhausted: true, cutoff: c }).reason, 'short');
+  assert.equal(C.historyVerdict({ sigs: [sig(1, 2000)], exhausted: false, cutoff: c }).reason, 'error');
+  assert.equal(C.historyVerdict({ sigs: [sig(1, 2000)], exhausted: false, capped: true, cutoff: c }).reason, 'cap');
+  assert.deepEqual(C.historyVerdict({ sigs: [], exhausted: true, cutoff: c, accountExists: false }), { complete: true, reason: 'none', from: null });
+  assert.equal(C.historyVerdict({ sigs: [], exhausted: true, cutoff: c, accountExists: true }).complete, false);
+  assert.equal(C.historyVerdict({ sigs: [], exhausted: true, cutoff: c }).complete, false); // unknown account: not proven
+});
+test('the cut-short node seen on 2026-11-03 is never taken as complete; the full node is found and proven', async () => {
+  // vibe returned 1 of 8 signatures with no error; leo errored; Helium returned all 8.
+  const short = endpoint({ [mv.usdcAta]: mv.sigs.usdc_short }); const full = endpoint({ [mv.usdcAta]: mv.sigs.usdc_full });
+  const broken = async () => { throw new Error('Internal JSON-RPC error.'); };
+  const call = (u, m, p) => ({ leo: broken, vibe: short, helium: full }[u](u, m, p));
+  const alone = await C.readHistory({ urls: ['leo', 'vibe'], account: mv.usdcAta, cutoff: CUTOFF_MV, call, getTx: fxTx });
+  assert.equal(alone.complete, false); assert.equal(alone.reason, 'short'); assert.equal(alone.sigs.length, 1);
+  assert.equal(alone.from, mv.sigs.usdc_short[0].blockTime);
+  assert.deepEqual(alone.tried.map((t) => t.error ? 'error' : t.reason), ['error', 'short']);
+  const h = await C.readHistory({ urls: ['leo', 'vibe', 'helium'], account: mv.usdcAta, cutoff: CUTOFF_MV, call, getTx: fxTx });
+  assert.equal(h.complete, true); assert.equal(h.reason, 'created'); assert.equal(h.url, 'helium'); assert.equal(h.sigs.length, 8);
+  assert.deepEqual(h.sigs.map((s) => s.signature), mv.sigs.usdc_full.map((s) => s.signature)); // newest first, merged without duplicates
+  const first = await C.readHistory({ urls: ['helium', 'vibe'], account: mv.usdcAta, cutoff: CUTOFF_MV, call, getTx: fxTx });
+  assert.equal(first.url, 'helium'); assert.equal(first.tried.length, 1); // proven complete, so no second endpoint is asked
+});
+test('history pages with before until the list runs out, stops at the window, the cap, or a node that repeats itself', async () => {
+  const log = []; const call = endpoint({ [mv.usdcAta]: mv.sigs.usdc_full }, log);
+  const h = await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: CUTOFF_MV, page: 3, call, getTx: fxTx });
+  assert.equal(h.complete, true); assert.equal(h.sigs.length, 8); assert.equal(log.length, 3);
+  assert.deepEqual(log.map((l) => l.before), [null, mv.sigs.usdc_full[2].signature, mv.sigs.usdc_full[5].signature]);
+  // A window that starts inside the list: the first page already reaches past it.
+  const w = await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: mv.sigs.usdc_full[1].blockTime - 1, page: 3, call: endpoint({ [mv.usdcAta]: mv.sigs.usdc_full }), getTx: fxTx });
+  assert.equal(w.reason, 'window'); assert.equal(w.sigs.length, 3);
+  // More than the cap: partial, and the next endpoint is not asked (it would hit the same cap).
+  const capLog = []; const cap = await C.readHistory({ urls: ['x', 'y'], account: mv.usdcAta, cutoff: CUTOFF_MV, page: 3, cap: 5, call: endpoint({ [mv.usdcAta]: mv.sigs.usdc_full }, capLog), getTx: fxTx });
+  assert.equal(cap.complete, false); assert.equal(cap.reason, 'cap'); assert.ok(capLog.every((l) => l.url === 'x'));
+  // A hostile node that serves the same full page forever ends with an error, not a hang.
+  let n = 0; const loop = async () => { n++; return mv.sigs.usdc_full.slice(0, 3); };
+  const bad = await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: CUTOFF_MV, page: 3, call: loop, getTx: fxTx });
+  assert.equal(bad.complete, false); assert.equal(bad.reason, 'error'); assert.ok(n <= 3, String(n));
+  // Garbage instead of a list, or invalid signatures, never count.
+  const junk = await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: CUTOFF_MV, call: async () => ({ result: 'nope' }), getTx: fxTx });
+  assert.equal(junk.complete, false); assert.equal(junk.sigs.length, 0);
+  const bogus = await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: CUTOFF_MV, call: async () => [{ signature: '<img>' }], getTx: fxTx });
+  assert.equal(bogus.complete, false); assert.equal(bogus.sigs.length, 0);
+  // A new merchant: no account, no signatures, complete. The account check is asked only for an empty list.
+  let asked = 0; const none = await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: CUTOFF_MV, call: async () => [], getTx: fxTx, accountExists: () => { asked++; return false; } });
+  assert.equal(none.complete, true); assert.equal(none.reason, 'none'); assert.equal(asked, 1);
+  asked = 0; await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: CUTOFF_MV, call, getTx: fxTx, accountExists: () => { asked++; return true; } });
+  assert.equal(asked, 0);
+  // A page that fails after the first: partial ('error'), what was read is kept.
+  let k = 0; const flaky = async (u, m, p) => { if (k++) throw new Error('busy'); return mv.sigs.usdc_full.slice(0, 3); };
+  const fl = await C.readHistory({ urls: ['x'], account: mv.usdcAta, cutoff: CUTOFF_MV, page: 3, call: flaky, getTx: fxTx });
+  assert.equal(fl.complete, false); assert.equal(fl.reason, 'error'); assert.equal(fl.sigs.length, 3);
+});
+test('positive control on the demo merchant: 9 payments, 2.45 USDC in 14 days, and the USDC credits add up to its balance', async () => {
+  const lists = { [mv.usdcAta]: mv.sigs.usdc_full, [mv.cusdcAta]: mv.sigs.cusdc_full };
+  const read = async (acct, urls, call) => C.readHistory({ urls, account: acct, cutoff: CUTOFF_MV, call, getTx: fxTx });
+  const credits = async (hs) => {
+    const seen = new Set(); const out = [];
+    for (const s of hs.flatMap((h) => h.sigs)) if (!seen.has(s.signature) && seen.add(s.signature)) { const c = C.merchantCredit(mv.txs[s.signature], mv.merchant, mv.cusdcAta, s.signature); if (c) out.push(c); }
+    return out;
+  };
+  const full = endpoint(lists);
+  const hs = [await read(mv.usdcAta, ['helium'], full), await read(mv.cusdcAta, ['helium'], full)];
+  assert.ok(hs.every((h) => h.complete), JSON.stringify(hs.map((h) => h.reason)));
+  const rows = C.ledgerRows(await credits(hs), mv.aurora, mv.merchant);
+  const days = C.dailyTotals(rows, { days: 14, now: NOW_MV });
+  assert.equal(days.reduce((s, d) => s + d.count, 0), 9);
+  assert.equal(C.fromUnits(days.reduce((s, d) => s + d.usdc, 0n), 6), '2.45');
+  // Independent check: no USDC ever left this account, so the sum of its credits equals its balance after the newest one.
+  const usdcSum = rows.filter((r) => r.kind === 'usdc').reduce((s, r) => s + r.usdc, 0n);
+  const newest = mv.txs[mv.sigs.usdc_full[0].signature];
+  const bal = newest.meta.postTokenBalances.find((b) => b.owner === mv.merchant && b.mint === C.USDC_MINT).uiTokenAmount.amount;
+  assert.equal(usdcSum, BigInt(bal)); assert.equal(C.fromUnits(usdcSum, 6), '2.3');
+  // The cut-short node alone gives 1 of the 8 USDC credits and must be flagged partial, which is what the page then says.
+  const shortHs = [await read(mv.usdcAta, ['vibe'], endpoint({ [mv.usdcAta]: mv.sigs.usdc_short })), await read(mv.cusdcAta, ['helium'], full)];
+  assert.equal(shortHs[0].complete, false);
+  const shortRows = C.ledgerRows(await credits(shortHs), mv.aurora, mv.merchant);
+  const shortDays = C.dailyTotals(shortRows, { days: 14, now: NOW_MV }); // exactly what the live page showed: 2 payments, 0.30 USDC
+  assert.equal(shortDays.reduce((s, d) => s + d.count, 0), 2); assert.equal(C.fromUnits(shortDays.reduce((s, d) => s + d.usdc, 0n), 6), '0.3');
+});
+test('paid with = what reached the deposit address, from that payment\'s own record, never the list\'s amountIn', async () => {
+  const dep = '0x3ceB7E53E2127be1Ae70477AB53aE8e2955c34ba'; const today = mv.sigs.usdc_full[0].signature;
+  const r = C.recordAmounts(mv.status[dep], dep, mv.merchant);
+  assert.equal(r.paid, '0.161563'); assert.equal(r.invoice, 150000n); assert.equal(r.refunded, null); assert.deepEqual(r.sols, [today]);
+  assert.equal(mv.aurora.find((x) => x.depositAddress === dep).amountInFormatted, '0.160046'); // the number the page used to show
+  assert.equal(C.recordAmounts(mv.status[dep], dep.toLowerCase(), mv.merchant).paid, '0.161563'); // EVM case does not matter
+  assert.equal(C.recordAmounts(mv.status[dep], '0xDF4FE7105893cB3BC78579A703b551d65eBa7c54', mv.merchant), null); // another deposit's record
+  assert.equal(C.recordAmounts(mv.status[dep], dep, mv.usdcAta), null); // another merchant
+  assert.equal(C.recordAmounts(null, dep, mv.merchant), null); assert.equal(C.recordAmounts({ message: 'not found' }, dep, mv.merchant), null);
+  const records = new Map(Object.entries(mv.status).map(([k, s]) => [k, C.recordAmounts(s, k, mv.merchant)]));
+  const credits = mv.sigs.usdc_full.map((s) => C.merchantCredit(mv.txs[s.signature], mv.merchant, mv.cusdcAta, s.signature)).filter(Boolean);
+  const rows = C.ledgerRows(credits, mv.aurora, mv.merchant, records);
+  const by = (sig) => rows.find((x) => x.sig === sig);
+  assert.equal(by(today).paidIn, '0.161563'); assert.equal(by(today).record, `#s=${dep}`);
+  assert.equal(by('4oPn2qbtaHY2JiDi88BAFivHjDcHJs8QbmBDhbPezWuuZT2VVPcU7m5tb7kSwxxeY7pN6CNPj448xEZT3q7PL9Hs').paidIn, '0.161535');
+  assert.equal(by('49Uz6rAsJMQEx2qcX9JdCJqSzCdbpWSKBttYaJNrjaPKjAfZ5qH6SdLr3mwAw34rucxM6hy2i91FcAJe1nVVAxZV').paidIn, '0.161561');
+  for (const row of rows) for (const x of mv.aurora) assert.notEqual(row.paidIn, x.amountInFormatted);
+  // Without records: no amount at all. A record that names another Solana transaction is not used for this credit.
+  assert.equal(C.ledgerRows(credits, mv.aurora, mv.merchant).find((x) => x.sig === today).paidIn, null);
+  const wrongSol = new Map([[dep, { ...records.get(dep), sols: ['4oPn2qbtaHY2JiDi88BAFivHjDcHJs8QbmBDhbPezWuuZT2VVPcU7m5tb7kSwxxeY7pN6CNPj448xEZT3q7PL9Hs'] }]]);
+  assert.equal(C.ledgerRows(credits, mv.aurora, mv.merchant, wrongSol).find((x) => x.sig === today).paidIn, null);
+});
+test('a record with a refund shows what was sent and what came back; one still in flight shows its invoice, not a list number', async () => {
+  const t2 = '0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5'; const t1 = '0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56';
+  const r2 = C.recordAmounts(mv.status[t2], t2, mv.merchant); assert.equal(r2.paid, '0.773463'); assert.equal(r2.refunded, '0.002659');
+  assert.equal(mv.status[t2].swapDetails.amountInFormatted, '0.768404'); // swapped amount, not what the customer sent
+  const r1 = C.recordAmounts(mv.status[t1], t1, mv.merchant); assert.equal(r1.paid, '0.4'); assert.equal(r1.refunded, '0.3976'); assert.equal(r1.invoice, 1000000n);
+  const base = { originAsset: mv.status[t1].quoteResponse.quoteRequest.originAsset, recipient: mv.merchant };
+  const aur = [{ ...base, depositAddress: t1, status: 'REFUNDED', amountInFormatted: '9.99', amountOutFormatted: '9.99', destinationChainTxHashes: [], createdAt: '2026-10-29T18:27:00Z' }];
+  const row = C.ledgerRows([], aur, mv.merchant, new Map([[t1, r1]]))[0];
+  assert.equal(row.paidIn, '0.4'); assert.equal(row.refunded, '0.3976'); assert.equal(row.out, '1');
+  const bare = C.ledgerRows([], aur, mv.merchant)[0]; assert.equal(bare.paidIn, null); assert.equal(bare.out, null);
+  // A record before any deposit has no paid amount.
+  const pending = structuredClone(mv.status[t1]); pending.swapDetails.depositedAmountFormatted = '0'; pending.swapDetails.refundedAmountFormatted = '0';
+  const rp = C.recordAmounts(pending, t1, mv.merchant); assert.equal(rp.paid, null); assert.equal(rp.refunded, null);
+  pending.swapDetails.depositedAmountFormatted = '<b>1</b>'; assert.equal(C.recordAmounts(pending, t1, mv.merchant).paid, null);
 });

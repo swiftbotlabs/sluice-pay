@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://intents-api.aurora.dev https://intents-connect-api.aurora.dev https://1click.chaindefuser.com https://solana-mainnet.gateway.tatum.io https://solana.leorpc.com https://public.rpc.solanavibestation.com https://api.mainnet-beta.solana.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://intents-api.aurora.dev https://intents-connect-api.aurora.dev https://1click.chaindefuser.com https://solana-rpc.web.helium.io https://solana-mainnet.gateway.tatum.io https://solana.leorpc.com https://public.rpc.solanavibestation.com; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#0c6b63">
 <title>Sluice Pay</title>
@@ -218,6 +218,7 @@
         <div class="stat"><span class="muted">In Kamino</span><b id="m-earn">…</b><small class="muted" id="m-earn-sub">cUSDC position</small></div>
         <div class="stat"><span class="muted">Received, 14 days</span><b id="m-14">…</b><small class="muted" id="m-14-sub">verified on Solana</small></div>
       </div>
+      <p id="m-partial" class="badge warn" role="status"></p>
       <h2>USDC received per day</h2>
       <p class="muted hint">Last 14 days, your local time. Only credits read from Solana count. Hover or tap a day.</p>
       <div id="m-chart" class="chart" role="group" aria-label="USDC received per day, last 14 days"></div>

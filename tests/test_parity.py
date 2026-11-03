@@ -4,12 +4,20 @@ import os
 import subprocess
 import unittest
 
+from sluice import aurora as au
 from sluice import connect as cn
 from sluice import receipts
 from sluice import solana as sol
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FX = json.load(open(os.path.join(HERE, "fixture_connect_payload_earn.json")))
+MV = json.load(open(os.path.join(HERE, "fixture_merchant_view.json")))  # real mainnet reads for the demo merchant, 2026-11-03
+NODE_MV = """
+const C=require(process.argv[1]);const fx=JSON.parse(require('fs').readFileSync(process.argv[2]));
+const paid={};for(const[k,s]of Object.entries(fx.status)){const r=C.recordAmounts(s,k,fx.merchant);paid[k]=r?r.paid:null;}
+const credits={};for(const[sig,tx]of Object.entries(fx.txs)){const c=C.merchantCredit(tx,fx.merchant,fx.cusdcAta,sig);credits[sig]=c&&c.kind==='usdc'?c.usdc.toString():null;}
+console.log(JSON.stringify({paid,credits}));
+"""
 NODE = """
 const C=require(process.argv[1]);(async()=>{const a=JSON.parse(process.argv[2]);
 const s=await C.earnSteps({intermediary:a.i,merchant:a.m,orderId:a.o,price:a.p,createAta:a.c});
@@ -139,6 +147,32 @@ class ParityTests(unittest.TestCase):
             self.assertEqual(sol.ata(FX["merchant"]), js["usdc"])
             self.assertEqual(sol.ata(FX["merchant"], cn.KLEND_CUSDC_MINT), js["cusdc"])
             self.assertEqual(cn.derive_intermediary("0x" + "ab" * 20), js["inter"])
+
+    def test_merchant_view_amounts_match_the_python_rail(self):
+        """The merchant view's numbers must be the ones the server would use: what the customer sent is the record's
+        deposited amount (never the swapped amountIn), and every USDC credit is the same token delta the server verifies."""
+        core = os.path.abspath(os.path.join(HERE, "..", "docs", "core.js"))
+        out = subprocess.run(["node", "-e", NODE_MV, "--", core, os.path.join(HERE, "fixture_merchant_view.json")],
+                             capture_output=True, text=True, timeout=30, check=True).stdout
+        js = json.loads(out)
+        self.assertEqual(sol.ata(MV["merchant"]), MV["usdcAta"])
+        self.assertEqual(sol.ata(MV["merchant"], cn.KLEND_CUSDC_MINT), MV["cusdcAta"])
+        self.assertEqual(len(MV["status"]), 5)
+        for dep, s in MV["status"].items():
+            py = au.summarize_status(s)
+            self.assertEqual(js["paid"][dep], py["depositedAmount"], dep)
+            self.assertNotEqual(js["paid"][dep], py["amountIn"], dep)
+        self.assertEqual(js["paid"]["0x3ceB7E53E2127be1Ae70477AB53aE8e2955c34ba"], "0.161563")
+        total = 0
+        for sig, tx in MV["txs"].items():
+            d = sol.token_delta(tx, MV["merchant"])
+            want = js["credits"][sig]
+            if want is None:
+                self.assertLessEqual(d, 0, sig)  # the Kamino deposit: USDC went to the reserve, not to the merchant
+            else:
+                self.assertEqual(int(want), d, sig)
+                total += d
+        self.assertEqual(total, 2_300_000)  # 8 credits = the merchant's USDC balance after the newest one
 
 
 if __name__ == "__main__":

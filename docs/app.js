@@ -13,8 +13,11 @@
   const ONECLICK = 'https://1click.chaindefuser.com/v0'; // NEAR Intents' public API: an independent second opinion on Aurora's answers
   const API_KEY = '53042395-08f3-4382-a78e-b2208d0397c1'; // public integrator key for this page only; the server uses its own key
   // Keyless public RPCs with CORS. Each serves a different subset of methods, so calls are routed and fall through.
-  const RPC = { tatum: 'https://solana-mainnet.gateway.tatum.io', leo: 'https://solana.leorpc.com/?api_key=FREE', vibe: 'https://public.rpc.solanavibestation.com', main: 'https://api.mainnet-beta.solana.com' };
-  const RPC_ORDER = { getSignaturesForAddress: [RPC.leo, RPC.vibe, RPC.main], default: [RPC.tatum, RPC.vibe, RPC.leo, RPC.main] };
+  // Checked from a browser origin on 2026-11-03: Helium's node returns full signature history; leo and vibe keep only recent
+  // history and can answer with a short list and no error (so the merchant view proves completeness, see core.readHistory);
+  // tatum refuses getSignaturesForAddress without a key and allows 5 calls a minute; api.mainnet-beta answers browsers 403.
+  const RPC = { helium: 'https://solana-rpc.web.helium.io', tatum: 'https://solana-mainnet.gateway.tatum.io', leo: 'https://solana.leorpc.com/?api_key=FREE', vibe: 'https://public.rpc.solanavibestation.com' };
+  const RPC_ORDER = { getSignaturesForAddress: [RPC.helium, RPC.leo, RPC.vibe], getTransaction: [RPC.helium, RPC.tatum, RPC.vibe, RPC.leo], default: [RPC.tatum, RPC.helium, RPC.vibe, RPC.leo] };
   const DEMO_LINK = 'p=eyJhbXQiOiIwLjUwIiwiZXhwIjoxODAwMDEzMzY3LCJrIjoiOWNZRnpybUhSY3NZekxoQVdzTmVtekN5NzVaaEVUbjJweDRNUzhvRERSZVIiLCJyZWYiOiJkZW1vLWludm9pY2UtMTA0MiIsInMiOiJlYXJuIiwidG8iOiI5Y1lGenJtSFJjc1l6TGhBV3NOZW16Q3k3NVpoRVRuMnB4NE1TOG9ERFJlUiIsInYiOjF9.XDSG4A7YmbS97B2hAIbGSnT3aJ3sOlasUS3qWgHLkXP8qTCp9P3Iqp71OrojPLT19vcn39eOTFU0IcZZ6b3PCQ';
   const EARN_TX = '558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv'; // the first live settle-to-earn run
   const MERCHANT_DEMO = '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR';
@@ -71,16 +74,22 @@
     if (!r.ok) { const e = new Error(j.message || j.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
     return j.result !== undefined ? j.result : j;
   }
+  /** One call to one endpoint. Anything but a JSON-RPC result is an error, never an empty answer. */
+  async function rpcAt(u, method, params) {
+    const r = await fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(7000) });
+    if (r.status === 429) throw new Error('RPC busy');
+    const j = await r.json();
+    if (j && j.error) throw new Error(String(j.error.message || 'RPC error'));
+    if (!r.ok || !j || !('result' in j)) throw new Error(`RPC HTTP ${r.status}`);
+    return j.result;
+  }
   async function rpc(method, params) {
     let last; let sawNull = false;
     for (const u of RPC_ORDER[method] || RPC_ORDER.default) {
       try {
-        const r = await fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(7000) });
-        if (r.status === 429) throw new Error('RPC busy');
-        const j = await r.json();
-        if (j.error) throw new Error(j.error.message);
-        if (j.result === null && method === 'getTransaction') { sawNull = true; continue; } // node may lag: ask the next one
-        return j.result;
+        const res = await rpcAt(u, method, params);
+        if (res === null && method === 'getTransaction') { sawNull = true; continue; } // node may lag: ask the next one
+        return res;
       } catch (e) { last = e; }
     }
     if (sawNull) return null;
@@ -1094,7 +1103,13 @@
       rows.replaceChildren();
       if (raw !== null) rows.append(row('Invoice', `${pretty(raw)} USDC on Solana`));
       if (C.isSolAddr(qr.recipient)) rows.append(row('Merchant', Object.assign(document.createElement('a'), { href: `#m=${qr.recipient}`, textContent: short(qr.recipient) })));
-      if (org) rows.append(row('Paid with', `${d.depositedAmountFormatted || qq.amountInFormatted || ''} ${org.sym} on ${org.net}`));
+      // "Paid with" is what reached the deposit address; before a deposit there is only the quoted amount to send.
+      const ra = C.recordAmounts(s, dep, qr.recipient);
+      if (org) {
+        if (ra && ra.paid) rows.append(row('Paid with', `${ra.paid} ${org.sym} on ${org.net}`));
+        else if (s.status === 'PENDING_DEPOSIT' && qq.amountInFormatted) rows.append(row('Amount to send', `${qq.amountInFormatted} ${org.sym} on ${org.net}`));
+        else rows.append(row('Paid with', `${org.sym} on ${org.net}`)); // a confidential record shows no amounts: none is guessed
+      }
       if (hashes[0]) rows.append(row('Deposit', txLink(org ? org.chain : '', hashes[0])));
       if (d.refundedAmountFormatted && d.refundedAmountFormatted !== '0') rows.append(row('Refunded', `${d.refundedAmountFormatted} ${org ? org.sym : ''}${d.refundReason ? ` (${humanize(d.refundReason)})` : ''}`));
       if (hashes[1]) rows.append(row('Refund tx', txLink(org ? org.chain : '', hashes[1])));
@@ -1143,7 +1158,9 @@
     tag.className = 'tag ' + st[0]; tag.textContent = st[1];
     top.append(amt, tag);
     const org = r.origin ? tokenName(r.origin) : null;
-    const from = org ? `paid with ${r.paidIn ? r.paidIn + ' ' : ''}${org.sym} on ${org.net}` : r.kind === 'earn' ? `${fromUnits(r.shares, 6)} cUSDC to your account` : r.kind === 'usdc' ? 'USDC received' : '';
+    // The amount the customer sent comes from this payment's record (what reached the deposit address), never from a list total.
+    const back = r.refunded && org ? `, ${r.refunded} ${org.sym} refunded` : '';
+    const from = org ? `paid with ${r.paidIn ? r.paidIn + ' ' : ''}${org.sym} on ${org.net}${back}` : r.kind === 'earn' ? `${fromUnits(r.shares, 6)} cUSDC to your account` : r.kind === 'usdc' ? 'USDC received' : '';
     const sub = document.createElement('div'); sub.className = 'muted lsub'; sub.textContent = [from, when(r.at)].filter(Boolean).join(' · ');
     const links = document.createElement('div'); links.className = 'links';
     if (r.sig) { const s = document.createElement('span'); s.append('Solana: ', txLink('sol', r.sig)); links.append(s); }
@@ -1156,7 +1173,7 @@
     box.replaceChildren(...rows.map(ledgerRow));
   }
   /** Single-series column chart: one baseline, one hue, a hover or tap readout per day, the busiest day labelled. */
-  function paintChart(days) {
+  function paintChart(days, partial) {
     const box = $('m-chart'); const max = days.reduce((m, d) => (d.usdc > m ? d.usdc : m), 0n);
     const today = days[days.length - 1].day;
     const plot = document.createElement('div'); plot.className = 'plot';
@@ -1178,15 +1195,23 @@
     const axis = document.createElement('div'); axis.className = 'axis';
     for (const k of [days[0].day, days[Math.floor(days.length / 2)].day, today]) axis.append(Object.assign(document.createElement('span'), { textContent: dayName(k, today) }));
     const nodes = [plot, axis, tip];
-    if (max === 0n) nodes.push(Object.assign(document.createElement('p'), { className: 'empty muted', textContent: 'No verified payments in the last 14 days yet.' }));
+    if (max === 0n) nodes.push(Object.assign(document.createElement('p'), { className: 'empty muted', textContent: partial ? 'No verified payments in the history Solana returned.' : 'No verified payments in the last 14 days yet.' }));
     box.replaceChildren(...nodes);
   }
   function paintMerchant(addr, st, mine) {
-    const rows = C.ledgerRows(st.credits, st.aurora, addr);
+    const rows = C.ledgerRows(st.credits, st.aurora, addr, st.records);
     const days = C.dailyTotals(rows, { days: 14, tzOffsetMin: new Date().getTimezoneOffset() });
     const sum = days.reduce((s, d) => s + d.usdc, 0n); const cnt = days.reduce((s, d) => s + d.count, 0);
-    text($('m-14'), st.done || cnt ? `${pretty(sum)} USDC` : '…');
-    text($('m-14-sub'), `${cnt} payment${cnt === 1 ? '' : 's'}, verified on Solana`);
+    // A total is only called complete when the history behind it is proven complete (core.readHistory); otherwise it says so.
+    const partial = st.done && (st.partial || st.solError || st.unread > 0);
+    text($('m-14'), st.done || cnt ? `${partial ? 'at least ' : ''}${pretty(sum)} USDC` : '…');
+    text($('m-14-sub'), `${cnt} payment${cnt === 1 ? '' : 's'}, verified on Solana${partial ? ' · history incomplete' : ''}`);
+    const since = st.from ? new Date(st.from * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' }) : null;
+    const hist = st.capped ? 'More than 200 transactions in 14 days: only the newest are read, so older payments may be missing from the total.'
+      : st.partial ? `Solana's public nodes returned history only ${since ? `back to ${since}` : 'for recent days'} just now, so older payments may be missing from the total. Reload to try again.`
+        : 'The history is complete for the last 14 days: it reaches back past them, or to the transaction that opened each account.';
+    text($('m-partial'), !partial ? '' : st.solError ? 'Solana could not be read just now, so no total is shown as complete. Reload to try again.'
+      : st.partial ? hist : `${st.unread} transaction${st.unread === 1 ? '' : 's'} could not be read just now, so the total may be higher. Reload to try again.`);
     if (st.shares === 'error') { text($('m-earn'), 'unavailable'); text($('m-shares'), 'unavailable'); } else if (st.shares !== null) {
       const v = C.earnValue(st.shares, rows); const has = st.shares > 0n;
       text($('m-earn'), `${has ? fromUnits(st.shares, 6) : '0'} cUSDC`); text($('m-shares'), `${has ? fromUnits(st.shares, 6) : '0'} cUSDC`);
@@ -1194,7 +1219,7 @@
       text($('m-worth'), v ? `${pretty(v.usdc)} USDC` : has ? (st.done ? 'not in view' : '…') : '0.00 USDC');
       text($('m-worth-sub'), v ? `at the rate of your deposit on ${when(v.at)}` : has && st.done ? 'no deposit found in the latest transactions' : 'USDC');
     }
-    paintChart(days);
+    paintChart(days, partial);
     const dust = rows.filter((r) => r.dust).length;
     const pays = rows.filter((r) => !r.dust && (r.kind !== 'earn' || r.verified));
     const wait = st.done ? 'No payments found yet.' : 'Reading Solana…';
@@ -1203,8 +1228,8 @@
     paintList($('m-earn-rows'), rows.filter((r) => r.kind === 'earn' && !r.dust), st.done ? 'No deposits into Kamino yet. Choose "Put it to work" when you make a link.' : 'Reading Solana…');
     if (st.done) {
       const how = st.solError ? 'Solana could not be read just now, so only what Aurora reports is listed, marked as not checked. Reload to try again.'
-        : `Every amount is read from Solana: the latest ${st.scanned} transactions to your USDC and cUSDC accounts, so any USDC sent to this wallet shows, not only payments through Sluice.${st.unread ? ` ${st.unread} of them could not be read just now and are not shown; reload to try again.` : ''}${dust ? ` ${dust} transfer${dust === 1 ? '' : 's'} under 0.01 USDC ${dust === 1 ? 'is' : 'are'} left out of the list and the totals.` : ''}${st.partial ? ' Older history could not be read from Solana just now, so the 14-day total may be incomplete.' : ''}`;
-      text($('m-scan-note'), `${how} Where this checkout routed a payment, Aurora adds what the customer paid with and a record you can share.${st.auroraError ? ' Aurora\'s history could not be read just now.' : ''}`);
+        : `Every amount is read from Solana: ${st.scanned} transaction${st.scanned === 1 ? '' : 's'} to your USDC and cUSDC accounts, each checked on its own, so any USDC sent to this wallet shows, not only payments through Sluice. ${hist}${st.unread ? ` ${st.unread} of them could not be read just now and are not shown; reload to try again.` : ''}${dust ? ` ${dust} transfer${dust === 1 ? '' : 's'} under 0.01 USDC ${dust === 1 ? 'is' : 'are'} left out of the list and the totals.` : ''}`;
+      text($('m-scan-note'), `${how} Where this checkout routed a payment, its record adds what the customer sent (the amount that reached the deposit address) and a link you can share.${st.auroraError ? ' Aurora\'s history could not be read just now.' : ''}`);
     }
     if (mine) {
       const paid = rows.some((r) => r.verified && !r.dust); if (paid) flag(addr, 'paid');
@@ -1240,39 +1265,46 @@
     $('m-perm').href = `#${pq}`; $('m-sol').href = `https://solscan.io/account/${addr}`;
     $('m-welcome-x').onclick = () => { flag(addr, 'hideWelcome'); show($('m-welcome'), false); };
     merchantTabs();
-    const st = { credits: [], aurora: [], shares: null, done: false, scanned: 0 };
+    const st = { credits: [], aurora: [], records: new Map(), shares: null, done: false, scanned: 0 };
     const paint = () => paintMerchant(addr, st, mine);
     paint();
     const [usdcAcct, cusdcAcct] = await Promise.all([C.ata(addr), C.ata(addr, KLEND.cusdc)]);
-    accountAmount(usdcAcct).then((v) => text($('m-usdc'), `${pretty(v === null ? 0n : v)} USDC`), () => text($('m-usdc'), 'unavailable'));
-    accountAmount(cusdcAcct).then((v) => { st.shares = v === null ? 0n : v; paint(); }, () => { st.shares = 'error'; paint(); });
+    const usdcBal = accountAmount(usdcAcct); const cusdcBal = accountAmount(cusdcAcct);
+    usdcBal.then((v) => text($('m-usdc'), `${pretty(v === null ? 0n : v)} USDC`), () => text($('m-usdc'), 'unavailable'));
+    cusdcBal.then((v) => { st.shares = v === null ? 0n : v; paint(); }, () => { st.shares = 'error'; paint(); });
     loadTokens().then(paint, () => {});
+    // Aurora's list says which Solana transactions it routed. What the customer sent is read from each payment's own record
+    // (the #s= page's source), one at a time, newest first.
+    const records = async () => {
+      const want = st.aurora.filter((x) => x && x.recipient === addr && C.isDepositAddr(x.depositAddress) && x.status && x.status !== 'PENDING_DEPOSIT').slice(0, 12);
+      for (const x of want) {
+        const s = await swapStatus(x.depositAddress).catch(() => null);
+        const v = C.recordAmounts(s, x.depositAddress, addr);
+        if (v) { st.records.set(x.depositAddress, v); paint(); }
+      }
+    };
     fetch(`${AURORA}/api/transactions/${API_KEY}?walletAddress=${encodeURIComponent(addr)}&numberOfTransactions=25`, { signal: AbortSignal.timeout(12000) })
-      .then((x) => x.json()).then((r) => { st.aurora = (Array.isArray(r) ? r : r.data || r.transactions || []).slice(0, 25); paint(); }, () => { st.auroraError = true; paint(); });
-    // Both token accounts, newest first. Each transaction is read and checked on its own, and shown as soon as it is.
-    const sigs = async (acct, limit, before) => {
-      for (let i = 0; ; i++) {
-        try { return (await rpc('getSignaturesForAddress', [acct, before ? { limit, before, commitment: 'confirmed' } : { limit, commitment: 'confirmed' }])) || []; } catch (e) { if (i >= 2) throw e; await sleep(2500 * (i + 1)); }
-      }
-    };
-    // The newest page, then older pages until 14 days are covered, so a burst of dust cannot push real payments out of view.
+      .then((x) => x.json()).then((r) => { st.aurora = (Array.isArray(r) ? r : r.data || r.transactions || []).slice(0, 25); paint(); return records(); }, () => { st.auroraError = true; paint(); })
+      .catch(() => {}); // a record that cannot be read only leaves its amount out
+    // Both token accounts, newest first, read until 14 days are covered so a burst of dust cannot push real payments out of view.
+    // A public node that keeps only recent history answers with a short list and no error, so the list must prove it is
+    // complete (core.readHistory), and the next endpoint is asked when it cannot. Each transaction is read once and shown as soon as it is checked.
     const cutoff = Math.floor(Date.now() / 1000) - 14 * 86400;
-    const history = async (acct, first, cap) => {
-      const out = await sigs(acct, first);
-      // Only when the newest page is full can older payments exist; an older page that fails is reported, never fatal.
-      while (out.length >= first && out.length < cap && (out[out.length - 1].blockTime || 0) >= cutoff) {
-        let page;
-        try { page = await rpc('getSignaturesForAddress', [acct, { limit: 50, before: out[out.length - 1].signature, commitment: 'confirmed' }]); } catch { st.partial = true; break; }
-        if (!page || !page.length) break;
-        out.push(...page);
-        if (page.length < 50) break;
-      }
-      return out;
+    const txs = new Map();
+    const getTxOnce = (sig) => {
+      if (!txs.has(sig)) txs.set(sig, getTx(sig).then((tx) => { if (!tx) txs.delete(sig); return tx; }, (e) => { txs.delete(sig); throw e; }));
+      return txs.get(sig);
     };
+    const callRetry = async (u, method, params) => { try { return await rpcAt(u, method, params); } catch { await sleep(1500); return rpcAt(u, method, params); } };
+    const exists = (p) => p.then((v) => v !== null, () => undefined);
+    const history = async (acct, cap, bal) => C.readHistory({ urls: RPC_ORDER.getSignaturesForAddress, account: acct, cutoff, cap, page: 100, call: callRetry, getTx: getTxOnce, accountExists: () => exists(bal) });
     try {
-      const [a, b] = await Promise.all([history(usdcAcct, 25, 200), history(cusdcAcct, 10, 60)]);
+      const [a, b] = await Promise.all([history(usdcAcct, 200, usdcBal), history(cusdcAcct, 100, cusdcBal)]);
+      st.partial = !a.complete || !b.complete; st.capped = a.reason === 'cap' || b.reason === 'cap';
+      st.from = [a, b].filter((h) => !h.complete && h.from).reduce((m, h) => (m === null || h.from < m ? h.from : m), null);
+      if (!a.sigs.length && !b.sigs.length && [...a.tried, ...b.tried].every((t) => t.error)) throw new Error('no Solana endpoint answered');
       const seen = new Set();
-      const all = [...a, ...b].filter((s) => !s.err && safeHash(s.signature) && !seen.has(s.signature) && seen.add(s.signature))
+      const all = [...a.sigs, ...b.sigs].filter((s) => !s.err && safeHash(s.signature) && !seen.has(s.signature) && seen.add(s.signature))
         .sort((x, y) => (y.blockTime || 0) - (x.blockTime || 0));
       const list = all.filter((s, i) => i < 30 || (s.blockTime || 0) >= cutoff).slice(0, 200);
       st.scanned = list.length;
@@ -1282,7 +1314,7 @@
         if (pass) await sleep(2500 * pass);
         const failed = [];
         for (const sig of todo) {
-          const tx = await getTx(sig).catch(() => undefined);
+          const tx = await getTxOnce(sig).catch(() => undefined);
           if (tx === undefined || tx === null) { failed.push(sig); continue; }
           const c = C.merchantCredit(tx, addr, cusdcAcct, sig);
           if (c) { st.credits.push(c); paint(); }
