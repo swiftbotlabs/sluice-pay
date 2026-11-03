@@ -103,7 +103,10 @@ class LinkTests(unittest.TestCase):
 
 NAMES = ["  Café   Lumière  ", "Tienda de Ana & Co.", "दुकान", "Cafe\u0301", "", "   ", "...", "a" * 40, "a" * 41,
          "Shop\u202egnp.exe", "Sh\u200bop", "Shop<script>", 'Shop "x"', "Shop\u00a0Two", "Shop \U0001f642", "Line\u2028Two",
-         "Tab\tand\nnewline", "O'Brien (Ltd)!", "under_score-dash", "\ufeffBOM", "東京ラーメン", "مقهى"]
+         "Tab\tand\nnewline", "O'Brien (Ltd)!", "under_score-dash", "\ufeffBOM", "東京ラーメン", "مقهى",
+         "9cYFzr...DDReR", "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2", "0x12ab Shop", "Restaurant Lumière", "Lumière2024Shop", "AbCdEfGhIjKl",
+         "a\u0301\u0301\u0301", "a\u0301\u0301", "a\u20dd", "\u3164", "Shop\ufe0f", "A\u034fB", "\u115fShop", "Shop\uffa0",
+         "Shop\u180b", "Verified - signed by receiving wallet"]
 NODE_NAMES = """
 const C=require(process.argv[1]);const a=JSON.parse(process.argv[2]);
 console.log(JSON.stringify({names:a.names.map(C.cleanName),msg:C.linkMessage(a.link)}));

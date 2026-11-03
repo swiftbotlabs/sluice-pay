@@ -45,23 +45,30 @@ Sluice moves real money, so the design assumes every input is hostile and every 
   and are re-checked with the public record before they are shown. An order that cannot be re-checked is not resumed, and the page warns
   the payer not to pay twice. Expired addresses are not shown as payable. The page guards against a double click on its own send
   button; it cannot stop a payer sending again from another wallet.
-- **A merchant's name is bounded display text.** Names are NFC-normalised, at most 40 characters, letters, marks and digits of any
-  script plus single spaces and `. , ' & ( ) ! _ -`. Control, zero-width, bidi and other invisible characters are refused (the
-  Python CLI applies the same rule; a parity test runs both). On a signed link the name sits inside the signed bytes, so changing it
-  breaks the signature. On an unsigned link or a permanent pay page it is shown with a warning that anyone could have changed it. The
-  full address is always shown under the name, and a name never replaces the address check.
+- **A merchant's name is bounded display text, and always labelled as unverified.** Names are NFC-normalised, at most 40
+  characters, letters, marks and digits of any script plus single spaces and `. , ' & ( ) ! _ -`. Control, zero-width, bidi and other
+  default-ignorable characters, enclosing marks and runs of three or more marks are refused, and so is anything that could pass for an
+  address: `..`, a word starting `0x`, or a word of 12 or more characters with a digit or three capitals. The Python CLI applies the
+  same rule and a parity test runs both. On a signed link the name sits inside the signed bytes, so changing it breaks the signature,
+  but a signature only proves which wallet made the link: anyone can sign their own link with any name. So every page that shows a name
+  marks it "name not verified", clips it to one line, and shows the full address under it. A name never replaces the address check.
 - **The payout address is checked before a link exists.** The first-run form refuses 0x addresses, token mints, token accounts,
-  programs and known Kamino accounts, reading the account from Solana. Anything that looks like a recovery phrase or a private key
-  is cleared from the field at once and never stored. Addresses with no private key (for example multisig vaults) are allowed with a
-  warning.
+  programs and known Kamino accounts, reading the account from Solana. Anything that looks like a recovery phrase (any case, numbered
+  or not, 8 words or more) or a private key is cleared from the field at once and never stored. Addresses with no private key (for
+  example multisig vaults) are allowed with a warning. An address filled in from this device's storage must be confirmed with a tick
+  before it is used again.
 - **The merchant view counts only what Solana shows.** Every amount in it comes from a transaction read from Solana: a USDC credit
   to the merchant, or a Kamino deposit that names the merchant's own cUSDC account. The merchant moving its own USDC into Kamino, and
   withdrawals from it, are not counted. Aurora's history only adds what the customer paid with and a record link, and payments it
-  lists that Solana does not show yet are marked as not checked. Any USDC sent to the merchant appears, not only Sluice payments, and
-  the page says so. The Kamino value shown is a floor: the USDC-per-cUSDC rate of the newest deposit seen on Solana.
+  lists that Solana does not show yet are marked as not checked, and its amount fields are shown only if they are plain numbers. Any
+  USDC sent to the merchant appears, not only Sluice payments, and the page says so. Credits under 0.01 USDC are left out of the list
+  and the totals, and the view pages back through the last 14 days (up to 200 transactions), so a burst of dust cannot push real
+  payments out of view. A Kamino deposit row counts only the deposit instructions that name the merchant's cUSDC account, never
+  anything else the same transaction put into Kamino. The Kamino value shown is a floor: balance x supplied / (shares + 1) for the
+  newest non-dust deposit seen on Solana.
 - **What stays on the device.** The first-run form keeps the merchant's name, address, settlement choice, the links made and checklist
-  ticks in this browser's localStorage, and nothing else. Stored values are re-validated when read. "Forget my details on this device"
-  removes them.
+  ticks in this browser's localStorage, and nothing else. Stored values are re-validated when read: a stored link is shown only if the
+  link itself pays the stored address. "Forget my details on this device" removes them.
 - **Private payments stay private in our records.** For confidential orders the order view and the receipt omit the
   payer's refund address, source-chain tx and deposit address.
 
@@ -105,6 +112,9 @@ Sluice moves real money, so the design assumes every input is hostile and every 
   rather than continuing, until the pin is updated.
 - A signed pay link proves who signed it, not that this is the merchant you meant to pay: compare the address with the merchant.
 - Unsigned links can be edited by anyone, and the page says so.
+- The live checkout shares its web origin with other static apps from the same maker, so they share one localStorage. A script bug in
+  any of them could rewrite the merchant's saved address; that is why a saved address needs a fresh confirmation. A separate origin for
+  the checkout would remove this.
 - Kamino is a third-party protocol. Settling into it carries smart-contract and liquidity risk until the merchant redeems.
 - The checkout page trusts the browser's WebCrypto Ed25519 to verify signed links; older browsers show the link as
   "cannot verify" instead of "signed".

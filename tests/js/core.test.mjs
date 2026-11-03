@@ -254,9 +254,9 @@ const usdcTx = JSON.parse(readFileSync(new URL('../fixture_tx_usdc.json', import
 test('names: any script, a little punctuation, nothing invisible', () => {
   assert.equal(C.cleanName('  Café   Lumière  '), 'Café Lumière');
   assert.equal(C.cleanName('Tienda de Ana & Co.'), 'Tienda de Ana & Co.');
-  assert.equal(C.cleanName('दुकान'), 'दुकान');
-  assert.equal(C.cleanName('Café'), 'Café'); // NFC
-  for (const bad of ['', '   ', '...', 'a'.repeat(41), 'Shop‮gnp.exe', 'Sh​op', 'Shop<script>', 'Shop "x"', 'Shop Two', 'Shop 🙂', 'Line Two', null, 42]) {
+  assert.equal(C.cleanName('द\u0941क\u093Eन'), 'द\u0941क\u093Eन');
+  assert.equal(C.cleanName('Cafe\u0301'), 'Café'); // NFC
+  for (const bad of ['', '   ', '...', 'a'.repeat(41), 'Shop\u202Egnp.exe', 'Sh\u200Bop', 'Shop<script>', 'Shop "x"', 'Shop\u00A0Two', 'Shop 🙂', 'Line\u2028Two', null, 42]) {
     assert.equal(C.cleanName(bad), null, JSON.stringify(bad));
   }
   assert.equal(C.cleanName('a'.repeat(40)), 'a'.repeat(40));
@@ -302,7 +302,7 @@ test('link input is validated and normalised', () => {
   assert.throws(() => C.linkInput({ to: 'x', amt: '1' }), /Solana address/);
   for (const amt of ['0.14', '1.1234567', '-1', '1e3', '', '1,2,3', '1.5.5']) assert.throws(() => C.linkInput({ to: MERCHANT, amt }), /Amount/, amt);
   assert.throws(() => C.linkInput({ to: MERCHANT, amt: '1', ref: 'a b' }), /Reference/);
-  assert.throws(() => C.linkInput({ to: MERCHANT, amt: '1', name: 'Sh​op' }), /Name/);
+  assert.throws(() => C.linkInput({ to: MERCHANT, amt: '1', name: 'Sh\u200Bop' }), /Name/);
 });
 test('the signed message has sorted keys, carries the name and settlement, and the checkout can read it back', () => {
   const now = Date.parse('2026-11-03T12:00:00Z');
@@ -316,7 +316,7 @@ test('the signed message has sorted keys, carries the name and settlement, and t
 test('permanent page link: address plus an optional unsigned name', () => {
   assert.deepEqual(C.permanentLink(`#a=${MERCHANT}`), { merchant: MERCHANT, name: null });
   assert.deepEqual(C.permanentLink(`#a=${MERCHANT}&n=${encodeURIComponent('Tienda Ana')}`), { merchant: MERCHANT, name: 'Tienda Ana' });
-  assert.equal(C.permanentLink(`#a=${MERCHANT}&n=${encodeURIComponent('x‮y')}`).name, null);
+  assert.equal(C.permanentLink(`#a=${MERCHANT}&n=${encodeURIComponent('x\u202Ey')}`).name, null);
 });
 test('merchant ledger reads real mainnet transactions: a Kamino deposit and a USDC credit', async () => {
   const dst = await C.ata(MERCHANT, C.KLEND.cusdc);
@@ -388,4 +388,36 @@ test('links remembered on this device: newest first, no duplicates, capped', () 
   l = C.rememberLink(l, { url: 'u5', again: true }, 8);
   assert.equal(l[0].again, true); assert.equal(l.filter((x) => x.url === 'u5').length, 1);
   assert.deepEqual(C.rememberLink('junk', { url: 'a' }), [{ url: 'a' }]);
+});
+
+// ---------- hardening after review ----------
+test('a name cannot pass for an address, and cannot draw over the page', () => {
+  for (const bad of ['9cYFzr...DDReR', '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2', '0x12ab Shop', 'Lumière2024Shop', 'AbCdEfGhIjKl',
+    'a\u0301\u0301\u0301\u0301', 'b\u0301\u0302\u0303', 'a\u20DD', '\u3164', 'Shop\uFE0F', 'A\u034FB', '\u115FShop', 'Shop\uFFA0', 'Shop\u180B', 'x' + '\u0301'.repeat(39)]) {
+    assert.equal(C.cleanName(bad), null, JSON.stringify(bad));
+  }
+  for (const ok of ['Restaurant Lumière', 'Café 24', "McDonald's", 'Shop no. 7', 'a\u0301\u0301']) assert.notEqual(C.cleanName(ok), null, ok);
+});
+test('recovery phrases are caught capitalised, numbered or long', () => {
+  const w = 'abandon ability able about above absent absorb abstract absurd abuse access accident'.split(' ');
+  assert.equal(C.looksSecret(w.map((x) => x[0].toUpperCase() + x.slice(1)).join(' ')), true);
+  assert.equal(C.looksSecret(w.map((x, i) => `${i + 1}. ${x}`).join(' ')), true);
+  assert.equal(C.looksSecret(w.map((x, i) => `${i + 1}.${x}`).join('\n')), true);
+  assert.equal(C.looksSecret([...w, ...w].join(' ')), true); // 24 words, over 200 characters
+  assert.equal(C.looksSecret(w.slice(0, 8).join(' ')), true);
+  assert.equal(C.looksSecret('pay me at my shop'), false);
+});
+test('dust never counts, Aurora text fields must be plain numbers, and the Kamino floor holds against a dust deposit', async () => {
+  const dst = await C.ata(MERCHANT, C.KLEND.cusdc);
+  const real = C.merchantCredit(earnTx.tx, MERCHANT, dst, earnTx.sig);
+  const dustEarn = { kind: 'earn', sig: 'd', at: real.at + 60, shares: 1n, supplied: 2n, ref: null };
+  const rows = C.ledgerRows([real, dustEarn, { kind: 'usdc', sig: 'u', at: real.at + 30, usdc: 1n }], [], MERCHANT);
+  assert.deepEqual(rows.map((r) => r.dust), [true, true, false]);
+  const v = C.earnValue(124074n, rows); assert.ok(v.usdc <= 150000n && v.usdc >= 149000n, String(v.usdc)); assert.equal(v.sig, earnTx.sig);
+  // only a dust deposit in view: still a floor, never above shares * rate
+  const only = C.earnValue(124074n, C.ledgerRows([dustEarn], [], MERCHANT)); assert.ok(only.usdc <= 124074n, String(only.usdc));
+  const days = C.dailyTotals(rows, { days: 30, now: (real.at + 3600) * 1000 });
+  assert.equal(days.reduce((s, d) => s + d.count, 0), 1);
+  const aur = [{ recipient: MERCHANT, depositAddress: '0x1111111111111111111111111111111111111111', status: 'REFUNDED', amountInFormatted: '<b>9</b>', amountOutFormatted: '1e9', originAsset: 'x', createdAt: '2026-10-30T00:00:00Z' }];
+  const r = C.ledgerRows([], aur, MERCHANT)[0]; assert.equal(r.paidIn, null); assert.equal(r.out, null);
 });

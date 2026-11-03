@@ -776,8 +776,17 @@
     const p = store.get(PROFILE, null);
     return p && C.isSolAddr(p.to) ? { to: p.to, name: C.cleanName(p.name || '') || '', settle: p.settle === 'earn' ? 'earn' : 'usdc' } : null;
   }
-  const myLinks = () => (store.get(LINKS, []) || []).filter((l) => l && typeof l.url === 'string' && l.url.startsWith(base() + '#'));
-  const flags = (addr) => store.get(FLAGS + addr, {}) || {};
+  /** Who a link pays, read from the link itself, so a stored entry cannot claim one address and carry another. */
+  function linkTarget(url) {
+    if (typeof url !== 'string' || !url.startsWith(base() + '#') || url.length > 2400) return null;
+    const h = url.slice(base().length + 1);
+    try {
+      if (h.startsWith('p=')) return JSON.parse(new TextDecoder().decode(unb64u(h.slice(2).split('.')[0]))).to;
+      const q = new URLSearchParams(h); return q.get('to') || q.get('a');
+    } catch { return null; }
+  }
+  const myLinks = () => { const l = store.get(LINKS, []); return (Array.isArray(l) ? l : []).filter((x) => x && typeof x === 'object' && C.isSolAddr(x.to) && linkTarget(x.url) === x.to); };
+  const flags = (addr) => { const f = store.get(FLAGS + addr, {}); return f && typeof f === 'object' && !Array.isArray(f) ? f : {}; };
   const flag = (addr, k) => { const f = flags(addr); if (!f[k]) { f[k] = Date.now(); store.set(FLAGS + addr, f); } };
   const phantom = () => (window.phantom && window.phantom.solana) || (window.solana && window.solana.isPhantom ? window.solana : null);
   /** The getting-started list, ticked from real events: a link made here, opened, shared, and a credit read from Solana. */
@@ -798,7 +807,7 @@
     }));
   }
 
-  const ob = { step: 1, name: '', to: '', check: C.payoutCheck('', undefined), settle: 'usdc', kind: 'fixed' };
+  const ob = { step: 1, name: '', to: '', check: C.payoutCheck('', undefined), settle: 'usdc', kind: 'fixed', stored: false };
   const STEPS = ['You', 'How you get paid', 'Your link'];
   let chkRun = 0; let chkTimer;
   function paintCheck(r) {
@@ -825,6 +834,7 @@
       if (!clean) return 'Your name: up to 40 letters, digits, spaces and . , \' & ( ) ! _ - only.';
       if (ob.check.level === 'pending') return 'Checking your address on Solana…';
       if (!ob.check.ok) return ob.check.level === 'empty' ? 'Add your Solana wallet address to continue.' : 'Fix the wallet address to continue.';
+      if (ob.stored && !$('o-confirm').checked) return 'Confirm the saved address is your own wallet to continue.';
       return '';
     }
     if (ob.step === 3 && ob.kind === 'fixed') {
@@ -846,6 +856,7 @@
     const ph = phantom(); const why = onbValid();
     const next = $('o-next'); next.disabled = !!why; text($('o-why'), why);
     text(next, ob.step === 1 ? 'Next: how you get paid' : ob.step === 2 ? 'Next: your link' : ob.kind === 'perm' ? 'Create my pay page' : ph ? 'Sign with Phantom' : 'Create my link');
+    show($('o-confirm-row'), ob.stored && ob.step === 1);
     show($('o-back'), ob.step > 1 && !done); show(document.querySelector('.onb-bar'), !done);
     const note = $('o-sign-note'); note.replaceChildren();
     if (ob.step === 3 && ob.kind === 'fixed') {
@@ -973,17 +984,18 @@
     window.scrollTo(0, 0); setTimeout(() => window.scrollTo(0, 0), 0); // the #start anchor would otherwise hide the header
     const me = profile();
     if (me) {
-      $('o-name').value = me.name; $('o-to').value = me.to;
+      $('o-name').value = me.name; $('o-to').value = me.to; ob.stored = true; $('o-confirm').checked = false;
       document.querySelector(`input[name=o-settle][value=${me.settle}]`).checked = true;
     }
     $('o-name').oninput = () => { syncOnb(); };
-    $('o-to').oninput = () => { clearTimeout(chkTimer); ob.to = ''; ob.check = C.payoutCheck($('o-to').value, undefined); if (ob.check.level === 'secret') return checkPayout(); paintCheck(ob.check.level === 'pending' ? { level: 'pending', msg: '' } : ob.check); syncOnb(); chkTimer = setTimeout(checkPayout, 350); return undefined; };
+    $('o-confirm').onchange = syncOnb;
+    $('o-to').oninput = () => { ob.stored = false; clearTimeout(chkTimer); ob.to = ''; ob.check = C.payoutCheck($('o-to').value, undefined); if (ob.check.level === 'secret') return checkPayout(); paintCheck(ob.check.level === 'pending' ? { level: 'pending', msg: '' } : ob.check); syncOnb(); chkTimer = setTimeout(checkPayout, 350); return undefined; };
     $('o-paste').onclick = async () => {
-      try { const t = (await navigator.clipboard.readText()).trim().slice(0, 200); if (C.looksSecret(t)) { $('o-to').value = ''; paintCheck(C.payoutCheck(t, undefined)); return; } $('o-to').value = t; checkPayout(); } catch { $('o-to').focus(); text($('o-to-check'), 'Press and hold in the field, then Paste.'); }
+      try { const t = (await navigator.clipboard.readText()).trim(); if (C.looksSecret(t)) { $('o-to').value = ''; paintCheck(C.payoutCheck(t, undefined)); return; } ob.stored = false; $('o-to').value = t.slice(0, 200); checkPayout(); } catch { $('o-to').focus(); text($('o-to-check'), 'Press and hold in the field, then Paste.'); }
     };
     const ph = phantom();
     show($('o-phantom'), !!ph);
-    $('o-phantom').onclick = async () => { try { const { publicKey } = await ph.connect(); $('o-to').value = publicKey.toString(); checkPayout(); } catch { /* declined */ } };
+    $('o-phantom').onclick = async () => { try { const { publicKey } = await ph.connect(); ob.stored = false; $('o-to').value = publicKey.toString(); checkPayout(); } catch { /* declined */ } };
     for (const b of document.querySelectorAll('#o-help [role=tab]')) {
       b.onclick = () => {
         for (const x of document.querySelectorAll('#o-help [role=tab]')) x.setAttribute('aria-selected', String(x === b));
@@ -1184,18 +1196,19 @@
       text($('m-worth-sub'), v ? `at the rate of your deposit on ${when(v.at)}` : has && st.done ? 'no deposit found in the latest transactions' : 'USDC');
     }
     paintChart(days);
-    const pays = rows.filter((r) => r.kind !== 'earn' || r.verified);
+    const dust = rows.filter((r) => r.dust).length;
+    const pays = rows.filter((r) => !r.dust && (r.kind !== 'earn' || r.verified));
     const wait = st.done ? 'No payments found yet.' : 'Reading Solana…';
     paintList($('m-latest'), pays.slice(0, 3), wait);
     paintList($('m-rows'), pays, wait);
-    paintList($('m-earn-rows'), rows.filter((r) => r.kind === 'earn'), st.done ? 'No deposits into Kamino yet. Choose "Put it to work" when you make a link.' : 'Reading Solana…');
+    paintList($('m-earn-rows'), rows.filter((r) => r.kind === 'earn' && !r.dust), st.done ? 'No deposits into Kamino yet. Choose "Put it to work" when you make a link.' : 'Reading Solana…');
     if (st.done) {
       const how = st.solError ? 'Solana could not be read just now, so only what Aurora reports is listed, marked as not checked. Reload to try again.'
-        : `Every amount is read from Solana: the latest ${st.scanned} transactions to your USDC and cUSDC accounts, so any USDC sent to this wallet shows, not only payments through Sluice.${st.unread ? ` ${st.unread} of them could not be read just now and are not shown; reload to try again.` : ''}`;
+        : `Every amount is read from Solana: the latest ${st.scanned} transactions to your USDC and cUSDC accounts, so any USDC sent to this wallet shows, not only payments through Sluice.${st.unread ? ` ${st.unread} of them could not be read just now and are not shown; reload to try again.` : ''}${dust ? ` ${dust} transfer${dust === 1 ? '' : 's'} under 0.01 USDC ${dust === 1 ? 'is' : 'are'} left out of the list and the totals.` : ''}${st.partial ? ' Older history could not be read from Solana just now, so the 14-day total may be incomplete.' : ''}`;
       text($('m-scan-note'), `${how} Where this checkout routed a payment, Aurora adds what the customer paid with and a record you can share.${st.auroraError ? ' Aurora\'s history could not be read just now.' : ''}`);
     }
     if (mine) {
-      const paid = rows.some((r) => r.verified); if (paid) flag(addr, 'paid');
+      const paid = rows.some((r) => r.verified && !r.dust); if (paid) flag(addr, 'paid');
       const items = checklistItems(addr, paid); const n = items.filter((i) => i[1]).length;
       const hidden = !!flags(addr).hideWelcome;
       show($('m-welcome'), !hidden && n < items.length);
@@ -1238,16 +1251,31 @@
     fetch(`${AURORA}/api/transactions/${API_KEY}?walletAddress=${encodeURIComponent(addr)}&numberOfTransactions=25`, { signal: AbortSignal.timeout(12000) })
       .then((x) => x.json()).then((r) => { st.aurora = (Array.isArray(r) ? r : r.data || r.transactions || []).slice(0, 25); paint(); }, () => { st.auroraError = true; paint(); });
     // Both token accounts, newest first. Each transaction is read and checked on its own, and shown as soon as it is.
-    const sigs = async (acct, limit) => {
+    const sigs = async (acct, limit, before) => {
       for (let i = 0; ; i++) {
-        try { return (await rpc('getSignaturesForAddress', [acct, { limit, commitment: 'confirmed' }])) || []; } catch (e) { if (i >= 2) throw e; await sleep(2500 * (i + 1)); }
+        try { return (await rpc('getSignaturesForAddress', [acct, before ? { limit, before, commitment: 'confirmed' } : { limit, commitment: 'confirmed' }])) || []; } catch (e) { if (i >= 2) throw e; await sleep(2500 * (i + 1)); }
       }
     };
+    // The newest page, then older pages until 14 days are covered, so a burst of dust cannot push real payments out of view.
+    const cutoff = Math.floor(Date.now() / 1000) - 14 * 86400;
+    const history = async (acct, first, cap) => {
+      const out = await sigs(acct, first);
+      // Only when the newest page is full can older payments exist; an older page that fails is reported, never fatal.
+      while (out.length >= first && out.length < cap && (out[out.length - 1].blockTime || 0) >= cutoff) {
+        let page;
+        try { page = await rpc('getSignaturesForAddress', [acct, { limit: 50, before: out[out.length - 1].signature, commitment: 'confirmed' }]); } catch { st.partial = true; break; }
+        if (!page || !page.length) break;
+        out.push(...page);
+        if (page.length < 50) break;
+      }
+      return out;
+    };
     try {
-      const [a, b] = await Promise.all([sigs(usdcAcct, 25), sigs(cusdcAcct, 10)]);
+      const [a, b] = await Promise.all([history(usdcAcct, 25, 200), history(cusdcAcct, 10, 60)]);
       const seen = new Set();
-      const list = [...a, ...b].filter((s) => !s.err && safeHash(s.signature) && !seen.has(s.signature) && seen.add(s.signature))
-        .sort((x, y) => (y.blockTime || 0) - (x.blockTime || 0)).slice(0, 30);
+      const all = [...a, ...b].filter((s) => !s.err && safeHash(s.signature) && !seen.has(s.signature) && seen.add(s.signature))
+        .sort((x, y) => (y.blockTime || 0) - (x.blockTime || 0));
+      const list = all.filter((s, i) => i < 30 || (s.blockTime || 0) >= cutoff).slice(0, 200);
       st.scanned = list.length;
       // Public RPCs rate-limit bursts: a read that fails is retried after a pause, and what still fails is counted, never guessed.
       let todo = list.map((s) => s.signature);
@@ -1342,7 +1370,7 @@
     const { merchant, name } = C.permanentLink(location.hash);
     if (!C.isSolAddr(merchant)) { text($('p-to'), '—'); text($('p-badge'), 'This link has an invalid Solana address.'); $('p-badge').className = 'badge bad'; show($('p-pick'), false); return; }
     text($('p-to'), merchant);
-    if (name) { text($('p-name'), name); show($('p-name')); document.title = `Pay ${name} · Sluice`; text($('p-badge'), 'This link is not signed: confirm the name and address with the merchant'); }
+    if (name) { text($('p-name'), name); show($('p-name')); show($('p-name-tag')); document.title = `Pay ${name} · Sluice`; text($('p-badge'), 'This link is not signed: confirm the name and address with the merchant'); }
     $('p-change').onclick = () => { show($('p-picked'), false); show($('p-origins')); show($('p-count')); show($('p-more'), assets.length - assets.filter(C.isPopular).length > 0); };
     $('p-copy').onclick = () => copy($('p-copy'), $('p-address').textContent);
     $('p-copy-memo').onclick = () => copy($('p-copy-memo'), $('p-memo').textContent);
@@ -1382,7 +1410,7 @@
       if (invoice.exp && invoice.exp < Date.now() / 1000) throw new Error('This pay link has expired. Ask the merchant for a new one.');
     } catch (e) { return stop(e.message); }
     text($('inv-amount'), pretty(invoice.raw)); text($('inv-to'), invoice.to); text($('inv-ref'), invoice.ref || '—');
-    if (invoice.name) { text($('inv-name'), invoice.name); show($('inv-name')); document.title = `Pay ${invoice.name} · Sluice`; }
+    if (invoice.name) { text($('inv-name'), invoice.name); show($('inv-name')); show($('inv-name-tag')); document.title = `Pay ${invoice.name} · Sluice`; }
     show($('inv-ref-row'), !!invoice.ref);
     show($('inv-earn'), invoice.settle === 'earn');
     if (invoice.signed && invoice.sigOk && invoice.signer === invoice.to) { text(bd, '✓ Signed by the receiving wallet. Confirm the address with the merchant.'); bd.className = 'badge good'; }
@@ -1440,7 +1468,8 @@
       show($('c-back')); text($('c-back-name'), me.name || short(me.to)); $('c-back-m').href = `#m=${me.to}`;
       $('c-back-links').replaceChildren(...myLinks().filter((l) => l.to === me.to).slice(0, 3).map((l) => {
         const li = document.createElement('li');
-        const label = l.kind === 'perm' ? 'Pay page, any amount' : `${l.amt} USDC${l.ref ? ' · ' + l.ref : ''}${l.signed ? ' · signed' : ''}${l.exp && l.exp * 1000 < Date.now() ? ' · expired' : ''}`;
+        const amt = typeof l.amt === 'string' && /^\d{1,9}(\.\d{1,6})?$/.test(l.amt) ? l.amt : '?'; const ref = typeof l.ref === 'string' && /^[\w.-]{0,40}$/.test(l.ref) ? l.ref : '';
+      const label = `${l.kind === 'perm' ? 'Pay page, any amount' : `${amt} USDC${ref ? ' · ' + ref : ''}${l.signed ? ' · signed' : ''}${typeof l.exp === 'number' && l.exp * 1000 < Date.now() ? ' · expired' : ''}`} · to ${short(l.to)}`;
         li.append(Object.assign(document.createElement('a'), { href: l.url, textContent: label }));
         return li;
       }));

@@ -92,18 +92,36 @@ def _unb64u(s: str) -> bytes:
 NAME_PUNCT = " .,'&()!_-"
 
 
+# Code points that render as nothing (Unicode Default_Ignorable_Code_Point): the same list as docs/core.js.
+IGNORABLE = ((0xAD, 0xAD), (0x34F, 0x34F), (0x61C, 0x61C), (0x115F, 0x1160), (0x17B4, 0x17B5), (0x180B, 0x180F), (0x200B, 0x200F),
+             (0x202A, 0x202E), (0x2060, 0x206F), (0x3164, 0x3164), (0xFE00, 0xFE0F), (0xFEFF, 0xFEFF), (0xFFA0, 0xFFA0), (0xFFF0, 0xFFF8),
+             (0x1BCA0, 0x1BCA3), (0x1D173, 0x1D17A), (0xE0000, 0xE0FFF))
+
+
 def clean_name(s) -> str | None:
     """Same rule as cleanName() in docs/core.js: letters, marks and digits from any script, single spaces and a little
-    punctuation, at most 40 characters. Control, zero-width and bidi characters are refused."""
+    punctuation, at most 40 characters. Invisible, enclosing and stacked marks are refused, and so is anything that could pass
+    for an address on the checkout."""
     if not isinstance(s, str):
         return None
     t = re.sub(r"[ \t\n\r]+", " ", unicodedata.normalize("NFC", s)).strip(" ")
     if not t or len(t) > 40:
         return None
-    if not all(unicodedata.category(c)[0] in "LMN" or c in NAME_PUNCT for c in t):
+    cat = unicodedata.category
+    if not all(cat(c)[0] in "LMN" or c in NAME_PUNCT for c in t) or not any(cat(c)[0] in "LN" for c in t):
         return None
-    if not any(unicodedata.category(c)[0] in "LN" for c in t):
+    if any(a <= ord(c) <= b for c in t for a, b in IGNORABLE) or any(cat(c) == "Me" for c in t):
         return None
+    run = 0
+    for c in t:
+        run = run + 1 if cat(c)[0] == "M" else 0
+        if run >= 3:
+            return None
+    if ".." in t or re.search(r"(^| )0[xX]", t):
+        return None
+    for w in t.split(" "):
+        if len(w) >= 12 and (any(cat(c)[0] == "N" for c in w) or sum(cat(c) == "Lu" for c in w) >= 3):
+            return None
     return t
 
 

@@ -27,7 +27,7 @@
     <div class="invoice">
       <div class="muted">You are paying</div>
       <div class="amount"><span id="inv-amount">0.00</span> <span class="unit">USDC</span></div>
-      <div class="payee"><span class="muted">to</span> <b id="inv-name" class="hidden"></b><code id="inv-to" class="addrline"></code></div>
+      <div class="payee"><span class="muted">to</span> <b id="inv-name" class="pn hidden"></b><span id="inv-name-tag" class="nametag hidden">name not verified</span><code id="inv-to" class="addrline"></code></div>
       <div class="ref" id="inv-ref-row">Reference <code id="inv-ref"></code></div>
       <div id="inv-badge" class="badge"></div>
       <div id="inv-earn" class="earnnote hidden">This merchant earns on arrival: your payment goes straight into their Kamino USDC position on Solana.</div>
@@ -134,7 +134,7 @@
   <section id="perm" class="card hidden" aria-live="polite">
     <div class="invoice">
       <div class="muted">Pay any amount to</div>
-      <div class="payee"><b id="p-name" class="pname hidden"></b><code id="p-to" class="addrline"></code></div>
+      <div class="payee"><b id="p-name" class="pname hidden"></b><span id="p-name-tag" class="nametag hidden">name not verified</span><code id="p-to" class="addrline"></code></div>
       <div id="p-badge" class="badge warn">Confirm this address with the merchant</div>
       <p class="muted hint">It arrives as USDC on Solana. No wallet to connect, no form, and the address never expires. New: no real payment has been run through one of these addresses yet, so start small.</p>
     </div>
@@ -265,6 +265,7 @@
             <div class="fieldhead"><label for="o-to">Your Solana wallet address</label><button id="o-paste" class="ghost small" type="button">Paste</button></div>
             <input id="o-to" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="32 to 44 letters and numbers">
             <p id="o-to-check" class="check" role="status"></p>
+            <label class="toggle hidden" id="o-confirm-row"><input type="checkbox" id="o-confirm"> <span>This saved address is my own wallet. <span class="muted">It was filled in from this device: check every character before you continue.</span></span></label>
             <button id="o-phantom" class="link hidden" type="button">Use my Phantom address</button>
           </div>
           <details id="o-help" class="help">
@@ -348,7 +349,7 @@
           <div class="phone-body">
             <div class="muted" id="pv-lead">You are paying</div>
             <div class="amount" id="pv-amount-row"><span id="pv-amt">0.00</span> <span class="unit">USDC</span></div>
-            <div class="payee"><span class="muted" id="pv-to-word">to</span> <b id="pv-name"></b><code id="pv-to" class="addrline"></code></div>
+            <div class="payee"><span class="muted" id="pv-to-word">to</span> <b id="pv-name" class="pn"></b><span class="nametag">name not verified</span><code id="pv-to" class="addrline"></code></div>
             <div id="pv-badge" class="badge"></div>
             <div id="pv-earn" class="earnnote hidden">This merchant earns on arrival: your payment goes straight into their Kamino USDC position on Solana.</div>
             <div class="pv-fake" aria-hidden="true">Connect wallet</div>

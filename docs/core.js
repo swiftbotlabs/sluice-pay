@@ -602,18 +602,30 @@
   const NAME_OK = /^[\p{L}\p{M}\p{N} .,'&()!_-]+$/u;
   /** A display name for the checkout. Letters, marks and digits from any script, single spaces and a little punctuation.
    *  Control, zero-width, bidi and other invisible characters are refused, so a name cannot hide or reorder text. */
+  // Code points that render as nothing (Unicode Default_Ignorable_Code_Point), listed so the Python CLI applies the same list.
+  const IGNORABLE = [[0xAD, 0xAD], [0x34F, 0x34F], [0x61C, 0x61C], [0x115F, 0x1160], [0x17B4, 0x17B5], [0x180B, 0x180F], [0x200B, 0x200F],
+    [0x202A, 0x202E], [0x2060, 0x206F], [0x3164, 0x3164], [0xFE00, 0xFE0F], [0xFEFF, 0xFEFF], [0xFFA0, 0xFFA0], [0xFFF0, 0xFFF8],
+    [0x1BCA0, 0x1BCA3], [0x1D173, 0x1D17A], [0xE0000, 0xE0FFF]];
+  const ignorable = (cp) => IGNORABLE.some(([a, b]) => cp >= a && cp <= b);
   function cleanName(s) {
     if (typeof s !== 'string') return null;
     const t = s.normalize('NFC').replace(/[ \t\n\r]+/g, ' ').replace(/^ +| +$/g, '');
     if (!t || [...t].length > NAME_MAX || !NAME_OK.test(t) || !/[\p{L}\p{N}]/u.test(t)) return null;
+    // nothing invisible, no enclosing marks, no stacks of marks that draw over the text around the name
+    if ([...t].some((c) => ignorable(c.codePointAt(0))) || /\p{Me}/u.test(t) || /\p{M}{3,}/u.test(t)) return null;
+    // a name must not pass for an address: no '..' (a shortened address), no 0x word, no long word with digits or several capitals
+    if (t.includes('..') || /(^| )0[xX]/.test(t)) return null;
+    if (t.split(' ').some((w) => [...w].length >= 12 && (/\p{N}/u.test(w) || (w.match(/\p{Lu}/gu) || []).length >= 3))) return null;
     return t;
   }
   /** Something nobody should ever paste into a web page: a recovery phrase or a private key in any common format. */
   function looksSecret(s) {
     const t = String(s || '').trim();
     if (!t) return false;
-    const words = t.split(/\s+/);
-    if (words.length >= 12 && words.length <= 24 && words.every((w) => /^[a-z]{3,8}$/.test(w))) return true;
+    // any capitalisation, numbered or not ("1. abandon 2. ability"), and partial phrases too
+    const words = t.toLowerCase().split(/\s+/).filter((w) => !/^\d{1,2}[.):]?$/.test(w)).map((w) => w.replace(/^\d{1,2}[.):]/, ''));
+    const wordy = words.filter((w) => /^[a-z]{3,8}$/.test(w)).length;
+    if (wordy >= 8 && wordy >= words.length * 0.8) return true;
     if (/^(0x)?[0-9a-fA-F]{64}$/.test(t)) return true;
     if (/^\[\s*\d{1,3}(\s*,\s*\d{1,3}){63}\s*\]$/.test(t)) return true;
     if (/^[1-9A-HJ-NP-Za-km-z]{80,90}$/.test(t)) { try { return b58decode(t).length === 64; } catch { return false; } }
@@ -713,6 +725,8 @@
     return usdc > 0n ? { kind: 'usdc', sig, at, usdc } : null;
   }
   const AURORA_LIVE = new Set(['KNOWN_DEPOSIT_TX', 'INCOMPLETE_DEPOSIT', 'PROCESSING', 'SUCCESS', 'REFUNDED', 'FAILED']);
+  const DUST = 10000n; // credits under 0.01 USDC are listed as dust and never counted: anyone can send them to flood the view
+  const decimalText = (v) => (typeof v === 'string' && /^\d{1,20}(\.\d{1,18})?$/.test(v) ? v : null);
   /** Newest-first rows for the merchant view. Every credit row comes from Solana; Aurora's list adds the source asset and a record
    *  link when it routed that exact Solana transaction, and shows payments still on the way or refunded. Unpaid quotes are left out. */
   function ledgerRows(credits, aurora, merchant) {
@@ -722,14 +736,15 @@
     for (const c of credits || []) {
       if (!c || (c.kind !== 'usdc' && c.kind !== 'earn')) continue;
       const x = bySig.get(c.sig) || null; if (x) used.add(x.depositAddress);
-      rows.push({ kind: c.kind, verified: true, sig: c.sig, at: c.at, usdc: c.kind === 'earn' ? c.supplied : c.usdc, shares: c.shares || 0n,
-        origin: x ? x.originAsset : null, paidIn: x ? x.amountInFormatted || null : null,
+      const usdc = c.kind === 'earn' ? c.supplied : c.usdc;
+      rows.push({ kind: c.kind, verified: true, dust: usdc < DUST, sig: c.sig, at: c.at, usdc, shares: c.shares || 0n,
+        origin: x ? x.originAsset : null, paidIn: x ? decimalText(x.amountInFormatted) : null,
         record: x ? `#s=${x.depositAddress}` : c.ref ? `#c=${c.ref}.${merchant}` : null });
     }
     for (const x of mine) {
       if (used.has(x.depositAddress) || !AURORA_LIVE.has(x.status)) continue;
       rows.push({ kind: 'aurora', verified: false, status: x.status, at: Math.floor(Date.parse(x.createdAt || '') / 1000) || null, usdc: null,
-        out: x.amountOutFormatted || null, origin: x.originAsset || null, paidIn: x.amountInFormatted || null, record: `#s=${x.depositAddress}` });
+        out: decimalText(x.amountOutFormatted), origin: x.originAsset || null, paidIn: decimalText(x.amountInFormatted), record: `#s=${x.depositAddress}` });
     }
     return rows.sort((p, q) => (q.at || 0) - (p.at || 0));
   }
@@ -739,19 +754,21 @@
     const out = []; const idx = new Map();
     for (let i = days - 1; i >= 0; i--) { const k = key(now - i * 86400000); idx.set(k, out.length); out.push({ day: k, usdc: 0n, count: 0 }); }
     for (const r of rows || []) {
-      if (!r.verified || !r.at || r.usdc === null || r.usdc === undefined) continue;
+      if (!r.verified || r.dust || !r.at || r.usdc === null || r.usdc === undefined) continue;
       const i = idx.get(key(r.at * 1000)); if (i === undefined) continue;
       out[i].usdc += BigInt(r.usdc); out[i].count += 1;
     }
     return out;
   }
-  /** A lower bound for what a cUSDC balance is worth: the USDC-per-cUSDC rate of the newest deposit we can see on Solana.
-   *  Kamino's rate only grows as interest accrues, so today's value is at least this. */
+  /** A lower bound for what a cUSDC balance is worth: the USDC-per-cUSDC rate of the newest real deposit seen on Solana.
+   *  Kamino's rate only grows as interest accrues, and it rounds the shares it mints down, so dividing by shares + 1 never
+   *  overstates. A dust deposit is not used when a real one is in view. */
   function earnValue(balanceShares, rows) {
     const bal = BigInt(balanceShares || 0);
-    const last = (rows || []).filter((r) => r.kind === 'earn' && r.shares > 0n && r.usdc > 0n).sort((p, q) => (q.at || 0) - (p.at || 0))[0];
+    const deps = (rows || []).filter((r) => r.kind === 'earn' && r.shares > 0n && r.usdc > 0n).sort((p, q) => (q.at || 0) - (p.at || 0));
+    const last = deps.find((r) => r.shares >= DUST) || deps[0];
     if (!last || bal <= 0n) return null;
-    return { usdc: (bal * BigInt(last.usdc)) / BigInt(last.shares), at: last.at, sig: last.sig };
+    return { usdc: (bal * BigInt(last.usdc)) / (BigInt(last.shares) + 1n), at: last.at, sig: last.sig };
   }
   /** Links a merchant made on this device: newest first, no duplicates, at most `max`. */
   function rememberLink(list, item, max = 8) {
