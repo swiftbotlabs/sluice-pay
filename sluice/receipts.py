@@ -9,7 +9,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 import time
+import unicodedata
 
 from . import solana as sol
 
@@ -87,14 +89,39 @@ def _unb64u(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
 
 
+NAME_PUNCT = " .,'&()!_-"
+
+
+def clean_name(s) -> str | None:
+    """Same rule as cleanName() in docs/core.js: letters, marks and digits from any script, single spaces and a little
+    punctuation, at most 40 characters. Control, zero-width and bidi characters are refused."""
+    if not isinstance(s, str):
+        return None
+    t = re.sub(r"[ \t\n\r]+", " ", unicodedata.normalize("NFC", s)).strip(" ")
+    if not t or len(t) > 40:
+        return None
+    if not all(unicodedata.category(c)[0] in "LMN" or c in NAME_PUNCT for c in t):
+        return None
+    if not any(unicodedata.category(c)[0] in "LN" for c in t):
+        return None
+    return t
+
+
 def make_pay_link(signer: Signer, *, to: str, amount: str, ref: str, ttl_s: int = 7 * 86400,
-                  base_url: str = "https://swiftbotlab.github.io/sluice-pay/", settle: str = "usdc") -> str:
-    """The link is signed by `signer`; the checkout shows a 'signed by the receiving wallet' badge when signer == to."""
+                  base_url: str = "https://apps.swiftbotlab.workers.dev/sluice-pay/", settle: str = "usdc",
+                  name: str | None = None) -> str:
+    """The link is signed by `signer`; the checkout shows a 'signed by the receiving wallet' badge when signer == to.
+    `name` is the merchant's display name, inside the signed bytes like everything else."""
     if not sol.is_pubkey(to):
         raise ValueError("bad Solana address")
     if settle not in ("usdc", "earn"):
         raise ValueError("settle must be usdc or earn")
     fields = {"v": 1, "to": to, "amt": amount, "ref": ref, "exp": int(time.time()) + ttl_s, "k": signer.pubkey}
+    if name:
+        n = clean_name(name)
+        if not n:
+            raise ValueError("name: up to 40 letters, digits, spaces and . , ' & ( ) ! _ -")
+        fields["n"] = n
     if settle == "earn":
         fields["s"] = "earn"  # inside the signed bytes: a relay cannot change it. A payer with no wallet still pays plain USDC.
     msg = canonical(fields)

@@ -15,7 +15,8 @@
 <header class="top">
   <div class="wrap row">
     <a class="brand" href="./"><img src="icon.svg" alt="" width="24" height="24">Sluice</a>
-    <nav id="nav" aria-label="Sections"><a href="#create">Create link</a><a href="#earn">Earn</a><a href="#agents">APIs</a><a href="#proof">Proof</a></nav>
+    <nav id="nav" aria-label="Sections"><a href="#start">Get started</a><a href="#earn">Earn</a><a href="#agents">APIs</a><a href="#proof">Proof</a></nav>
+    <a id="nav-mine" class="navmine hidden" href="#">My payments</a>
   </div>
 </header>
 
@@ -26,7 +27,7 @@
     <div class="invoice">
       <div class="muted">You are paying</div>
       <div class="amount"><span id="inv-amount">0.00</span> <span class="unit">USDC</span></div>
-      <div class="to">to <code id="inv-to"></code></div>
+      <div class="payee"><span class="muted">to</span> <b id="inv-name" class="hidden"></b><code id="inv-to" class="addrline"></code></div>
       <div class="ref" id="inv-ref-row">Reference <code id="inv-ref"></code></div>
       <div id="inv-badge" class="badge"></div>
       <div id="inv-earn" class="earnnote hidden">This merchant earns on arrival: your payment goes straight into their Kamino USDC position on Solana.</div>
@@ -52,6 +53,7 @@
       <h2>Pay with</h2>
       <p class="muted hint" id="origin-count">Loading supported assets…</p>
       <div id="origins" class="chips" role="radiogroup" aria-label="Asset to pay with"></div>
+      <div id="picked" class="picked hidden"><span>Paying with <b id="picked-name"></b></span><button id="btn-change" class="link" type="button">Change</button></div>
       <button id="btn-more" class="link hidden" type="button" aria-expanded="false"></button>
       <div id="more" class="hidden">
         <label class="field"><span>Search every supported asset</span><input id="asset-search" type="search" placeholder="USDT, Tron, BNB…" autocomplete="off" spellcheck="false"></label>
@@ -66,9 +68,12 @@
         <button id="btn-sol-refund" class="link hidden" type="button">Use my Phantom address</button>
       </label>
       <p id="refund-auto" class="muted hint hidden"></p>
-      <label class="toggle" id="private-row"><input type="checkbox" id="confidential"> <span><b>Private payment</b> (Confidential Intents): your source wallet is not linkable to the Solana payment. Private quotes are not public, so this page cannot cross-check them.</span></label>
-      <button id="btn-quote" class="primary wide" type="button" disabled>Get deposit address</button>
+      <label class="toggle" id="private-row"><input type="checkbox" id="confidential"> <span><b>Private payment</b> <span class="muted">· Confidential Intents hides which wallet paid. Private quotes are not public, so this page cannot cross-check them.</span></span></label>
       <div id="quote-error" class="error hidden" role="alert"></div>
+      <div class="paybar">
+        <button id="btn-quote" class="primary wide" type="button" disabled>Get deposit address</button>
+        <p id="pay-why" class="muted hint center"></p>
+      </div>
     </div>
 
     <!-- one-signature rail (Intents Connect) -->
@@ -86,6 +91,7 @@
           <div class="kv"><span>Sending from chain</span><b id="d-chain"></b></div>
           <div class="kv"><span>Supported asset</span><span><b id="d-asset"></b> <span class="pill">1 asset supported</span></span></div>
           <div class="kv"><span>Send exactly</span><b id="d-amount" class="big"></b></div>
+          <div class="kv" id="d-left-row"><span>Time left</span><b id="d-left"></b></div>
           <div class="kv stack"><span>Deposit address</span></div>
           <div class="addr"><code id="d-address"></code><button id="btn-copy" class="ghost" type="button">Copy</button></div>
           <div id="d-memo-row" class="hidden">
@@ -128,15 +134,15 @@
   <section id="perm" class="card hidden" aria-live="polite">
     <div class="invoice">
       <div class="muted">Pay any amount to</div>
-      <div class="to"><code id="p-to"></code></div>
+      <div class="payee"><b id="p-name" class="pname hidden"></b><code id="p-to" class="addrline"></code></div>
       <div id="p-badge" class="badge warn">Confirm this address with the merchant</div>
-      <p class="muted hint">It arrives as USDC on Solana. No wallet to connect, no form, and the address never expires.</p>
-      <div class="badge warn">New: these addresses are live, but no real payment has been run through one yet. Start small.</div>
+      <p class="muted hint">It arrives as USDC on Solana. No wallet to connect, no form, and the address never expires. New: no real payment has been run through one of these addresses yet, so start small.</p>
     </div>
     <div id="p-pick">
       <h2>What are you sending?</h2>
       <p class="muted hint" id="p-count">Loading supported assets…</p>
       <div id="p-origins" class="chips" role="radiogroup" aria-label="Asset you are sending"></div>
+      <div id="p-picked" class="picked hidden"><span>Sending <b id="p-picked-name"></b></span><button id="p-change" class="link" type="button">Change</button></div>
       <button id="p-more" class="link hidden" type="button" aria-expanded="false"></button>
       <div id="p-more-box" class="hidden">
         <label class="field"><span>Search every supported asset</span><input id="p-search" type="search" placeholder="USDT, Tron, BNB…" autocomplete="off" spellcheck="false"></label>
@@ -185,17 +191,181 @@
   </section>
 
   <!-- MERCHANT -->
-  <section id="merchant" class="card hidden" aria-live="polite">
-    <div class="muted">Merchant</div>
-    <h1 id="m-title"></h1>
-    <div class="stats">
-      <div class="stat"><span class="muted">USDC in wallet</span><b id="m-usdc">…</b></div>
-      <div class="stat"><span class="muted">Earning in Kamino</span><b id="m-earn">…</b></div>
+  <section id="merchant" class="hidden" aria-live="polite">
+    <div class="card mhead">
+      <div class="muted">Merchant view</div>
+      <h1 id="m-title"></h1>
+      <div class="addr"><code id="m-addr"></code><button id="m-copy" class="ghost" type="button">Copy</button></div>
+      <div class="row gap mlinks">
+        <a id="m-new" class="button primary" href="#start">New pay link</a>
+        <a id="m-perm" class="button ghost">Permanent pay page</a>
+        <a id="m-sol" class="button ghost" target="_blank" rel="noopener">Solscan</a>
+      </div>
+      <p class="muted hint">Read live from Solana and Aurora in your browser. No login and no database: anyone with this address sees the same numbers.</p>
     </div>
-    <p><a id="m-perm">Open this merchant's permanent pay page</a></p>
-    <h2>Recent payments through this checkout</h2>
-    <div id="m-rows"></div>
-    <p class="muted hint">Listed from Aurora's history, read live. Open a row for its Solana proof.</p>
+    <div class="tabs" role="tablist" aria-label="Merchant sections">
+      <button type="button" role="tab" id="mt-overview" aria-controls="mp-overview" aria-selected="true">Overview</button>
+      <button type="button" role="tab" id="mt-payments" aria-controls="mp-payments" aria-selected="false" tabindex="-1">Payments</button>
+      <button type="button" role="tab" id="mt-earn" aria-controls="mp-earn" aria-selected="false" tabindex="-1">Earn</button>
+    </div>
+    <div id="mp-overview" class="card" role="tabpanel" aria-labelledby="mt-overview">
+      <div id="m-welcome" class="welcome hidden">
+        <div class="row between"><b id="m-welcome-title">Getting started</b><button id="m-welcome-x" class="link" type="button">Hide</button></div>
+        <ol id="m-checklist" class="checklist"></ol>
+      </div>
+      <div class="stats stats3">
+        <div class="stat"><span class="muted">USDC in wallet</span><b id="m-usdc">…</b><small class="muted">on Solana, now</small></div>
+        <div class="stat"><span class="muted">In Kamino</span><b id="m-earn">…</b><small class="muted" id="m-earn-sub">cUSDC position</small></div>
+        <div class="stat"><span class="muted">Received, 14 days</span><b id="m-14">…</b><small class="muted" id="m-14-sub">verified on Solana</small></div>
+      </div>
+      <h2>USDC received per day</h2>
+      <p class="muted hint">Last 14 days, your local time. Only credits read from Solana count. Hover or tap a day.</p>
+      <div id="m-chart" class="chart" role="group" aria-label="USDC received per day, last 14 days"></div>
+      <div class="row between"><h2>Latest payments</h2><button id="m-all" class="link" type="button">All payments</button></div>
+      <div id="m-latest" class="ledger"><p class="muted">Reading Solana…</p></div>
+    </div>
+    <div id="mp-payments" class="card hidden" role="tabpanel" aria-labelledby="mt-payments">
+      <h2>Payments received</h2>
+      <p class="muted hint" id="m-scan-note">Every amount is read from Solana. Where this checkout routed a payment, Aurora adds what the customer paid with and a record you can share.</p>
+      <div id="m-rows" class="ledger"><p class="muted">Reading Solana…</p></div>
+    </div>
+    <div id="mp-earn" class="card hidden" role="tabpanel" aria-labelledby="mt-earn">
+      <h2>Your Kamino position</h2>
+      <div class="stats">
+        <div class="stat"><span class="muted">cUSDC held</span><b id="m-shares">…</b><small class="muted">in your own token account</small></div>
+        <div class="stat"><span class="muted">Worth at least</span><b id="m-worth">…</b><small class="muted" id="m-worth-sub">USDC</small></div>
+      </div>
+      <p class="muted hint">cUSDC is Kamino's receipt for USDC supplied to its main-market reserve. Its USDC value only grows as borrowers pay interest, so the rate of your newest deposit gives a floor for today's value.</p>
+      <h2>Deposits into Kamino</h2>
+      <div id="m-earn-rows" class="ledger"><p class="muted">Reading Solana…</p></div>
+      <h2>Getting it back</h2>
+      <p>Your wallet owns the cUSDC, so only you can redeem it. <code>python3 cli/redeem_earn.py --owner &lt;your address&gt;</code> simulates the withdrawal on mainnet; with <code>--key-file</code> and <code>--send</code> it turns cUSDC back into USDC plus interest.</p>
+      <p class="muted hint">Kamino is a third-party protocol: smart-contract and liquidity risk apply until you redeem.</p>
+    </div>
+  </section>
+
+  <!-- FIRST RUN: three steps to a working checkout -->
+  <section id="start" class="hidden" aria-live="polite">
+    <div class="onb-top">
+      <div class="onb-progress" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="onb-step" id="o-step">Step 1 of 3 · You</p>
+    </div>
+    <div class="onb-grid">
+      <div class="card onb-form">
+        <div id="o-s1" class="onb-pane">
+          <p class="eyebrow">Set up · about 2 minutes</p>
+          <h1>Let's get you paid</h1>
+          <p class="lead">Three short steps: who you are, how you want the money, and your link. No account and no sign-up. Nothing is kept on a server.</p>
+          <ul class="need">
+            <li>Your shop or display name</li>
+            <li>Your Solana wallet address, where the USDC lands</li>
+          </ul>
+          <label class="field"><span>Your name</span><input id="o-name" maxlength="40" autocomplete="organization" spellcheck="false" placeholder="e.g. Café Lumière"><small class="muted">As your customers know you. It is shown on your checkout.</small></label>
+          <div class="field">
+            <div class="fieldhead"><label for="o-to">Your Solana wallet address</label><button id="o-paste" class="ghost small" type="button">Paste</button></div>
+            <input id="o-to" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="32 to 44 letters and numbers">
+            <p id="o-to-check" class="check" role="status"></p>
+            <button id="o-phantom" class="link hidden" type="button">Use my Phantom address</button>
+          </div>
+          <details id="o-help" class="help">
+            <summary>Where do I find my Solana address?</summary>
+            <div class="seg" role="tablist" aria-label="Wallet">
+              <button type="button" role="tab" aria-selected="true" data-w="phantom">Phantom</button>
+              <button type="button" role="tab" aria-selected="false" data-w="solflare">Solflare</button>
+              <button type="button" role="tab" aria-selected="false" data-w="exchange">An exchange</button>
+            </div>
+            <ol class="howto" data-w="phantom"><li>Open Phantom and tap <b>Receive</b>.</li><li>Find <b>Solana</b> in the list and tap <b>Copy</b>.</li><li>Come back and tap <b>Paste</b>.</li></ol>
+            <ol class="howto hidden" data-w="solflare"><li>Open Solflare and tap your wallet name at the top.</li><li>Tap <b>Copy address</b>.</li><li>Come back and tap <b>Paste</b>.</li></ol>
+            <div class="howto hidden" data-w="exchange"><p>Use a wallet you control instead. Exchange deposit addresses can change or need a memo, and settling into Kamino needs your own wallet. Phantom and Solflare are free and take a few minutes to set up.</p></div>
+          </details>
+          <div class="never"><b>Never paste these</b>
+            <ul><li>Your recovery phrase (12 or 24 words) or a private key. Sluice never asks for them.</li><li>An Ethereum-style address that starts with 0x.</li><li>A token's own address, like USDC's. It has to be your wallet.</li></ul>
+          </div>
+        </div>
+
+        <div id="o-s2" class="onb-pane hidden">
+          <p class="eyebrow">Step 2 · how you get paid</p>
+          <h1>Where should the money go?</h1>
+          <p class="lead">Either way your customers pay with what they hold, on any chain, and you receive USDC on Solana.</p>
+          <div class="opts" role="radiogroup" aria-label="How payments settle">
+            <label class="opt"><input type="radio" name="o-settle" value="usdc" checked><span><b>USDC in my wallet</b><span class="muted">Every payment lands as USDC in <span id="o-s2-to"></span>. Works with every way of paying.</span></span></label>
+            <label class="opt"><input type="radio" name="o-settle" value="earn"><span><b>Put it to work in Kamino</b><span class="muted">Each payment is supplied to Kamino's USDC reserve in the same Solana transaction. The interest-bearing cUSDC goes to your own wallet; nobody else holds it.</span></span></label>
+          </div>
+          <ul id="o-earn-facts" class="facts hidden">
+            <li>Customers who pay with a connected EVM wallet settle into Kamino. Paying by address or QR settles as plain USDC: you are paid either way.</li>
+            <li id="o-earn-proof">Live on mainnet: </li>
+            <li>You can redeem cUSDC for USDC plus interest at any time with <code>cli/redeem_earn.py</code>.</li>
+            <li>Kamino is a third-party protocol: smart-contract and liquidity risk until you redeem.</li>
+          </ul>
+        </div>
+
+        <div id="o-s3" class="onb-pane hidden">
+          <p class="eyebrow">Step 3 · your link</p>
+          <h1>What do you want to share?</h1>
+          <div class="opts two" role="radiogroup" aria-label="Kind of link">
+            <label class="opt"><input type="radio" name="o-kind" value="fixed" checked><span><b>A pay link</b><span class="muted">A fixed amount, refunds automatic. For invoices and orders.</span></span></label>
+            <label class="opt"><input type="radio" name="o-kind" value="perm"><span><b>A pay page</b><span class="muted">Any amount, any time, never expires. For tips and a QR on the counter.</span></span></label>
+          </div>
+          <div id="o-fixed">
+            <div class="row gap">
+              <label class="field grow"><span>Amount (USDC)</span><input id="o-amt" inputmode="decimal" autocomplete="off" placeholder="25.00"></label>
+              <label class="field grow"><span>Reference <small class="muted">optional</small></span><input id="o-ref" maxlength="40" autocomplete="off" spellcheck="false" placeholder="invoice-1042"></label>
+            </div>
+            <p class="muted hint" id="o-sign-note"></p>
+          </div>
+          <div id="o-perm" class="hidden">
+            <p class="muted hint">One permanent address per network, read live from Aurora when your customer picks what they pay with. Deposits have a $1 minimum ($2 on Tron), settle as plain USDC and are retried rather than refunded, so use a pay link for fixed prices.</p>
+          </div>
+        </div>
+
+        <div id="o-done" class="onb-pane hidden">
+          <p class="eyebrow">Done</p>
+          <h1>Save your link</h1>
+          <p class="lead">This link is your checkout. Sluice keeps no copy on any server, so copy it or save the QR now.</p>
+          <div class="addr"><code id="o-link"></code><button id="o-copy" class="ghost" type="button">Copy</button></div>
+          <p class="muted hint" id="o-link-note"></p>
+          <div class="row gap">
+            <a id="o-open" class="button primary" target="_blank" rel="noopener">Open it</a>
+            <button id="o-share" class="ghost hidden" type="button">Share</button>
+            <a id="o-qr-dl" class="button ghost" download="sluice-link.png">Save QR</a>
+          </div>
+          <div class="qrbox donebox"><div id="o-qr" role="img" aria-label="QR code of your link"></div><p class="muted hint" id="o-qr-cap"></p></div>
+          <h2>Next</h2>
+          <ol id="o-checklist" class="checklist"></ol>
+          <div class="row gap">
+            <a id="o-merchant" class="button ghost">Open my merchant view</a>
+            <button id="o-again" class="link" type="button">Make another link</button>
+          </div>
+          <p class="hint"><button id="o-forget" class="link" type="button">Forget my details on this device</button></p>
+        </div>
+        <div id="o-error" class="error hidden" role="alert"></div>
+      </div>
+
+      <aside class="onb-preview" aria-label="What your customer sees">
+        <div class="prevhead"><span class="eyebrow">What your customer sees</span><span class="pill">Preview</span></div>
+        <div class="phone">
+          <div class="phone-bar"><span id="pv-url"></span></div>
+          <div class="phone-body">
+            <div class="muted" id="pv-lead">You are paying</div>
+            <div class="amount" id="pv-amount-row"><span id="pv-amt">0.00</span> <span class="unit">USDC</span></div>
+            <div class="payee"><span class="muted" id="pv-to-word">to</span> <b id="pv-name"></b><code id="pv-to" class="addrline"></code></div>
+            <div id="pv-badge" class="badge"></div>
+            <div id="pv-earn" class="earnnote hidden">This merchant earns on arrival: your payment goes straight into their Kamino USDC position on Solana.</div>
+            <div class="pv-fake" aria-hidden="true">Connect wallet</div>
+            <div class="pv-h">Pay with</div>
+            <div class="chips pv-chips" id="pv-chips" aria-hidden="true"></div>
+            <p class="muted hint" id="pv-count"></p>
+          </div>
+        </div>
+        <p class="muted hint" id="pv-foot">Built from what you type. Nothing leaves this page until you create the link.</p>
+      </aside>
+
+      <div class="onb-bar">
+        <button id="o-back" class="ghost" type="button">Back</button>
+        <button id="o-next" class="primary" type="button">Next</button>
+        <p id="o-why" class="muted hint"></p>
+      </div>
+    </div>
   </section>
 
   <!-- HOME -->
@@ -204,8 +374,8 @@
       <h1>Get paid in USDC on Solana, by anyone, from any chain.</h1>
       <p class="lead">Share a link. Your customer pays with what they already hold. You receive the exact amount in your Solana wallet, or straight into yield, and nothing counts until Solana itself shows it.</p>
       <div class="row gap">
-        <a id="btn-demo" class="button primary" href="#">See a live invoice</a>
-        <a class="button ghost" href="#create">Create a pay link</a>
+        <a class="button primary" href="#start">Start accepting payments</a>
+        <a id="btn-demo" class="button ghost" href="#">See a live invoice</a>
       </div>
       <img class="heroart" src="hero.svg" alt="Payments from Base, Arbitrum, Ethereum, Tron and Bitcoin flow through Sluice into the merchant's USDC on Solana, or into Kamino." width="720" height="300">
       <ul class="heroline"><li><b id="stat-assets">210</b> assets</li><li><b id="stat-nets">30+</b> networks</li><li><b>8</b> mainnet runs you can re-check</li><li><b>Refunds</b> automatic</li></ul>
@@ -218,28 +388,18 @@
     </section>
 
     <section id="create" class="card">
-      <h2>Create a pay link</h2>
-      <label class="field"><span>Your Solana address</span><input id="c-to" spellcheck="false" autocomplete="off" placeholder="Solana address"></label>
-      <div class="row gap">
-        <label class="field grow"><span>Amount (USDC)</span><input id="c-amt" inputmode="decimal" placeholder="25.00"></label>
-        <label class="field grow"><span>Reference</span><input id="c-ref" maxlength="40" placeholder="invoice-1042"></label>
+      <h2>Your checkout in three steps</h2>
+      <ol class="flow three">
+        <li><b>You</b><span>Your name and Solana address, checked on Solana as you paste it</span></li>
+        <li><b>How you get paid</b><span>USDC in your wallet, or straight into your own Kamino position</span></li>
+        <li><b>Your link</b><span>A pay link or a permanent pay page, with a live preview and a QR</span></li>
+      </ol>
+      <div class="row gap"><a class="button primary" href="#start">Start: about 2 minutes</a></div>
+      <div id="c-back" class="welcomeback hidden">
+        <p><b id="c-back-name"></b>, welcome back.</p>
+        <div class="row gap"><a id="c-back-m" class="button ghost">My merchant view</a><a class="button ghost" href="#start">New link</a></div>
+        <ul id="c-back-links" class="mylinks"></ul>
       </div>
-      <fieldset class="settle">
-        <legend>When the money arrives</legend>
-        <label class="radio"><input type="radio" name="settle" value="usdc" checked> <span><b>USDC in my wallet</b></span></label>
-        <label class="radio"><input type="radio" name="settle" value="earn"> <span><b>Put it to work</b>: supply it to Kamino for me in the same transaction</span></label>
-      </fieldset>
-      <div class="row gap">
-        <button id="btn-sign" class="primary" type="button">Sign link with Phantom</button>
-        <button id="btn-link" class="ghost" type="button">Create unsigned link</button>
-      </div>
-      <p class="hint"><button id="btn-perm" class="link" type="button">No fixed amount? Get a permanent pay page</button></p>
-      <div id="c-out" class="hidden">
-        <div class="addr"><code id="c-link"></code><button id="btn-copy-link" class="ghost" type="button">Copy</button></div>
-        <p class="muted hint" id="c-note"></p>
-        <p class="hint"><a id="c-merchant">See payments to this address</a></p>
-      </div>
-      <div id="c-error" class="error hidden" role="alert"></div>
     </section>
 
     <section id="always" class="card">
@@ -282,7 +442,7 @@ Solana settlement re-verified: True</code></pre>
     </section>
   </div>
 </main>
-<footer class="wrap muted">Sluice by Swift Bot Labs. Routing by Aurora Intents, powered by NEAR Intents. Settlement verified on Solana mainnet. <a href="https://github.com/swiftbotlab/sluice-pay">Open source</a>.</footer>
+<footer class="wrap muted">Sluice by Swift Bot Labs. Routing by Aurora Intents, powered by NEAR Intents. Settlement verified on Solana mainnet. <a href="https://github.com/swiftbotlabs/sluice-pay">Open source</a>.</footer>
 <script src="qrcode.min.js"></script>
 <script src="core.js"></script>
 <script src="app.js"></script>

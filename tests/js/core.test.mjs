@@ -245,3 +245,147 @@ test('refund address shapes', () => {
   assert.equal(C.validRefund('btc', 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'), true); assert.equal(C.validRefund('tron', 'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7'), true);
   assert.equal(C.validRefund('sol', 'nope'), false); assert.equal(C.validRefund('other', 'x y z'), false); assert.equal(C.validRefund('nofam', 'abcdefghijkl'), false);
 });
+
+// ---------- merchant first run + merchant view ----------
+const MERCHANT = '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR';
+const earnTx = JSON.parse(readFileSync(new URL('../fixture_tx_earn.json', import.meta.url)));
+const usdcTx = JSON.parse(readFileSync(new URL('../fixture_tx_usdc.json', import.meta.url)));
+
+test('names: any script, a little punctuation, nothing invisible', () => {
+  assert.equal(C.cleanName('  Café   Lumière  '), 'Café Lumière');
+  assert.equal(C.cleanName('Tienda de Ana & Co.'), 'Tienda de Ana & Co.');
+  assert.equal(C.cleanName('दुकान'), 'दुकान');
+  assert.equal(C.cleanName('Café'), 'Café'); // NFC
+  for (const bad of ['', '   ', '...', 'a'.repeat(41), 'Shop‮gnp.exe', 'Sh​op', 'Shop<script>', 'Shop "x"', 'Shop Two', 'Shop 🙂', 'Line Two', null, 42]) {
+    assert.equal(C.cleanName(bad), null, JSON.stringify(bad));
+  }
+  assert.equal(C.cleanName('a'.repeat(40)), 'a'.repeat(40));
+});
+test('a pasted secret is recognised in every common shape, an address is not', () => {
+  const phrase = 'abandon ability able about above absent absorb abstract absurd abuse access accident';
+  assert.equal(C.looksSecret(phrase), true);
+  assert.equal(C.looksSecret(phrase.split(' ').concat(phrase.split(' ')).join(' ')), true); // 24 words
+  assert.equal(C.looksSecret('0x' + 'ab'.repeat(32)), true);
+  assert.equal(C.looksSecret('[' + Array.from({ length: 64 }, (_, i) => i).join(',') + ']'), true);
+  assert.equal(C.looksSecret(C.b58encode(Uint8Array.from({ length: 64 }, (_, i) => i + 1))), true);
+  for (const ok of [MERCHANT, '0x' + 'ab'.repeat(20), 'my shop', 'hello world this is a short note', '']) assert.equal(C.looksSecret(ok), false, ok);
+});
+test('payout address: wrong kinds are refused before and after the Solana read', async () => {
+  const bad = (a, acct) => { const r = C.payoutCheck(a, acct); assert.equal(r.ok, false, a); return r; };
+  assert.equal(C.payoutCheck('', undefined).level, 'empty');
+  assert.equal(bad('abandon ability able about above absent absorb abstract absurd abuse access accident').level, 'secret');
+  assert.match(bad('0x' + 'ab'.repeat(20)).msg, /Ethereum/);
+  assert.match(bad('not-an-address').msg, /not a Solana address/);
+  assert.match(bad(C.USDC_MINT).msg, /USDC token/);
+  assert.match(bad(C.KLEND.cusdc).msg, /cUSDC/);
+  assert.equal(C.payoutCheck(MERCHANT, undefined).level, 'pending');
+  // what Solana says decides the rest (shapes as getAccountInfo jsonParsed returns them)
+  const usdcAccount = await C.ata(MERCHANT);
+  assert.match(bad(usdcAccount, { owner: C.TOKEN_PROGRAM, executable: false, type: 'account' }).msg, /token account/);
+  assert.match(bad('So11111111111111111111111111111111111111112').msg, /wrapped SOL/);
+  assert.match(bad(C.KLEND.program, { owner: 'BPFLoaderUpgradeab1e11111111111111111111111', executable: true }).msg, /program/);
+  const someMint = C.b58encode(Uint8Array.from({ length: 32 }, (_, i) => 200 - i));
+  assert.match(bad(someMint, { owner: C.TOKEN_PROGRAM, executable: false, type: 'mint' }).msg, /mint/);
+  // the real merchant wallet: an on-curve key owned by the System program
+  const good = C.payoutCheck(MERCHANT, { owner: C.SYSTEM_PROGRAM, executable: false });
+  assert.equal(good.ok, true); assert.equal(good.level, 'good'); assert.equal(good.canSign, true);
+  assert.equal(C.payoutCheck(MERCHANT, null).level, 'good');
+  assert.equal(C.payoutCheck(MERCHANT, 'error').level, 'warn');
+  // a PDA (no private key) is allowed with a warning: multisig vaults are PDAs
+  const pda = C.payoutCheck(usdcAccount, null);
+  assert.equal(pda.ok, true); assert.equal(pda.level, 'warn'); assert.equal(pda.canSign, false);
+  assert.equal(C.payoutCheck(MERCHANT, { owner: 'SMPLecH534NA9acpos4G6x7uf3LWbCAwZQE9e8ZekMu', executable: false }).level, 'warn');
+});
+test('link input is validated and normalised', () => {
+  assert.deepEqual(C.linkInput({ to: ` ${MERCHANT} `, amt: '25,50', ref: 'inv-1', name: ' Demo  Shop ' }), { to: MERCHANT, amt: '25.50', ref: 'inv-1', name: 'Demo Shop' });
+  assert.equal(C.linkInput({ to: MERCHANT, amt: '0.15' }).name, null);
+  assert.throws(() => C.linkInput({ to: 'x', amt: '1' }), /Solana address/);
+  for (const amt of ['0.14', '1.1234567', '-1', '1e3', '', '1,2,3', '1.5.5']) assert.throws(() => C.linkInput({ to: MERCHANT, amt }), /Amount/, amt);
+  assert.throws(() => C.linkInput({ to: MERCHANT, amt: '1', ref: 'a b' }), /Reference/);
+  assert.throws(() => C.linkInput({ to: MERCHANT, amt: '1', name: 'Sh​op' }), /Name/);
+});
+test('the signed message has sorted keys, carries the name and settlement, and the checkout can read it back', () => {
+  const now = Date.parse('2026-11-03T12:00:00Z');
+  const m = C.linkMessage({ to: MERCHANT, amt: '25.00', ref: 'inv-1', earn: true, name: 'Café Lumière', signer: MERCHANT, now });
+  const f = JSON.parse(m);
+  assert.deepEqual(Object.keys(f), [...Object.keys(f)].sort());
+  assert.deepEqual(f, { amt: '25.00', exp: now / 1000 + 7 * 86400, k: MERCHANT, n: 'Café Lumière', ref: 'inv-1', s: 'earn', to: MERCHANT, v: 1 });
+  const plain = JSON.parse(C.linkMessage({ to: MERCHANT, amt: '1', signer: MERCHANT, now }));
+  assert.equal('n' in plain, false); assert.equal('s' in plain, false);
+});
+test('permanent page link: address plus an optional unsigned name', () => {
+  assert.deepEqual(C.permanentLink(`#a=${MERCHANT}`), { merchant: MERCHANT, name: null });
+  assert.deepEqual(C.permanentLink(`#a=${MERCHANT}&n=${encodeURIComponent('Tienda Ana')}`), { merchant: MERCHANT, name: 'Tienda Ana' });
+  assert.equal(C.permanentLink(`#a=${MERCHANT}&n=${encodeURIComponent('x‮y')}`).name, null);
+});
+test('merchant ledger reads real mainnet transactions: a Kamino deposit and a USDC credit', async () => {
+  const dst = await C.ata(MERCHANT, C.KLEND.cusdc);
+  const e = C.merchantCredit(earnTx.tx, MERCHANT, dst, earnTx.sig);
+  assert.equal(e.kind, 'earn'); assert.equal(e.shares, 124074n); assert.ok(e.supplied >= 149990n && e.supplied <= 150000n, String(e.supplied));
+  assert.equal(e.ref, 'Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s');
+  // a transaction that also deposits for someone else cannot inflate the merchant's figure: the vault grew 10x, the row does not
+  const big = structuredClone(earnTx.tx);
+  for (const side of ['preTokenBalances', 'postTokenBalances']) for (const b of big.meta[side]) if (b.owner === C.KLEND.authority && b.mint === C.USDC_MINT) b.uiTokenAmount.amount = String(BigInt(b.uiTokenAmount.amount) * (side === 'postTokenBalances' ? 10n : 1n));
+  assert.ok(C.merchantCredit(big, MERCHANT, dst, earnTx.sig).supplied <= 150000n);
+  // the same cUSDC credit does not count for a different destination account (positive control above)
+  assert.equal(C.merchantCredit(earnTx.tx, MERCHANT, await C.ata(MERCHANT), earnTx.sig), null);
+  const u = C.merchantCredit(usdcTx.tx, MERCHANT, dst, usdcTx.sig);
+  assert.deepEqual(u, { kind: 'usdc', sig: usdcTx.sig, at: usdcTx.tx.blockTime, usdc: 500000n });
+  // failed transactions and someone else's credits are nothing
+  const failed = structuredClone(usdcTx.tx); failed.meta.err = { InstructionError: [0, 'Custom'] };
+  assert.equal(C.merchantCredit(failed, MERCHANT, dst, 'x'), null);
+  assert.equal(C.merchantCredit(usdcTx.tx, 'So11111111111111111111111111111111111111112', dst, 'x'), null);
+});
+test('the merchant moving its own USDC into Kamino, or out of it, is not income', () => {
+  const tx = (usdcPre, usdcPost, cPre, cPost) => ({ blockTime: 1, meta: { err: null,
+    preTokenBalances: [{ owner: MERCHANT, mint: C.USDC_MINT, uiTokenAmount: { amount: usdcPre } }, { owner: MERCHANT, mint: C.KLEND.cusdc, uiTokenAmount: { amount: cPre } }],
+    postTokenBalances: [{ owner: MERCHANT, mint: C.USDC_MINT, uiTokenAmount: { amount: usdcPost } }, { owner: MERCHANT, mint: C.KLEND.cusdc, uiTokenAmount: { amount: cPost } }] },
+    transaction: { message: { instructions: [] } } });
+  assert.equal(C.merchantCredit(tx('100', '0', '0', '80'), MERCHANT, 'dst', 's'), null); // no Kamino deposit to dst named, and USDC fell
+  assert.equal(C.merchantCredit(tx('0', '100', '80', '0'), MERCHANT, 'dst', 's').kind, 'withdraw');
+});
+test('ledger rows: Solana credits first-class, Aurora adds source and in-flight payments, unpaid quotes left out', async () => {
+  const dst = await C.ata(MERCHANT, C.KLEND.cusdc);
+  const credits = [C.merchantCredit(usdcTx.tx, MERCHANT, dst, usdcTx.sig), C.merchantCredit(earnTx.tx, MERCHANT, dst, earnTx.sig), { kind: 'withdraw', sig: 'w', at: 5, usdc: 9n }];
+  const base = { originAsset: 'nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near', recipient: MERCHANT };
+  const aurora = [
+    { ...base, depositAddress: '0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5', status: 'SUCCESS', amountInFormatted: '0.773463', destinationChainTxHashes: [usdcTx.sig], createdAt: '2026-10-29T18:25:00Z' },
+    { ...base, depositAddress: '0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56', status: 'REFUNDED', amountInFormatted: '0.4', destinationChainTxHashes: [], createdAt: '2026-10-29T18:27:00Z' },
+    { ...base, depositAddress: '0x1111111111111111111111111111111111111111', status: 'PENDING_DEPOSIT', createdAt: '2026-10-30T00:00:00Z' },
+    { ...base, recipient: 'someoneelse', depositAddress: '0x2222222222222222222222222222222222222222', status: 'SUCCESS', createdAt: '2026-10-30T00:00:00Z' },
+  ];
+  const rows = C.ledgerRows(credits, aurora, MERCHANT);
+  assert.equal(rows.length, 3);
+  assert.deepEqual(rows.map((r) => r.kind), ['earn', 'aurora', 'usdc']); // newest first
+  const paid = rows[2]; assert.equal(paid.verified, true); assert.equal(paid.usdc, 500000n); assert.equal(paid.paidIn, '0.773463'); assert.equal(paid.record, '#s=0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5');
+  assert.equal(rows[1].status, 'REFUNDED'); assert.equal(rows[1].verified, false); assert.equal(rows[1].usdc, null);
+  assert.equal(rows[0].record, `#c=Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s.${MERCHANT}`);
+});
+test('daily totals count only verified credits, in the merchant\'s local day', () => {
+  const now = Date.parse('2026-11-03T10:00:00Z');
+  const rows = [
+    { verified: true, at: Date.parse('2026-11-03T09:00:00Z') / 1000, usdc: 500000n },
+    { verified: true, at: Date.parse('2026-11-02T20:00:00Z') / 1000, usdc: 150000n }, // 01:30 on Nov 3 in IST
+    { verified: false, at: Date.parse('2026-11-03T08:00:00Z') / 1000, usdc: null },
+    { verified: true, at: Date.parse('2026-10-01T08:00:00Z') / 1000, usdc: 999n }, // outside the window
+  ];
+  const utc = C.dailyTotals(rows, { days: 3, now });
+  assert.deepEqual(utc.map((d) => [d.day, d.usdc, d.count]), [['2026-11-01', 0n, 0], ['2026-11-02', 150000n, 1], ['2026-11-03', 500000n, 1]]);
+  const ist = C.dailyTotals(rows, { days: 3, now, tzOffsetMin: -330 });
+  assert.deepEqual(ist.map((d) => [d.day, d.usdc, d.count]), [['2026-11-01', 0n, 0], ['2026-11-02', 0n, 0], ['2026-11-03', 650000n, 2]]);
+});
+test('earn value is a lower bound from the newest real deposit rate', async () => {
+  const dst = await C.ata(MERCHANT, C.KLEND.cusdc);
+  const rows = C.ledgerRows([C.merchantCredit(earnTx.tx, MERCHANT, dst, earnTx.sig)], [], MERCHANT);
+  const v = C.earnValue(124074n, rows);
+  assert.ok(v.usdc >= 149990n && v.usdc <= 150000n, String(v.usdc)); assert.equal(v.sig, earnTx.sig);
+  assert.equal(C.earnValue(0n, rows), null); assert.equal(C.earnValue(5n, []), null);
+});
+test('links remembered on this device: newest first, no duplicates, capped', () => {
+  let l = [];
+  for (let i = 0; i < 10; i++) l = C.rememberLink(l, { url: `u${i}` }, 8);
+  assert.equal(l.length, 8); assert.equal(l[0].url, 'u9');
+  l = C.rememberLink(l, { url: 'u5', again: true }, 8);
+  assert.equal(l[0].again, true); assert.equal(l.filter((x) => x.url === 'u5').length, 1);
+  assert.deepEqual(C.rememberLink('junk', { url: 'a' }), [{ url: 'a' }]);
+});

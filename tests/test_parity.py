@@ -90,8 +90,40 @@ class LinkTests(unittest.TestCase):
             receipts.make_pay_link(signer, to=signer.pubkey, amount="1", ref="a", settle="other")
 
 
+    def test_name_is_signed_and_validated(self):
+        signer = receipts.Signer(sol.b58encode(bytes(range(32))))
+        link = receipts.make_pay_link(signer, to=signer.pubkey, amount="2.00", ref="a", name="  Café  Lumière ", base_url="x#")
+        fields, ok = receipts.read_pay_link(link.split("#", 1)[1])
+        self.assertTrue(ok)
+        self.assertEqual(fields["n"], "Café Lumière")
+        for bad in ("Sh\u200bop", "x\u202ey", "a" * 41, "...", "Shop <b>"):
+            with self.assertRaises(ValueError):
+                receipts.make_pay_link(signer, to=signer.pubkey, amount="1", ref="a", name=bad)
+
+
+NAMES = ["  Café   Lumière  ", "Tienda de Ana & Co.", "दुकान", "Cafe\u0301", "", "   ", "...", "a" * 40, "a" * 41,
+         "Shop\u202egnp.exe", "Sh\u200bop", "Shop<script>", 'Shop "x"', "Shop\u00a0Two", "Shop \U0001f642", "Line\u2028Two",
+         "Tab\tand\nnewline", "O'Brien (Ltd)!", "under_score-dash", "\ufeffBOM", "東京ラーメン", "مقهى"]
+NODE_NAMES = """
+const C=require(process.argv[1]);const a=JSON.parse(process.argv[2]);
+console.log(JSON.stringify({names:a.names.map(C.cleanName),msg:C.linkMessage(a.link)}));
+"""
+
+
 @unittest.skipUnless(node_available(), "node not installed")
 class ParityTests(unittest.TestCase):
+    def test_names_and_signed_bytes_match_the_browser(self):
+        core = os.path.abspath(os.path.join(HERE, "..", "docs", "core.js"))
+        pk = sol.b58encode(bytes(range(32)))
+        link = {"to": pk, "amt": "25.00", "ref": "inv-1", "earn": True, "name": "Café Lumière", "signer": pk, "now": 1793700000000}
+        out = subprocess.run(["node", "-e", NODE_NAMES, "--", core, json.dumps({"names": NAMES, "link": link})],
+                             capture_output=True, text=True, timeout=30, check=True).stdout
+        js = json.loads(out)
+        self.assertEqual([receipts.clean_name(n) for n in NAMES], js["names"])
+        self.assertIn("Café Lumière", js["names"])
+        fields = {"v": 1, "to": pk, "amt": "25.00", "ref": "inv-1", "exp": 1793700000 + 7 * 86400, "k": pk, "s": "earn", "n": "Café Lumière"}
+        self.assertEqual(receipts.canonical(fields), js["msg"].encode())
+
     def test_python_and_browser_build_identical_steps(self):
         core = os.path.abspath(os.path.join(HERE, "..", "docs", "core.js"))
         for create in (True, False):

@@ -16,11 +16,13 @@ No account, no wallet and no money needed.
 
 | Time | Do this | You will see |
 |---|---|---|
+| 1 min | Open the [first-run flow](https://apps.swiftbotlab.workers.dev/sluice-pay/#start), paste any Solana wallet address | Three steps to a working checkout: name and payout address (checked on Solana as you paste it: token accounts, mints, 0x addresses and recovery phrases are refused), USDC or settle-to-earn, then a pay link or permanent pay page with a live preview of what the customer sees, a QR and a save-your-link screen. |
 | 1 min | Open the [live demo invoice](https://apps.swiftbotlab.workers.dev/sluice-pay/#p=eyJhbXQiOiIwLjUwIiwiZXhwIjoxODAwMDEzMzY3LCJrIjoiOWNZRnpybUhSY3NZekxoQVdzTmVtekN5NzVaaEVUbjJweDRNUzhvRERSZVIiLCJyZWYiOiJkZW1vLWludm9pY2UtMTA0MiIsInMiOiJlYXJuIiwidG8iOiI5Y1lGenJtSFJjc1l6TGhBV3NOZW16Q3k3NVpoRVRuMnB4NE1TOG9ERFJlUiIsInYiOjF9.XDSG4A7YmbS97B2hAIbGSnT3aJ3sOlasUS3qWgHLkXP8qTCp9P3Iqp71OrojPLT19vcn39eOTFU0IcZZ6b3PCQ) | A merchant-signed invoice, 202 assets on 34 networks from Aurora's live list, a live price for whichever asset you tap. Change one character of the link: the checkout refuses it. |
 | 1 min | Open the [home page](https://apps.swiftbotlab.workers.dev/sluice-pay/), go to **Live proof**, press **Re-check all** | Eight real mainnet payments re-verified from your browser, against Aurora and Solana, right now. |
 | 1 min | Open a [refunded payment](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56) and a [paid one](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0xDF4FE7105893cB3BC78579A703b551d65eBa7c54) | Shareable records built only from Aurora and Solana data: what was sent, what came back, and the Solana check. |
 | 1 min | `git clone https://github.com/swiftbotlabs/sluice-pay && cd sluice-pay && python3 cli/simulate_earn.py` | The Intents Connect transaction that settles an invoice into Kamino, run through Solana's simulator on live mainnet state. Standard library only. |
-| 1 min | `node --test tests/js/core.test.mjs` and, after `pip install -r requirements.txt`, `python3 -m unittest discover -s tests` | 27 checkout tests and 51 server, CLI and parity tests, offline. They include real Intents Connect payloads and tampered copies of them. |
+| 1 min | Open the [merchant view](https://apps.swiftbotlab.workers.dev/sluice-pay/#m=9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR) of the demo merchant | Balances, USDC received per day, every payment with its Solana transaction and record, and the Kamino position, all read live from Solana. |
+| 1 min | `node --test tests/js/core.test.mjs` and, after `pip install -r requirements.txt`, `python3 -m unittest discover -s tests` | 39 checkout tests and 53 server, CLI and parity tests, offline. They include real Intents Connect payloads, real mainnet transactions, and tampered copies of them. |
 
 ## How it meets the judging criteria
 
@@ -29,7 +31,7 @@ No account, no wallet and no money needed.
 | **Working integration, demoed live** | All three products: Swap API and Confidential Intents in the checkout, Intents Deposits on permanent pay pages, Intents Connect in the checkout and the CLI. [Eight mainnet payments](#live-on-mainnet-real-money-real-links) you can re-check from the page. |
 | **Removes a real cross-chain friction point** | A customer pays from what they hold, in one step, and the merchant never touches a bridge. A [permanent pay page](#permanent-pay-pages) removes even the checkout. Machine buyers get a [402 flow](#what-sluice-does) with no human to rescue a half-finished bridge. |
 | **Correct settlement and refund handling** | [Settlement and refund table](#settlement-and-refund-handling), with a real refund on mainnet. Provider `SUCCESS` is only a hint: delivery waits for the balance change on Solana. A short deposit can be completed in place. A failed Intents Connect step can be retried from the page, with the same order reference so it cannot pay twice. Routes under an active Aurora incident are hidden. |
-| **Clean UX, no unnecessary actions** | Connect a wallet and the refund address, chain and asset fill themselves. On EVM chains, Bitcoin and Solana the QR carries the amount too, so nothing is typed. Paying with USDC already on Solana skips the bridge entirely. Mobile first. |
+| **Clean UX, no unnecessary actions** | A merchant goes from nothing to a shareable checkout in three steps, with a live preview of what the customer will see. Connect a wallet and the refund address, chain and asset fill themselves. On EVM chains, Bitcoin and Solana the QR carries the amount too, so nothing is typed. Paying with USDC already on Solana skips the bridge entirely. Mobile first. |
 | **Fit and creativity** | [Invoices that earn](#invoices-that-earn): the payer's money lands in the merchant's own yield position, in one atomic transaction. Merchant-signed links. Order references you can look up on Solana. |
 | **Bonus: multi-chain sources** | 202 assets on 34 networks, read live from Aurora's list. Real runs from Base and Arbitrum. |
 | **Bonus: contract-level composability** | Intents Connect runs `refresh_reserve` and `deposit_reserve_liquidity` on Kamino, or `TransferChecked` with a reference, after the bridge lands. The page decodes the exact transaction before the wallet signs. |
@@ -52,7 +54,8 @@ agents, backends) have it worst: there is no human to recover a half-finished br
 | **402 pay-per-call** for software | A Sluice API answers `402 Payment Required` with its price in USDC on Solana. A buyer creates an order, pays the quoted deposit from any supported chain, and calls again with `X-Sluice-Order`. The response comes with a **receipt signed by the server** that binds the request, the delivered bytes, the source-chain deposit and the Solana settlement. |
 | **On-chain order references** (Intents Connect) | The buyer's deposit is bridged into the buyer's own Solana account (Intents Connect intermediary), which runs ONE Solana transaction paying the merchant exactly the price and carrying a **reference account derived from the order id** (the Solana Pay pattern). `getSignaturesForAddress(reference)` finds the payment for an order, from Solana alone. |
 | **Private payments** (Confidential Intents) | One toggle routes the payment through Confidential Intents, so the payer's source wallet is not linkable to the Solana settlement. Sluice still verifies the settlement on Solana. |
-| **Records and a merchant view** | Every payment has a shareable record (`#s=<deposit address>`, or `#c=<reference>.<merchant>` for Connect), with support details in the shape Aurora's support process asks for. `#m=<address>` shows a merchant's balances and recent payments. No database behind either. |
+| **Records and a merchant view** | Every payment has a shareable record (`#s=<deposit address>`, or `#c=<reference>.<merchant>` for Connect), with support details in the shape Aurora's support process asks for. `#m=<address>` is the merchant's view: balances, USDC received per day, every credit read from Solana (joined with Aurora's record where this checkout routed it) and the Kamino position. No database behind either. |
+| **First run** (`#start`) | Name and payout address, then USDC or settle-to-earn, then a pay link or a permanent pay page. The address is checked on Solana while it is pasted, the customer's view is previewed live, and the last screen is the link, its QR (also as a printable PNG) and a short checklist. Signed links carry the name inside the signature. Nothing is sent to a server. |
 
 ## Permanent pay pages
 
@@ -236,7 +239,7 @@ python3 cli/sluice_buy.py http://127.0.0.1:8402/api/report/<solana-address> \
 # --confidential --accept-unverifiable-quote   private payment (quote cannot be cross-checked publicly; loss capped by --max-usd)
 
 # 4) signed pay link for the checkout page (--earn settles into Kamino)
-python3 cli/make_link.py --key-file merchant.key --amount 25.00 --ref invoice-1042 --earn
+python3 cli/make_link.py --key-file merchant.key --amount 25.00 --ref invoice-1042 --name "Demo Shop" --earn
 
 # 5) settle-to-earn: prove it on live mainnet state (no keys), then turn a position back into USDC
 python3 cli/simulate_earn.py

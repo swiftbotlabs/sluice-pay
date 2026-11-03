@@ -45,6 +45,23 @@ Sluice moves real money, so the design assumes every input is hostile and every 
   and are re-checked with the public record before they are shown. An order that cannot be re-checked is not resumed, and the page warns
   the payer not to pay twice. Expired addresses are not shown as payable. The page guards against a double click on its own send
   button; it cannot stop a payer sending again from another wallet.
+- **A merchant's name is bounded display text.** Names are NFC-normalised, at most 40 characters, letters, marks and digits of any
+  script plus single spaces and `. , ' & ( ) ! _ -`. Control, zero-width, bidi and other invisible characters are refused (the
+  Python CLI applies the same rule; a parity test runs both). On a signed link the name sits inside the signed bytes, so changing it
+  breaks the signature. On an unsigned link or a permanent pay page it is shown with a warning that anyone could have changed it. The
+  full address is always shown under the name, and a name never replaces the address check.
+- **The payout address is checked before a link exists.** The first-run form refuses 0x addresses, token mints, token accounts,
+  programs and known Kamino accounts, reading the account from Solana. Anything that looks like a recovery phrase or a private key
+  is cleared from the field at once and never stored. Addresses with no private key (for example multisig vaults) are allowed with a
+  warning.
+- **The merchant view counts only what Solana shows.** Every amount in it comes from a transaction read from Solana: a USDC credit
+  to the merchant, or a Kamino deposit that names the merchant's own cUSDC account. The merchant moving its own USDC into Kamino, and
+  withdrawals from it, are not counted. Aurora's history only adds what the customer paid with and a record link, and payments it
+  lists that Solana does not show yet are marked as not checked. Any USDC sent to the merchant appears, not only Sluice payments, and
+  the page says so. The Kamino value shown is a floor: the USDC-per-cUSDC rate of the newest deposit seen on Solana.
+- **What stays on the device.** The first-run form keeps the merchant's name, address, settlement choice, the links made and checklist
+  ticks in this browser's localStorage, and nothing else. Stored values are re-validated when read. "Forget my details on this device"
+  removes them.
 - **Private payments stay private in our records.** For confidential orders the order view and the receipt omit the
   payer's refund address, source-chain tx and deposit address.
 

@@ -597,7 +597,170 @@
     return a > d ? a - d : 0n;
   }
 
+  // ---------- merchant first run (pure: what the merchant typed, and what Solana says about it) ----------
+  const NAME_MAX = 40;
+  const NAME_OK = /^[\p{L}\p{M}\p{N} .,'&()!_-]+$/u;
+  /** A display name for the checkout. Letters, marks and digits from any script, single spaces and a little punctuation.
+   *  Control, zero-width, bidi and other invisible characters are refused, so a name cannot hide or reorder text. */
+  function cleanName(s) {
+    if (typeof s !== 'string') return null;
+    const t = s.normalize('NFC').replace(/[ \t\n\r]+/g, ' ').replace(/^ +| +$/g, '');
+    if (!t || [...t].length > NAME_MAX || !NAME_OK.test(t) || !/[\p{L}\p{N}]/u.test(t)) return null;
+    return t;
+  }
+  /** Something nobody should ever paste into a web page: a recovery phrase or a private key in any common format. */
+  function looksSecret(s) {
+    const t = String(s || '').trim();
+    if (!t) return false;
+    const words = t.split(/\s+/);
+    if (words.length >= 12 && words.length <= 24 && words.every((w) => /^[a-z]{3,8}$/.test(w))) return true;
+    if (/^(0x)?[0-9a-fA-F]{64}$/.test(t)) return true;
+    if (/^\[\s*\d{1,3}(\s*,\s*\d{1,3}){63}\s*\]$/.test(t)) return true;
+    if (/^[1-9A-HJ-NP-Za-km-z]{80,90}$/.test(t)) { try { return b58decode(t).length === 64; } catch { return false; } }
+    return false;
+  }
+  const TOKEN_2022 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+  const NOT_A_WALLET = {
+    [USDC_MINT]: "the USDC token's own address", [KLEND.cusdc]: "Kamino's cUSDC token address", [TOKEN_PROGRAM]: 'the Token program',
+    [TOKEN_2022]: 'the Token-2022 program', [ATA_PROGRAM]: 'a Solana program', [SYSTEM_PROGRAM]: 'the System program', [COMPUTE_BUDGET]: 'a Solana program',
+    [KLEND.program]: "Kamino's program", [KLEND.market]: "Kamino's market", [KLEND.reserve]: "Kamino's USDC reserve", [KLEND.supply]: "Kamino's USDC vault",
+    [KLEND.authority]: "Kamino's vault authority", So11111111111111111111111111111111111111112: "wrapped SOL's token address",
+    Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: "the USDT token's own address",
+  };
+  /** What a merchant pasted as the payout address. `account` is Solana's getAccountInfo value (jsonParsed): undefined while
+   *  unchecked, null when the address has no account yet, or 'error' when Solana could not be read. */
+  function payoutCheck(input, account) {
+    const a = String(input || '').trim();
+    if (!a) return { ok: false, level: 'empty', msg: '' };
+    if (looksSecret(a)) return { ok: false, level: 'secret', msg: 'That looks like a secret recovery phrase or private key. Never paste it into any page, this one included. It has been cleared from the field.' };
+    if (isEvmAddr(a)) return { ok: false, level: 'bad', msg: 'That is an Ethereum-style 0x address. Paste your Solana address: in Phantom it is the one next to Solana.' };
+    if (!isSolAddr(a)) return { ok: false, level: 'bad', msg: 'That is not a Solana address. It is 32 to 44 letters and numbers: copy it from your wallet.' };
+    if (NOT_A_WALLET[a]) return { ok: false, level: 'bad', msg: `That is ${NOT_A_WALLET[a]}, not a wallet. Paste your own wallet address.` };
+    const canSign = onCurve(b58decode(a));
+    if (account === undefined) return { ok: false, level: 'pending', msg: 'Checking this address on Solana…', canSign };
+    if (account === 'error') return { ok: true, level: 'warn', msg: 'Could not check this address on Solana right now. Make sure you copied it from your wallet.', canSign };
+    if (account === null) {
+      return canSign ? { ok: true, level: 'good', msg: 'A Solana wallet address. It holds no SOL, which is fine: you need none to receive USDC. Double-check you copied all of it.', canSign }
+        : { ok: true, level: 'warn', msg: 'This address has no private key (it is not a regular wallet). Only use it if it is a vault you control.', canSign };
+    }
+    if (account.executable) return { ok: false, level: 'bad', msg: 'That is a program, not a wallet. Paste your own wallet address.', canSign };
+    if (account.owner === TOKEN_PROGRAM || account.owner === TOKEN_2022) {
+      return account.type === 'mint' ? { ok: false, level: 'bad', msg: "That is a token's own address (a mint), not a wallet. Paste your own wallet address.", canSign }
+        : { ok: false, level: 'bad', msg: "That is a token account. Paste your wallet's main Solana address instead: payments go to the USDC account that belongs to it.", canSign };
+    }
+    if (account.owner === SYSTEM_PROGRAM) {
+      return canSign ? { ok: true, level: 'good', msg: 'A Solana wallet address, active on Solana.', canSign }
+        : { ok: true, level: 'warn', msg: 'This address has no private key: it is controlled by a program (for example a multisig vault). Only use it if that vault is yours.', canSign };
+    }
+    return { ok: true, level: 'warn', msg: 'This account belongs to a program (for example a multisig or smart wallet). Only use it if it is yours and can hold USDC.', canSign };
+  }
+  /** Amount, reference and name for a fixed-price link, validated and normalised. Throws with a message the form can show. */
+  function linkInput({ to, amt, ref = '', name = '' }) {
+    if (!isSolAddr(String(to || '').trim())) throw new Error('Enter a valid Solana address');
+    let a = String(amt || '').trim();
+    if (/^\d+,\d+$/.test(a)) a = a.replace(',', '.'); // phones in many countries type a decimal comma
+    if (!/^\d{1,9}(\.\d{1,6})?$/.test(a) || Number(a) < 0.15) throw new Error('Amount must be at least 0.15 USDC (the cross-chain minimum), with up to 6 decimals');
+    const r = String(ref || '').trim();
+    if (!/^[\w.-]{0,40}$/.test(r)) throw new Error('Reference: letters, digits, . _ - only, up to 40');
+    const n = name ? cleanName(name) : null;
+    if (name && !n) throw new Error('Name: up to 40 letters, digits, spaces and . , \' & ( ) ! _ -');
+    return { to: String(to).trim(), amt: a, ref: r, name: n };
+  }
+  /** The exact text a merchant signs for a pay link: keys in sorted order, byte for byte what the Python CLI signs. */
+  function linkMessage({ to, amt, ref = '', earn = false, name = null, signer, now = Date.now(), days = 7 }) {
+    const f = { amt, exp: Math.floor(now / 1000) + days * 86400, k: signer };
+    if (name) f.n = name;
+    f.ref = ref; if (earn) f.s = 'earn';
+    f.to = to; f.v = 1;
+    return JSON.stringify(f);
+  }
+  /** `#a=<merchant>` or `#a=<merchant>&n=<name>`: the permanent pay page. The name is unsigned and labelled so on the page. */
+  function permanentLink(hash) {
+    const q = new URLSearchParams(String(hash || '').replace(/^#/, ''));
+    return { merchant: q.get('a') || '', name: cleanName(q.get('n') || '') };
+  }
+
+  // ---------- merchant view: Solana is the ledger, Aurora only says where a credit came from ----------
+  /** Kamino deposits in this transaction whose cUSDC goes to `dst`: their total USDC amount and the first order reference. */
+  function kaminoDepositTo(tx, dst) {
+    const ixs = ((tx.transaction || {}).message || {}).instructions || [];
+    let amount = 0n; let ref = null; let hit = false;
+    for (const ix of ixs) {
+      if (ix.programId !== KLEND.program || !Array.isArray(ix.accounts) || typeof ix.data !== 'string' || ix.data.length > 100) continue;
+      let d; try { d = b58decode(ix.data); } catch { continue; }
+      if (d.length === 16 && toHex(d.slice(0, 8)) === KLEND.deposit && ix.accounts[1] === KLEND.reserve && ix.accounts[8] === dst) {
+        hit = true; amount += u64le(d, 8);
+        if (!ref && isSolAddr(ix.accounts[12])) ref = ix.accounts[12];
+      }
+    }
+    return hit ? { amount, ref } : null;
+  }
+  /** One Solana transaction seen from the merchant's side. A USDC credit, a Kamino deposit into the merchant's own cUSDC
+   *  account paid by someone else, a withdrawal from Kamino, or nothing. The merchant moving its own USDC into Kamino is not income. */
+  function merchantCredit(tx, merchant, cusdcAccount, sig) {
+    if (!tx || !tx.meta || tx.meta.err) return null;
+    const usdc = tokenDelta(tx, merchant, USDC_MINT); const shares = tokenDelta(tx, merchant, KLEND.cusdc);
+    const at = tx.blockTime || null;
+    if (shares > 0n) {
+      const dep = cusdcAccount ? kaminoDepositTo(tx, cusdcAccount) : null;
+      if (!dep || usdc < 0n) return null;
+      // Only the deposits that name the merchant's account count, never what else the same transaction put into Kamino.
+      const vault = tokenDelta(tx, KLEND.authority, USDC_MINT);
+      const supplied = vault <= 0n ? 0n : vault < dep.amount ? vault : dep.amount;
+      return { kind: 'earn', sig, at, shares, supplied, ref: dep.ref };
+    }
+    if (shares < 0n) return usdc > 0n ? { kind: 'withdraw', sig, at, usdc, shares: -shares } : null;
+    return usdc > 0n ? { kind: 'usdc', sig, at, usdc } : null;
+  }
+  const AURORA_LIVE = new Set(['KNOWN_DEPOSIT_TX', 'INCOMPLETE_DEPOSIT', 'PROCESSING', 'SUCCESS', 'REFUNDED', 'FAILED']);
+  /** Newest-first rows for the merchant view. Every credit row comes from Solana; Aurora's list adds the source asset and a record
+   *  link when it routed that exact Solana transaction, and shows payments still on the way or refunded. Unpaid quotes are left out. */
+  function ledgerRows(credits, aurora, merchant) {
+    const bySig = new Map(); const mine = (aurora || []).filter((x) => x && x.recipient === merchant && isDepositAddr(x.depositAddress));
+    for (const x of mine) for (const h of x.destinationChainTxHashes || []) { const s = typeof h === 'string' ? h : h && h.hash; if (s) bySig.set(s, x); }
+    const used = new Set(); const rows = [];
+    for (const c of credits || []) {
+      if (!c || (c.kind !== 'usdc' && c.kind !== 'earn')) continue;
+      const x = bySig.get(c.sig) || null; if (x) used.add(x.depositAddress);
+      rows.push({ kind: c.kind, verified: true, sig: c.sig, at: c.at, usdc: c.kind === 'earn' ? c.supplied : c.usdc, shares: c.shares || 0n,
+        origin: x ? x.originAsset : null, paidIn: x ? x.amountInFormatted || null : null,
+        record: x ? `#s=${x.depositAddress}` : c.ref ? `#c=${c.ref}.${merchant}` : null });
+    }
+    for (const x of mine) {
+      if (used.has(x.depositAddress) || !AURORA_LIVE.has(x.status)) continue;
+      rows.push({ kind: 'aurora', verified: false, status: x.status, at: Math.floor(Date.parse(x.createdAt || '') / 1000) || null, usdc: null,
+        out: x.amountOutFormatted || null, origin: x.originAsset || null, paidIn: x.amountInFormatted || null, record: `#s=${x.depositAddress}` });
+    }
+    return rows.sort((p, q) => (q.at || 0) - (p.at || 0));
+  }
+  /** Verified USDC received per local day, oldest first, ending today. tzOffsetMin = Date#getTimezoneOffset(). */
+  function dailyTotals(rows, { days = 14, now = Date.now(), tzOffsetMin = 0 } = {}) {
+    const key = (ms) => new Date(ms - tzOffsetMin * 60000).toISOString().slice(0, 10);
+    const out = []; const idx = new Map();
+    for (let i = days - 1; i >= 0; i--) { const k = key(now - i * 86400000); idx.set(k, out.length); out.push({ day: k, usdc: 0n, count: 0 }); }
+    for (const r of rows || []) {
+      if (!r.verified || !r.at || r.usdc === null || r.usdc === undefined) continue;
+      const i = idx.get(key(r.at * 1000)); if (i === undefined) continue;
+      out[i].usdc += BigInt(r.usdc); out[i].count += 1;
+    }
+    return out;
+  }
+  /** A lower bound for what a cUSDC balance is worth: the USDC-per-cUSDC rate of the newest deposit we can see on Solana.
+   *  Kamino's rate only grows as interest accrues, so today's value is at least this. */
+  function earnValue(balanceShares, rows) {
+    const bal = BigInt(balanceShares || 0);
+    const last = (rows || []).filter((r) => r.kind === 'earn' && r.shares > 0n && r.usdc > 0n).sort((p, q) => (q.at || 0) - (p.at || 0))[0];
+    if (!last || bal <= 0n) return null;
+    return { usdc: (bal * BigInt(last.usdc)) / BigInt(last.shares), at: last.at, sig: last.sig };
+  }
+  /** Links a merchant made on this device: newest first, no duplicates, at most `max`. */
+  function rememberLink(list, item, max = 8) {
+    const rest = (Array.isArray(list) ? list : []).filter((x) => x && typeof x.url === 'string' && x.url !== item.url);
+    return [item, ...rest].slice(0, max);
+  }
+
   return {
+    cleanName, looksSecret, payoutCheck, linkInput, linkMessage, permanentLink, merchantCredit, ledgerRows, dailyTotals, earnValue, rememberLink, kaminoDepositTo,
     USDC_MINT, TOKEN_PROGRAM, ATA_PROGRAM, SYSTEM_PROGRAM, SOL_USDC, KLEND, CHAINS, POPULAR,
     b58decode, b58encode, isSolAddr, concat, utf8, toHex, fromHex, sha256, toUnits, fromUnits, short,
     validRefund, isEvmAddr, isDepositAddr, onCurve, findPda, ata, referenceKey, paySteps, earnSteps,

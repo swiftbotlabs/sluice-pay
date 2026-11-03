@@ -17,7 +17,7 @@ import urllib.parse
 import urllib.request
 
 API_BASE = "https://intents-api.aurora.dev"
-USER_AGENT = "sluice/0.1 (+https://github.com/swiftbotlab/sluice-pay)"
+USER_AGENT = "sluice/0.1 (+https://github.com/swiftbotlabs/sluice-pay)"
 
 # Canonical asset ids (from GET /api/tokens). Never build ids by hand at runtime: they are checked
 # against the live token list before use.
