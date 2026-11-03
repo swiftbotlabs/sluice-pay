@@ -899,7 +899,7 @@
   }
   function go(step) {
     ob.step = step; show($('o-error'), false); syncOnb();
-    $('start').scrollIntoView({ block: 'start' });
+    window.scrollTo(0, 0); // the progress bar and the new step's heading come first
     const first = { 1: 'o-name', 2: null, 3: ob.kind === 'fixed' ? 'o-amt' : null }[step];
     if (first && !matchMedia('(pointer: coarse)').matches) $(first).focus();
   }
@@ -977,11 +977,10 @@
     show($('o-share'), !!navigator.share);
     $('o-share').onclick = () => navigator.share({ title: `Pay ${who}`, url }).then(shared, () => {});
     ticks();
-    $('start').scrollIntoView({ block: 'start' });
+    window.scrollTo(0, 0); // the progress bar and the new step's heading come first
   }
   async function startOnboarding() {
-    view('start');
-    window.scrollTo(0, 0); setTimeout(() => window.scrollTo(0, 0), 0); // the #start anchor would otherwise hide the header
+    view('setup'); // the section is not called 'start', so the #start link does not scroll the header away
     const me = profile();
     if (me) {
       $('o-name').value = me.name; $('o-to').value = me.to; ob.stored = true; $('o-confirm').checked = false;
@@ -1062,11 +1061,11 @@
 
   // ---------- views ----------
   function view(name) {
-    for (const v of ['pay', 'perm', 'receipt', 'merchant', 'home', 'start']) show($(v), v === name);
+    for (const v of ['pay', 'perm', 'receipt', 'merchant', 'home', 'setup']) show($(v), v === name);
     show($('nav'), name === 'home');
-    for (const el of [$('main'), document.querySelector('.top .wrap'), document.querySelector('footer')]) el.classList.toggle('wide', name === 'start');
+    for (const el of [$('main'), document.querySelector('.top .wrap'), document.querySelector('footer')]) el.classList.toggle('wide', name === 'setup');
     const me = profile(); const mine = $('nav-mine');
-    show(mine, !!me && (name === 'home' || name === 'start')); if (me) mine.href = `#m=${me.to}`;
+    show(mine, !!me && (name === 'home' || name === 'setup')); if (me) mine.href = `#m=${me.to}`;
   }
   const row = (label, value) => {
     const d = document.createElement('div'); const t = document.createElement('dt'); const v = document.createElement('dd');
