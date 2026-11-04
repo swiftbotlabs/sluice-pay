@@ -246,7 +246,7 @@ class Engine:
             else:
                 s = self.au.status(o["deposit_address"], o["deposit_memo"])
                 pview = au.summarize_status(s)
-                pstat, dest = pview["status"], pview["destinationTx"]
+                pstat, dest = pview["status"], pview["solanaTx"]
         except (au.AuroraError, cn.ConnectError) as e:
             return {**self.view(o), "warning": f"provider unreachable: {str(e)[:120]}"}
         self.store.update(oid, provider_status=pstat, provider_view=json.dumps(pview))
@@ -352,5 +352,8 @@ class Engine:
         }
         if o["state"] == "REFUNDED":
             v["refund"] = {"amount": pv.get("refundedAmount"), "reason": pv.get("refundReason"),
-                           "origin_txs": pv.get("originTx")}
+                           "origin_txs": pv.get("originTx"), "refund_txs": pv.get("refundTx") or []}
+        elif pv.get("refundTx") and pv.get("refundedAmount") not in (None, "0", "0.0"):
+            # paid with more than the quote: the order settles, and the excess goes back to refund_to on the paying chain
+            v["excess_refund"] = {"amount": pv.get("refundedAmount"), "refund_txs": pv.get("refundTx")}
         return v

@@ -264,6 +264,50 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(r["refund"]["amount"], "0.3976")
         self.assertIn("0x" + "b" * 64, r["refund"]["origin_txs"])
 
+    def test_overpay_settles_once_and_surfaces_the_excess_refund_even_when_aurora_lists_it_first(self):
+        fa = fakes.FakeAurora()
+        rpc = fakes.FakeRpc(txs={fakes.SIG_A: fakes.parsed_tx(fakes.MERCHANT, 400000)})
+        e, produced = make_engine(fa, rpc)
+        v = e.create_order(resource="report", params=self.P, pay_with="base:USDC", refund_to=fakes.PAYER_EVM)
+        refund = "0x" + "c" * 64
+        st = fakes.success(fakes.SIG_A)
+        st["swapDetails"].update({"depositedAmountFormatted": "0.5", "refundedAmount": "87600", "refundedAmountFormatted": "0.0876",
+                                  "destinationChainTxHashes": [{"hash": refund, "explorerUrl": ""}, {"hash": fakes.SIG_A, "explorerUrl": ""}]})
+        fa.statuses[v["deposit"]["address"]] = [st]
+        r = e.refresh(v["order_id"])
+        self.assertEqual(r["state"], "SETTLED")
+        self.assertEqual(r["settlement"]["solana_tx"], fakes.SIG_A)  # the refund hash is never read as the settlement
+        self.assertEqual(r["excess_refund"], {"amount": "0.0876", "refund_txs": [refund]})
+        e.deliver(v["order_id"], "report", self.P)
+        self.assertEqual(len(produced), 1)
+
+    def test_short_payment_refund_in_either_record_format(self):
+        for where in ("originChainTxHashes", "destinationChainTxHashes"):
+            fa = fakes.FakeAurora()
+            e, produced = make_engine(fa)
+            v = e.create_order(resource="report", params=self.P, pay_with="base:USDC", refund_to=fakes.PAYER_EVM)
+            refund = "0x" + "d" * 64
+            d = {"refundedAmountFormatted": "0.1976", "refundReason": "AMOUNT_MORE_THAN_BALANCE",
+                 "originChainTxHashes": [{"hash": "0x" + "e" * 64, "explorerUrl": ""}], "destinationChainTxHashes": []}
+            d[where] = d[where] + [{"hash": refund, "explorerUrl": ""}]
+            fa.statuses[v["deposit"]["address"]] = [{"status": "INCOMPLETE_DEPOSIT", "swapDetails": {"depositedAmountFormatted": "0.2"}},
+                                                    {"status": "REFUNDED", "swapDetails": d}]
+            self.assertEqual(e.refresh(v["order_id"])["state"], "DEPOSIT_SEEN")
+            r = e.refresh(v["order_id"])
+            self.assertEqual(r["state"], "REFUNDED", where)
+            self.assertEqual(r["refund"]["refund_txs"], [refund], where)
+            with self.assertRaises(OrderError):
+                e.deliver(v["order_id"], "report", self.P)
+            self.assertEqual(produced, [])
+
+    def test_tx_roles_on_the_real_overpaid_record(self):
+        st = json.load(open(os.path.join(os.path.dirname(__file__), "fixture_status_overpay.json")))
+        r = au.tx_roles(st["swapDetails"])
+        self.assertEqual(r["solanaTx"], ["55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7"])
+        self.assertEqual(r["refundTx"], ["0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135"])
+        self.assertEqual(au.tx_roles({"originChainTxHashes": [{"hash": "<script>"}], "destinationChainTxHashes": [None, 7]}),
+                         {"solanaTx": [], "refundTx": [], "topupTx": []})
+
     def test_wrong_request_for_order(self):
         fa = fakes.FakeAurora()
         rpc = fakes.FakeRpc(txs={fakes.SIG_A: fakes.parsed_tx(fakes.MERCHANT, 400000)})
@@ -358,3 +402,32 @@ class TestConnectSteps(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRedeem(unittest.TestCase):
+    """cli/redeem_earn.py: the merchant's cUSDC goes back to the merchant's own USDC account, and nothing else can be built."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "cli"))
+        import redeem_earn
+        cls.rd = redeem_earn
+
+    def test_real_layout_passes_and_tampered_copies_are_refused(self):
+        import copy
+        owner = fakes.MERCHANT
+        ixs = self.rd.redeem_instructions(owner, 124074)
+        self.rd.audit(ixs, owner)  # positive control
+        self.assertEqual(ixs[2][1][7][0], sol.ata(owner, cn.KLEND_CUSDC_MINT))
+        self.assertEqual(ixs[2][1][8][0], sol.ata(owner, sol.USDC_MINT))
+        other = "B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW"
+        def dest(i): i[2][1][8] = (sol.ata(other, sol.USDC_MINT), False, True)
+        def signer(i): i[2][1][0] = (other, True, False)
+        def program(i): i[1] = (sol.TOKEN_PROGRAM, i[1][1], i[1][2])
+        def extra(i): i.append((sol.TOKEN_PROGRAM, [(owner, True, True)], b"\x03"))
+        def source(i): i[2][1][7] = (sol.ata(other, cn.KLEND_CUSDC_MINT), False, True)
+        for mut in (dest, signer, program, extra, source):
+            t = copy.deepcopy(ixs)
+            mut(t)
+            with self.assertRaises(ValueError, msg=mut.__name__):
+                self.rd.audit(t, owner)

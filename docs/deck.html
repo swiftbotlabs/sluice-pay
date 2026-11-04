@@ -24,33 +24,33 @@
 <section class="slide">
   <h2>Sluice</h2>
   <img class="art" src="hero.svg" alt="Five chains flow through Sluice into the merchant's USDC on Solana, or into Kamino.">
-  <ul><li><b>Pay links</b> signed by the merchant's Solana wallet</li><li><b>202 assets on 34 networks</b>, live from Aurora</li><li><b>Nothing counts until Solana shows it</b></li></ul>
+  <ul><li><b>Pay links</b> signed by the merchant's Solana wallet</li><li><b>202 assets on 34 networks</b>, live from Aurora; paid live from Base, Arbitrum and Optimism</li><li><b>Nothing counts until Solana shows it</b></li></ul>
 </section>
 <section class="slide">
   <h2>A page that never expires</h2>
   <p class="big">One permanent address per network, for tips, top-ups and a QR on the counter.</p>
   <ul><li>Any amount, any time, from whatever the customer holds</li><li>No quote, no wallet connect, no form</li><li>Each address is checked against Aurora's record before it is shown</li><li>Fixed prices stay on signed links, which keep refunds</li></ul>
-  <p class="muted">Status: addresses are live on mainnet. No real payment has been run through one yet.</p>
+  <p class="muted">Live on mainnet: on 4 Nov a plain 1.10 USDC transfer on Base reached the merchant on Solana as 1.089777 USDC, 14 seconds after Aurora saw it.</p>
 </section>
 <section class="slide">
   <h2>Invoices that earn</h2>
   <p class="big">The payer's money lands in the <b>merchant's own</b> yield position, in one atomic transaction.</p>
   <ol class="flow"><li><b>Base</b><span>Payer signs once, sends USDC</span></li><li><b>NEAR Intents</b><span>Routes it to Solana</span></li><li><b>Kamino</b><span>Supplies USDC, mints cUSDC</span></li><li><b>Merchant</b><span>Owns the position</span></li></ol>
-  <p class="muted">Two legs through Intents Connect: the cross-chain swap, then a call into a Solana program, with the order reference attached. <span id="earn-status">Live on mainnet: 0.124074 cUSDC to the merchant from one signature on Base.</span></p>
+  <p class="muted">Two legs through Intents Connect: the cross-chain swap, then a call into a Solana program, with the order reference attached. <span id="earn-status">Live on mainnet both ways: 0.124074 cUSDC to the merchant from one signature on Base, then redeemed by the merchant for 0.150041 USDC.</span></p>
 </section>
 <section class="slide">
   <h2>Refunds and settlement, proven</h2>
   <table><thead><tr><th>Situation</th><th>What happens</th></tr></thead><tbody>
     <tr><td>Exact payment</td><td>Delivered after the merchant's balance is read on Solana</td></tr>
-    <tr><td>Too much</td><td>Excess refunded automatically (0.002659 USDC, mainnet)</td></tr>
-    <tr><td>Too little</td><td>Top up in place, or refunded to the payer (0.3976 USDC, mainnet)</td></tr>
+    <tr><td>Too much</td><td>Merchant gets exactly the invoice, the excess goes back: 0.30 sent for 0.25, 0.037512 USDC refunded on Base (mainnet, 4 Nov)</td></tr>
+    <tr><td>Too little</td><td>Top up in place, or refunded to the payer: 0.40 sent for 1.00, 0.3976 USDC back (mainnet); 0.20 sent for 0.25 on 4 Nov</td></tr>
     <tr><td>Route incident</td><td>Asset leaves the list; Solana delivery incidents pause payments</td></tr>
     <tr><td>Provider says success, Solana disagrees</td><td>Not delivered</td></tr>
   </tbody></table>
 </section>
 <section class="slide">
   <h2>You should not have to trust us</h2>
-  <ul><li><b>Links:</b> amount, address and how it settles are signed. One changed character and the checkout refuses</li><li><b>Signatures:</b> the page decodes the exact Solana transaction before your wallet opens, and refuses anything else</li><li><b>Payments:</b> anyone can re-check seven mainnet runs from the browser, no server involved</li><li><b>Orders:</b> a reference account makes each payment findable from Solana alone</li></ul>
+  <ul><li><b>Links:</b> amount, address and how it settles are signed. One changed character and the checkout refuses</li><li><b>Signatures:</b> the page decodes the exact Solana transaction before your wallet opens, and refuses anything else</li><li><b>Payments:</b> anyone can re-check thirteen mainnet runs from the browser, no server involved</li><li><b>Orders:</b> a reference account makes each payment findable from Solana alone</li></ul>
 </section>
 <section class="slide">
   <h2>Beyond people: APIs and agents</h2>

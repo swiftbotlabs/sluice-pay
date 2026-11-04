@@ -27,6 +27,7 @@
     instructions: 'Sysvar1nstructions1111111111111111111111111',
     refresh: '02da8aeb4fc91966',
     deposit: 'a9c91e7e06cd6644',
+    redeem: 'ea75b57db98edc1d',
   };
 
   // Intents Connect's Solana accounts are derived from this NEAR MPC root (v1.signer, public_key domain 1), so the page
@@ -454,6 +455,45 @@
     if (delta < BigInt(minRaw) || (exact && delta !== BigInt(minRaw))) return null;
     return { delta };
   }
+  /** A merchant turning its own Kamino position back into USDC: one successful transaction whose Kamino redeem instruction is
+   *  signed by the merchant, burns cUSDC from the merchant's cUSDC account and pays USDC into the merchant's own USDC account. */
+  function verifyRedeem(tx, merchant, { usdcAcct, cusdcAcct } = {}) {
+    if (!tx || !tx.meta || tx.meta.err) return null;
+    const ixs = ((tx.transaction || {}).message || {}).instructions || [];
+    const hit = ixs.some((ix) => {
+      if (ix.programId !== KLEND.program || !Array.isArray(ix.accounts) || typeof ix.data !== 'string' || ix.data.length > 100) return false;
+      let d; try { d = b58decode(ix.data); } catch { return false; }
+      return d.length === 16 && toHex(d.slice(0, 8)) === KLEND.redeem && ix.accounts[0] === merchant && ix.accounts[2] === KLEND.reserve
+        && (!cusdcAcct || ix.accounts[7] === cusdcAcct) && (!usdcAcct || ix.accounts[8] === usdcAcct);
+    });
+    if (!hit) return null;
+    const usdc = tokenDelta(tx, merchant, USDC_MINT); const shares = -tokenDelta(tx, merchant, KLEND.cusdc);
+    return usdc > 0n && shares > 0n ? { usdc, shares } : null;
+  }
+  /** Aurora lists a refund either after the deposit in originChainTxHashes (records from October) or among
+   *  destinationChainTxHashes (seen 2026-11-04). Sort each hash by what it is: a Solana signature decodes to exactly 64 bytes,
+   *  so anything else on the destination list is a refund on the paying chain. Later paying-chain hashes are refunds only when
+   *  the record reports a refunded amount; otherwise they are further deposits (a top-up). A refund hash is never treated as
+   *  the Solana settlement, and the settlement never as a refund. */
+  function txRoles(details) {
+    const d = details || {};
+    const list = (l) => (Array.isArray(l) ? l : []).map((h) => (typeof h === 'string' ? h : h && h.hash))
+      .filter((h) => typeof h === 'string' && /^[A-Za-z0-9]{20,130}$/.test(h));
+    const isSig = (h) => { try { return b58decode(h).length === 64; } catch { return false; } };
+    const origin = list(d.originChainTxHashes); const dest = list(d.destinationChainTxHashes);
+    const refunded = typeof d.refundedAmount === 'string' ? /^\d+$/.test(d.refundedAmount) && BigInt(d.refundedAmount) > 0n
+      : /[1-9]/.test(String(d.refundedAmountFormatted || ''));
+    const later = origin.slice(1); const destRefunds = dest.filter((h) => !isSig(h));
+    return { deposit: origin[0] || null, solana: dest.filter(isSig), refunds: refunded ? [...later, ...destRefunds] : destRefunds, topups: refunded ? [] : later, refunded };
+  }
+  /** A permanent-address payment counts only if Aurora's lists for THIS address show the deposit and the delivery to THIS merchant.
+   *  The amount itself is then read from Solana by the caller. */
+  function permanentDelivered(lists, { address, merchant, depositTx, solanaTx }) {
+    const mine = (d) => d && String(d.deposit_address || '').toLowerCase() === String(address || '').toLowerCase() && d.recipient === merchant;
+    const got = ((lists && lists.received) || []).find((d) => mine(d) && d.tx_hash === depositTx);
+    const sent = ((lists && lists.success) || []).find((d) => mine(d) && d.tx_hash === solanaTx);
+    return got && sent ? { received: got, delivered: sent } : null;
+  }
   /** Token balance from a base64 SPL token account (amount = u64 at offset 64). */
   function tokenAccountAmount(b64) {
     const b = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -878,7 +918,7 @@
     USDC_MINT, TOKEN_PROGRAM, ATA_PROGRAM, SYSTEM_PROGRAM, SOL_USDC, KLEND, CHAINS, POPULAR,
     b58decode, b58encode, isSolAddr, concat, utf8, toHex, fromHex, sha256, toUnits, fromUnits, short,
     validRefund, isEvmAddr, isDepositAddr, onCurve, findPda, ata, referenceKey, paySteps, earnSteps,
-    decodeMessage, messageFromPayload, auditPayload, secpWire, tokenDelta, verifyEarn, verifyUsdc, tokenAccountAmount,
+    decodeMessage, messageFromPayload, auditPayload, secpWire, tokenDelta, verifyEarn, verifyUsdc, verifyRedeem, txRoles, permanentDelivered, tokenAccountAmount,
     paymentUri, solanaPayUri, assetIncident, settlementIncident, listAssets, isPopular, matchAsset, stage, shortfall,
     permanentRequest, permanentMatches, permanentMinUsd, minInAsset, depositRows,
     MPC, sha3_256, deriveIntermediary, agreedTokens, checkPublicQuote, amountSane, restorable, earnDepositIn, referenceIn,

@@ -69,6 +69,18 @@ Sluice moves real money, so the design assumes every input is hostile and every 
 - **What stays on the device.** The first-run form keeps the merchant's name, address, settlement choice, the links made and checklist
   ticks in this browser's localStorage, and nothing else. Stored values are re-validated when read: a stored link is shown only if the
   link itself pays the stored address. "Forget my details on this device" removes them.
+- **Refund hashes are never read as settlements.** Aurora has listed a refund both after the deposit in `originChainTxHashes`
+  and inside `destinationChainTxHashes` (seen on 4 Nov, next to the Solana signature). The checkout, the record page and the server
+  sort every hash by what it is (`txRoles` in `docs/core.js`, `tx_roles` in `sluice/aurora.py`): only a string that decodes to a
+  64-byte Solana signature is looked up on Solana, anything else on the destination list is shown as a refund on the paying chain, and
+  a later paying-chain hash counts as a refund only when the record reports a refunded amount. Tested with the real 4 Nov record,
+  the October records, the refund listed first, and junk values.
+- **Redemption signs only for the merchant.** `cli/redeem_earn.py` builds one transaction: create the merchant's own USDC account if
+  missing, refresh Kamino's USDC reserve, and redeem cUSDC from the merchant's cUSDC account into the merchant's USDC account, with the
+  merchant as the only signer. It simulates first and sends only with `--send`; the key file must be chmod 600 and is never printed.
+  Before it simulates or signs, it refuses any program, signer or writable account other than the merchant, its two token accounts and
+  Kamino's reserve, cUSDC mint and vault (tested with tampered copies). The live redemption on 4 Nov was this transaction. The checkout's proof check (`verifyRedeem`) counts a redemption only if Kamino's redeem
+  instruction is signed by the merchant and names its accounts, and the merchant's cUSDC fell while its USDC grew.
 - **Private payments stay private in our records.** For confidential orders the order view and the receipt omit the
   payer's refund address, source-chain tx and deposit address.
 

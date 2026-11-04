@@ -1,0 +1,34 @@
+{
+ "address": "0xF06Ae506D1591aB9c49D442A7520671ab5c4Ea7E",
+ "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+ "lists": {
+  "received": [
+   {
+    "tx_hash": "0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b",
+    "fromChain": "base",
+    "asset_id": "base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+    "decimals": 6,
+    "amount": "1100000",
+    "from": "0x2481E29895b43e87e547a50fB0BB5aa1E70585EB",
+    "created_at": "2026-11-04T11:02:35.302Z",
+    "intents_account": "02ff0e1250d79b38178ae1d5a2e6f62fb1731c67817635680a620d8e07ccbc64",
+    "deposit_address": "0xF06Ae506D1591aB9c49D442A7520671ab5c4Ea7E",
+    "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR"
+   }
+  ],
+  "success": [
+   {
+    "tx_hash": "2Jhg3e1bBxCi3oE1BogFcvTn7bivpY3SaJbfnqqbDUzviswDczjU9Fi4WuHbLqw7EVtgqmR7qsz6hgQRHxcvksiE",
+    "destinationChain": "sol",
+    "asset_id": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+    "decimals": 6,
+    "amount": "1089777",
+    "created_at": "2026-11-04T11:02:49.734Z",
+    "intents_account": "02ff0e1250d79b38178ae1d5a2e6f62fb1731c67817635680a620d8e07ccbc64",
+    "deposit_address": "0xF06Ae506D1591aB9c49D442A7520671ab5c4Ea7E",
+    "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR"
+   }
+  ],
+  "failed": []
+ }
+}

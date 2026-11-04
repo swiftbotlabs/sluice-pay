@@ -566,3 +566,55 @@ test('a record with a refund shows what was sent and what came back; one still i
   const rp = C.recordAmounts(pending, t1, mv.merchant); assert.equal(rp.paid, null); assert.equal(rp.refunded, null);
   pending.swapDetails.depositedAmountFormatted = '<b>1</b>'; assert.equal(C.recordAmounts(pending, t1, mv.merchant).paid, null);
 });
+
+// ---------- 4 Nov live proofs: refunds by role, merchant redemption, permanent-address delivery ----------
+const overpay = JSON.parse(readFileSync(new URL('../fixture_status_overpay.json', import.meta.url)));
+const redeemTx = JSON.parse(readFileSync(new URL('../fixture_tx_redeem.json', import.meta.url)));
+const permFx = JSON.parse(readFileSync(new URL('../fixture_permanent_lists.json', import.meta.url)));
+test('refund hashes are told apart from the Solana settlement, in both record formats Aurora has used', () => {
+  // 4 Nov: the refund sits in destinationChainTxHashes next to the Solana signature (real record, overpaid 0.30 for 0.25)
+  const r = C.txRoles(overpay.swapDetails);
+  assert.equal(r.deposit, '0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4');
+  assert.deepEqual(r.solana, ['55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7']);
+  assert.deepEqual(r.refunds, ['0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135']); assert.equal(r.refunded, true);
+  // the refund listed first must not be taken for the settlement
+  const flipped = structuredClone(overpay.swapDetails); flipped.destinationChainTxHashes.reverse();
+  assert.deepEqual(C.txRoles(flipped).solana, r.solana); assert.deepEqual(C.txRoles(flipped).refunds, r.refunds);
+  // October records: the refund is the second paying-chain hash (real T2 overpay and T1 short payment)
+  const t2 = C.txRoles(mv.status['0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5'].swapDetails);
+  assert.equal(t2.solana.length, 1); assert.equal(t2.refunds.length, 1); assert.ok(t2.refunds[0].startsWith('0x291a1b7a'));
+  const t1 = C.txRoles(mv.status['0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56'].swapDetails);
+  assert.deepEqual(t1.solana, []); assert.ok(t1.refunds[0].startsWith('0x7654c9ed')); assert.ok(t1.deposit.startsWith('0x926b1cce'));
+  // with nothing refunded, a second paying-chain hash is a top-up, not a refund
+  const topped = { originChainTxHashes: [{ hash: '0x' + 'a'.repeat(64) }, { hash: '0x' + 'b'.repeat(64) }], destinationChainTxHashes: [], refundedAmount: '0', refundedAmountFormatted: '0' };
+  assert.deepEqual(C.txRoles(topped).refunds, []); assert.deepEqual(C.txRoles(topped).topups, ['0x' + 'b'.repeat(64)]);
+  // junk never becomes a link
+  const junk = { originChainTxHashes: [{ hash: '<img src=x>' }, null, 5], destinationChainTxHashes: [{ hash: 'javascript:alert(1)' }, { hash: 'x'.repeat(200) }] };
+  assert.deepEqual(C.txRoles(junk), { deposit: null, solana: [], refunds: [], topups: [], refunded: false });
+  assert.deepEqual(C.txRoles(undefined).solana, []);
+});
+test('merchant redemption is verified from the real mainnet transaction, and only for the merchant\'s own accounts', async () => {
+  const usdcAcct = await C.ata(MERCHANT); const cusdcAcct = await C.ata(MERCHANT, C.KLEND.cusdc);
+  assert.deepEqual(C.verifyRedeem(redeemTx, MERCHANT, { usdcAcct, cusdcAcct }), { usdc: 150041n, shares: 124074n });
+  assert.equal(C.merchantCredit(redeemTx, MERCHANT, cusdcAcct, 's').kind, 'withdraw'); // listed, never counted as a payment
+  assert.equal(C.verifyRedeem(redeemTx, 'So11111111111111111111111111111111111111112', {}), null);
+  assert.equal(C.verifyRedeem(redeemTx, MERCHANT, { usdcAcct: cusdcAcct, cusdcAcct }), null); // USDC paid elsewhere
+  const failed = structuredClone(redeemTx); failed.meta.err = { InstructionError: [2, 'Custom'] }; assert.equal(C.verifyRedeem(failed, MERCHANT, {}), null);
+  // the merchant's settle-to-earn deposit and a plain USDC credit are not redemptions
+  assert.equal(C.verifyRedeem(earnTx.tx, MERCHANT, {}), null); assert.equal(C.verifyRedeem(usdcTx.tx, MERCHANT, {}), null);
+  // balances alone are not enough: without Kamino's redeem instruction it is not a redemption
+  const noIx = structuredClone(redeemTx); noIx.transaction.message.instructions = noIx.transaction.message.instructions.filter((i) => i.programId !== C.KLEND.program);
+  assert.equal(C.verifyRedeem(noIx, MERCHANT, {}), null);
+});
+test('a permanent-address payment counts only when Aurora lists that deposit and that delivery for this address and merchant', () => {
+  const q = { address: permFx.address, merchant: permFx.merchant, depositTx: '0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b',
+    solanaTx: '2Jhg3e1bBxCi3oE1BogFcvTn7bivpY3SaJbfnqqbDUzviswDczjU9Fi4WuHbLqw7EVtgqmR7qsz6hgQRHxcvksiE' };
+  const hit = C.permanentDelivered(permFx.lists, q);
+  assert.ok(hit); assert.equal(hit.received.amount, '1100000'); assert.equal(hit.delivered.amount, '1089777');
+  assert.equal(C.permanentDelivered(permFx.lists, { ...q, address: permFx.address.toLowerCase() }) !== null, true); // EVM case-insensitive
+  assert.equal(C.permanentDelivered(permFx.lists, { ...q, merchant: 'So11111111111111111111111111111111111111112' }), null);
+  assert.equal(C.permanentDelivered(permFx.lists, { ...q, address: '0x57c2C008e9739E012D6878164E5E70BcA555b6B4' }), null);
+  assert.equal(C.permanentDelivered(permFx.lists, { ...q, solanaTx: '55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7' }), null);
+  assert.equal(C.permanentDelivered({ received: permFx.lists.received, success: [] }, q), null);
+  assert.equal(C.permanentDelivered(null, q), null);
+});

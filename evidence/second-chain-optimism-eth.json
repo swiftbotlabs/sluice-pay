@@ -1,0 +1,102 @@
+{
+ "run": "Paid from ETH on Optimism",
+ "date": "2026-11-04",
+ "what_it_proves": "A second source chain: native ETH on Optimism paid a 0.25 USDC invoice to the merchant on Solana; the ETH over-sent was refunded on Optimism (internal transfer from the bridge contract in the refund tx).",
+ "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+ "quote_request": {
+  "dry": false,
+  "swapType": "EXACT_OUTPUT",
+  "depositType": "ORIGIN_CHAIN",
+  "depositMode": "SIMPLE",
+  "originAsset": "nep245:v2_1.omni.hot.tg:10_11111111111111111111",
+  "destinationAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+  "amount": "250000",
+  "slippageTolerance": 100,
+  "refundTo": "0x2481E29895b43e87e547a50fB0BB5aa1E70585EB",
+  "refundType": "ORIGIN_CHAIN",
+  "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "recipientType": "DESTINATION_CHAIN",
+  "deadline": "2026-11-04T16:58:41.000Z",
+  "confidentiality": "public",
+  "quoteWaitingTimeMs": 0
+ },
+ "quote": {
+  "timeEstimate": 34,
+  "deadline": "2026-11-07T16:58:41.000Z",
+  "timeWhenInactive": "2026-11-07T16:58:41.000Z",
+  "depositAddress": "0xcd4587f5e161475a9b3ECFA6DDD22233634b0653",
+  "amountIn": "113159035516768",
+  "amountInFormatted": "0.000113159035516768",
+  "amountInUsd": "0.263024598974",
+  "minAmountIn": "112070467386884",
+  "amountOut": "250000",
+  "amountOutFormatted": "0.25",
+  "amountOutUsd": "0.249844000000",
+  "minAmountOut": "250000",
+  "refundFee": "260078000000",
+  "withdrawFee": "10007"
+ },
+ "quote_correlation_id": "142237dc-ddef-43ac-b677-054fe7cf6c83",
+ "public_cross_check": "NEAR Intents 1click status agreed on recipient, refundTo, origin asset, amountIn and EXACT_OUTPUT before the send; problems: []",
+ "source_chain": "op",
+ "deposit_tx": "0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370",
+ "refund_tx": "0x996f9e7fcc848f7068a2fb2a2727e0fbf9497c88674400f2a4c4e2234ee44c80",
+ "solana_settlement": "39uawZ5pSTz4jZEPv3DYZHYjxpQurRC6bvZWiac7GNkjqryzP3jpzfxKXs6e1aEgYye9WgjqHXDaYtBHUYwVJMfy",
+ "solana_check": {
+  "slot": 465278660,
+  "blockTime": 1793790311,
+  "err": null,
+  "merchant_usdc_delta": 0.25,
+  "merchant_cusdc_delta": 0.0,
+  "merchant_sol_delta": 0.0,
+  "finalized": true
+ },
+ "final_status": {
+  "status": "SUCCESS",
+  "updatedAt": "2026-11-04T11:05:31.000Z"
+ },
+ "swap_details": {
+  "intentHashes": [
+   "FY8kiRHpMxzMw76FyFDU2iE4qHyrVhyLAy57QxyD3ZYe",
+   "EvpyL1m6BfMaPzxD5wRkC4w5a6m1RwugpfJEcEVeQ7FV",
+   "3EJZFTK7UY8vvcggjDLSTKCUqKCGU7AoLjxSpDTNuPuh"
+  ],
+  "nearTxHashes": [
+   "Am1CHm8TRahiktQxPDpGDLYUchjSEHRAMTwLb5dDgec1",
+   "BLNMa45kECRydvMPHcY1bGtjywHJp7ypqiucR8miTRbB",
+   "BLmXh3RSzxnaGssxvzsfvgDdsBKwCYUT1Ztd9Vog2CDy",
+   "H4vBmsMogph2UJdVop6UzXYsKDrTH3GbpU2XMrELcjoT",
+   "AwJWsWmtV8Ym2yppNKbDYwYeWy4b8qgPXxvaHd9m7p4Q"
+  ],
+  "amountIn": "112126150436235",
+  "amountInFormatted": "0.000112126150436235",
+  "amountInUsd": "0.260760575455",
+  "amountOut": "250000",
+  "amountOutFormatted": "0.25",
+  "amountOutUsd": "0.249849250000",
+  "slippage": 5,
+  "originChainTxHashes": [
+   {
+    "hash": "0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370",
+    "explorerUrl": ""
+   }
+  ],
+  "destinationChainTxHashes": [
+   {
+    "hash": "39uawZ5pSTz4jZEPv3DYZHYjxpQurRC6bvZWiac7GNkjqryzP3jpzfxKXs6e1aEgYye9WgjqHXDaYtBHUYwVJMfy",
+    "explorerUrl": ""
+   },
+   {
+    "hash": "0x996f9e7fcc848f7068a2fb2a2727e0fbf9497c88674400f2a4c4e2234ee44c80",
+    "explorerUrl": ""
+   }
+  ],
+  "refundedAmount": "20982670536664",
+  "refundedAmountFormatted": "0.000020982670536664",
+  "refundedAmountUsd": "0.048796878947",
+  "refundReason": null,
+  "depositedAmount": "133368898372899",
+  "depositedAmountFormatted": "0.000133368898372899",
+  "depositedAmountUsd": "0.310162710056"
+ }
+}

@@ -38,6 +38,31 @@ def redeem_instructions(owner: str, amount: int, cusdc: str | None = None) -> li
     return [create_usdc, refresh, redeem]
 
 
+def audit(instructions: list, owner: str, cusdc: str | None = None) -> None:
+    """Refuse anything but: the owner's own USDC account (CreateIdempotent), refresh the USDC reserve, and redeem cUSDC from the
+    owner's cUSDC account into the owner's USDC account, with the owner as the only signer. Raises ValueError otherwise."""
+    usdc, cusdc = sol.ata(owner, sol.USDC_MINT), cusdc or sol.ata(owner, cn.KLEND_CUSDC_MINT)
+    writable_ok = {owner, usdc, cusdc, cn.KLEND_USDC_RESERVE, cn.KLEND_CUSDC_MINT, cn.KLEND_USDC_SUPPLY}
+    if len(instructions) != 3:
+        raise ValueError("expected exactly three instructions")
+    for prog, accs, _ in instructions:
+        if prog not in (sol.ATA_PROGRAM, cn.KLEND_PROGRAM):
+            raise ValueError(f"unexpected program {prog}")
+        for k, signer, writable in accs:
+            if signer and k != owner:
+                raise ValueError("a signer other than the owner")
+            if writable and k not in writable_ok:
+                raise ValueError(f"unexpected writable account {k}")
+    create, refresh, redeem = instructions
+    if create[0] != sol.ATA_PROGRAM or create[2] != b"\x01" or [a[0] for a in create[1][:4]] != [owner, usdc, owner, sol.USDC_MINT]:
+        raise ValueError("first step is not CreateIdempotent of the owner's USDC account")
+    if refresh[0] != cn.KLEND_PROGRAM or refresh[2] != REFRESH:
+        raise ValueError("second step is not refresh_reserve")
+    if redeem[0] != cn.KLEND_PROGRAM or redeem[2][:8] != REDEEM or len(redeem[2]) != 16 or redeem[1][0][0] != owner \
+            or redeem[1][7][0] != cusdc or redeem[1][8][0] != usdc:
+        raise ValueError("redeem does not move the owner's cUSDC into the owner's USDC account")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--key-file")
@@ -65,7 +90,12 @@ def main():
     amount = int(round(float(a.amount) * 1_000_000)) if a.amount else held
     if not 0 < amount <= held:
         sys.exit(f"nothing to redeem: holds {held / 1e6} cUSDC")
-    msg, signers = soltx.build_message(owner, redeem_instructions(owner, amount, src))
+    ixs = redeem_instructions(owner, amount, src)
+    try:
+        audit(ixs, owner, src)
+    except ValueError as e:
+        sys.exit(f"refusing: {e}")
+    msg, signers = soltx.build_message(owner, ixs)
     r = soltx.simulate(rpc, msg, len(signers))
     v = r["value"]
     print(f"simulated: redeem {amount / 1e6} of {held / 1e6} cUSDC, {v.get('unitsConsumed')} compute units, error: {v.get('err')}")
@@ -80,7 +110,9 @@ def main():
     if not signer:
         sys.exit("--send needs --key-file")
     bh = rpc.call("getLatestBlockhash", [{"commitment": "confirmed"}])["value"]["blockhash"]
-    msg, signers = soltx.build_message(owner, redeem_instructions(owner, amount, src), bh)
+    msg, signers = soltx.build_message(owner, ixs, bh)
+    if signers != [owner]:
+        sys.exit("refusing: unexpected signers")
     sig = signer._sk.sign(msg).signature
     txid = rpc.call("sendTransaction", [base64.b64encode(soltx.wrap(msg, [sig])).decode(), {"encoding": "base64", "preflightCommitment": "confirmed"}])
     print("sent:", sol.EXPLORER_TX + txid)

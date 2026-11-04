@@ -136,7 +136,7 @@
       <div class="muted">Pay any amount to</div>
       <div class="payee"><b id="p-name" class="pname hidden"></b><span id="p-name-tag" class="nametag hidden">name not verified</span><code id="p-to" class="addrline"></code></div>
       <div id="p-badge" class="badge warn">Confirm this address with the merchant</div>
-      <p class="muted hint">It arrives as USDC on Solana. No wallet to connect, no form, and the address never expires. New: no real payment has been run through one of these addresses yet, so start small.</p>
+      <p class="muted hint">It arrives as USDC on Solana. No wallet to connect, no form, and the address never expires.</p>
     </div>
     <div id="p-pick">
       <h2>What are you sending?</h2>
@@ -240,7 +240,8 @@
       <h2>Deposits into Kamino</h2>
       <div id="m-earn-rows" class="ledger"><p class="muted">Reading Solana…</p></div>
       <h2>Getting it back</h2>
-      <p>Your wallet owns the cUSDC, so only you can redeem it. <code>python3 cli/redeem_earn.py --owner &lt;your address&gt;</code> simulates the withdrawal on mainnet; with <code>--key-file</code> and <code>--send</code> it turns cUSDC back into USDC plus interest.</p>
+      <p>Your wallet owns the cUSDC, so only you can redeem it. <code>python3 cli/redeem_earn.py --owner &lt;your address&gt;</code> simulates the withdrawal on mainnet; with <code>--key-file</code> and <code>--send</code> it turns cUSDC back into USDC plus interest, in your own USDC account.</p>
+      <div id="m-out-rows" class="ledger"><p class="muted">Reading Solana…</p></div>
       <p class="muted hint">Kamino is a third-party protocol: smart-contract and liquidity risk apply until you redeem.</p>
     </div>
   </section>
@@ -407,7 +408,7 @@
     <section id="always" class="card">
       <h2>One page that never expires</h2>
       <p>For tips, top-ups and a QR on the counter. Each merchant gets a permanent address per network: customers send any amount from whatever they hold, whenever they like, and it arrives as USDC on Solana. Nothing to quote, nothing to connect.</p>
-      <p class="muted hint">Status: addresses are live on mainnet and checked against Aurora's records. No real payment has been run through one yet.</p>
+      <p class="muted hint">Live on mainnet: on 4 Nov, 1.10 USDC sent on Base to a merchant's permanent address arrived as 1.089777 USDC on Solana 14 seconds later, checked on Solana. It is the first row under Live proof.</p>
       <p><a id="btn-demo-perm" class="button ghost" href="#">See a permanent pay page</a></p>
     </section>
 
@@ -438,7 +439,7 @@ Solana settlement re-verified: True</code></pre>
 
     <section id="proof" class="card">
       <h2>Live proof on mainnet</h2>
-      <p class="muted">Real payments, real refunds. Each check reads Aurora and Solana from your browser, right now.</p>
+      <p class="muted">Real payments, real refunds, from Base, Arbitrum and Optimism. Each check reads Aurora and Solana from your browser, right now.</p>
       <button id="btn-check-all" class="ghost" type="button">Re-check all</button>
       <div id="proof-table"></div>
     </section>

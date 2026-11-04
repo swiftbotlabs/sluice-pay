@@ -23,7 +23,13 @@
   const MERCHANT_DEMO = '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR';
   const ROUTED = /^#(p=|to=|s=|c=|m=|a=|start)/;
   // Real mainnet runs. "Check" re-reads each one from Aurora and from Solana in your browser.
+  // `fresh` = run on 4 Nov 2026 for the four things the judges asked to see live. `refund` = the refund tx on the paying chain.
   const PROOF = [
+    { kind: 'perm', fresh: true, name: 'Permanent address, real money (Intents Deposits)', chain: 'base', dep: '0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b', addr: '0xF06Ae506D1591aB9c49D442A7520671ab5c4Ea7E', sol: '2Jhg3e1bBxCi3oE1BogFcvTn7bivpY3SaJbfnqqbDUzviswDczjU9Fi4WuHbLqw7EVtgqmR7qsz6hgQRHxcvksiE', raw: 1n, note: '1.10 USDC sent on Base to the merchant\'s permanent address, with no quote and no form. 1.089777 USDC arrived on Solana 14 s later' },
+    { fresh: true, name: 'Overpaid invoice: the excess came back', chain: 'base', dep: '0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4', addr: '0x57c2C008e9739E012D6878164E5E70BcA555b6B4', sol: '55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7', refund: '0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135', raw: 250000n, note: '0.30 USDC sent for a 0.25 invoice: exactly 0.25 to the merchant, and 0.037512 USDC back to the payer on Base 26 s later' },
+    { fresh: true, name: 'Short invoice: refunded', chain: 'base', dep: '0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0', addr: '0xC7F06250568abB20Cf004dBC60fD9EC79bEF196B', sol: null, refund: null, raw: 0n, note: '0.20 USDC sent for a 0.25 invoice: nothing reaches the merchant, and the deposit goes back to the payer after the quote deadline (4 Nov, 14:58 UTC)' },
+    { fresh: true, name: 'Paid from ETH on Optimism', chain: 'op', dep: '0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370', addr: '0xcd4587f5e161475a9b3ECFA6DDD22233634b0653', sol: '39uawZ5pSTz4jZEPv3DYZHYjxpQurRC6bvZWiac7GNkjqryzP3jpzfxKXs6e1aEgYye9WgjqHXDaYtBHUYwVJMfy', refund: '0x996f9e7fcc848f7068a2fb2a2727e0fbf9497c88674400f2a4c4e2234ee44c80', raw: 250000n, note: 'A second source chain: ETH on Optimism paid a 0.25 USDC invoice, and the 0.000021 ETH over-sent came back' },
+    { kind: 'redeem', fresh: true, name: 'Merchant took its Kamino position out', chain: 'sol', sol: '3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35', note: 'The merchant\'s own wallet turned 0.124074 cUSDC back into 0.150041 USDC (the 0.15 supplied plus interest), paid into its own USDC account' },
     { name: 'Invoice settled into Kamino', chain: 'base', dep: '0x8e14bae0049ac8491469eac7087793f988bde603b515603095175b291f298379', addr: '0xeE62051e14B6d668CD3A55fe6C3dC091572759CE', sol: '558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv', ref: 'Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s', raw: 150000n, note: 'One signature on Base: USDC supplied to Kamino, cUSDC in the merchant\'s own account, order reference attached' },
     { name: 'Paid from Base USDC', chain: 'base', dep: '0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52', addr: '0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5', sol: '3uyHowgryQxRWjsC9DrxMSxFd1nvpEtq3xsrR6iGJfodAdsRC6TyVN8Zk1GgUWunsLH1j6dnz9Tz2tsMhu3xiSG2', raw: 500000n, note: '0.50 USDC received; the 0.002659 USDC over-sent came back on its own' },
     { name: 'Refund: payer sent too little', chain: 'base', dep: '0x926b1cce75dac5750c8cbe0364519987aa3d56d93f7bfaae6bad08fe9084b6ed', addr: '0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56', sol: null, raw: 0n, note: '0.40 sent for a 1.00 invoice; 0.3976 USDC refunded to the payer 30 s after the deadline' },
@@ -681,8 +687,12 @@
     } else {
       h.textContent = 'Payment failed'; p.textContent = 'If funds left your wallet, they are returned to your refund address.';
     }
-    for (const t of d.originChainTxHashes || []) add(`${o.net} tx: `, txLink(o.chain, t.hash));
-    if (o.depositTx && !(d.originChainTxHashes || []).length) add(`${o.net} tx: `, txLink(o.chain, o.depositTx));
+    const roles = C.txRoles(d);
+    if (kind === 'ok' && roles.refunded) p.append(` You sent more than needed: ${d.refundedAmountFormatted} ${o.sym} went back${o.refundTo ? ' to ' + short(o.refundTo) : ''}.`);
+    if (roles.deposit) add(`${o.net} tx: `, txLink(o.chain, roles.deposit));
+    else if (o.depositTx) add(`${o.net} tx: `, txLink(o.chain, o.depositTx));
+    for (const h of roles.topups) add(`${o.net} tx: `, txLink(o.chain, h));
+    for (const h of roles.refunds) add('Refund tx: ', txLink(o.chain, h));
     const receipt = o.rail === 'connect' ? `#c=${o.exec.ref}.${invoice.to}` : o.rail === 'swap' && !o.confidential ? `#s=${o.quote.depositAddress}` : null;
     if (receipt) add(Object.assign(document.createElement('a'), { href: base() + receipt, textContent: 'Open the shareable payment record' }));
     box.append(h, p, ul);
@@ -706,7 +716,7 @@
         if (st === 'SUCCESS') {
           show($('topup'), false);
           const raw = BigInt(o.raw); let proof = null;
-          for (const t of (s.swapDetails && s.swapDetails.destinationChainTxHashes) || []) { proof = await verifySig(t.hash, invoice.to, raw, false, o.createdAt); if (proof) break; }
+          for (const sig of C.txRoles(s.swapDetails).solana) { proof = await verifySig(sig, invoice.to, raw, false, o.createdAt).catch(() => null); if (proof) break; }
           if (!proof) proof = await findCredit(invoice.to, raw, o.createdAt, o.confidential);
           if (proof) return finish('ok', s, proof);
           if (++solTries > 20) text($('countdown'), 'provider reports success; Solana credit not visible yet');
@@ -1030,41 +1040,70 @@
 
   // ---------- proof ----------
   let proofQueue = Promise.resolve(); const checks = [];
+  const permList = (address, type) => fetch(`${AURORA}/api/persistent-deposit-status/${API_KEY}?address=${encodeURIComponent(address)}&type=${type}&limit=20`, { signal: AbortSignal.timeout(12000) })
+    .then((x) => x.json()).then((j) => (Array.isArray(j.deposits) ? j.deposits : []));
+  /** One live check of a proof row, from Aurora and Solana, in this browser. Returns text and links; never guesses an amount. */
+  async function checkProof(p) {
+    const parts = [];
+    if (p.kind === 'redeem') {
+      const [usdcAcct, cusdcAcct] = await Promise.all([C.ata(MERCHANT_DEMO), C.ata(MERCHANT_DEMO, KLEND.cusdc)]);
+      const v = C.verifyRedeem(await getTx(p.sol), MERCHANT_DEMO, { usdcAcct, cusdcAcct });
+      parts.push(v ? `Solana: merchant −${fromUnits(v.shares, 6)} cUSDC, +${fromUnits(v.usdc, 6)} USDC in its own account ✓` : 'Solana: not verified');
+      return parts;
+    }
+    if (p.kind === 'perm') {
+      const [received, success] = await Promise.all([permList(p.addr, 'received'), permList(p.addr, 'success')]);
+      const hit = C.permanentDelivered({ received, success }, { address: p.addr, merchant: MERCHANT_DEMO, depositTx: p.dep, solanaTx: p.sol });
+      parts.push(hit ? 'Aurora: received and delivered' : 'Aurora: not listed for this address');
+      const v = await verifySig(p.sol, MERCHANT_DEMO, p.raw, false);
+      parts.push(v ? ` · Solana: merchant +${fromUnits(v.delta, 6)} USDC ✓` : ' · Solana: not verified');
+      return parts;
+    }
+    const st = await swapStatus(p.addr); const d = st.swapDetails || {}; const roles = C.txRoles(d);
+    let msg = `Aurora: ${humanize(st.status)}`;
+    if (st.status === 'INCOMPLETE_DEPOSIT') msg += ` (${d.depositedAmountFormatted || '?'} arrived, less than asked; it goes back after the deadline)`;
+    if (roles.refunded) msg += ` (${d.refundedAmountFormatted || '?'} refunded${d.refundReason ? `, ${humanize(d.refundReason)}` : ''})`;
+    parts.push(msg);
+    if (roles.refunded && roles.refunds[0]) parts.push(' · refund ', txLink(p.chain, roles.refunds[0]));
+    if (p.ref) {
+      const dst = await C.ata(MERCHANT_DEMO, KLEND.cusdc);
+      const v = C.verifyEarn(await getTx(p.sol), MERCHANT_DEMO, p.raw, { dst, ref: p.ref });
+      parts.push(v ? ` · Solana: merchant +${fromUnits(v.shares, 6)} cUSDC, Kamino +${fromUnits(v.supplied, 6)} USDC ✓` : ' · Solana: not verified');
+    } else if (p.sol) {
+      const v = await verifySig(p.sol, MERCHANT_DEMO, p.raw, false);
+      parts.push(v ? ` · Solana: merchant +${fromUnits(v.delta, 6)} USDC ✓` : ' · Solana: not verified');
+    }
+    return parts;
+  }
   function renderProof() {
-    const nodes = PROOF.map((p) => {
-      const box = document.createElement('div'); box.className = 'proof';
+    const box = (p) => {
+      const el = document.createElement('div'); el.className = 'proof' + (p.fresh ? ' fresh' : '');
       const t = document.createElement('b'); t.textContent = p.name;
       const n = document.createElement('div'); n.className = 'note'; n.textContent = p.note;
       const l = document.createElement('div'); l.className = 'links';
-      const dep = document.createElement('span'); dep.append(`${CHAINS[p.chain].name}: `, txLink(p.chain, p.dep));
-      const sol = document.createElement('span'); if (p.sol) sol.append('Solana: ', txLink('sol', p.sol)); else sol.textContent = 'Solana: none (refunded)';
-      const rec = document.createElement('a'); rec.href = p.ref ? `#c=${p.ref}.${MERCHANT_DEMO}` : `#s=${p.addr}`; rec.textContent = 'Record';
-      l.append(dep, sol, rec);
+      if (p.dep) { const dep = document.createElement('span'); dep.append(`${CHAINS[p.chain].name}: `, txLink(p.chain, p.dep)); l.append(dep); }
+      const sol = document.createElement('span');
+      if (p.sol) sol.append('Solana: ', txLink('sol', p.sol)); else sol.textContent = p.kind ? '' : 'Solana: none (refunded)';
+      l.append(sol);
+      if (p.refund) { const r = document.createElement('span'); r.append('Refund: ', txLink(p.chain, p.refund)); l.append(r); }
+      const rec = document.createElement('a');
+      rec.href = p.kind === 'perm' ? `#a=${MERCHANT_DEMO}` : p.kind === 'redeem' ? `#m=${MERCHANT_DEMO}` : p.ref ? `#c=${p.ref}.${MERCHANT_DEMO}` : `#s=${p.addr}`;
+      rec.textContent = p.kind === 'perm' ? 'Permanent page' : p.kind === 'redeem' ? 'Merchant view' : 'Record';
+      l.append(rec);
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ghost chk'; btn.textContent = 'Check live';
       const out = document.createElement('div'); out.className = 'out';
       const check = async () => {
-        try {
-          const st = await swapStatus(p.addr);
-          let msg = `Aurora: ${st.status}`; const d = st.swapDetails || {};
-          if (st.status === 'REFUNDED') msg += ` (${d.refundedAmountFormatted || '?'} refunded, ${humanize(d.refundReason)})`;
-          if (p.ref) {
-            const dst = await C.ata(MERCHANT_DEMO, KLEND.cusdc);
-            const v = C.verifyEarn(await getTx(p.sol), MERCHANT_DEMO, p.raw, { dst, ref: p.ref });
-            msg += v ? ` · Solana: merchant +${fromUnits(v.shares, 6)} cUSDC, Kamino +${fromUnits(v.supplied, 6)} USDC ✓` : ' · Solana: not verified';
-          } else if (p.sol) {
-            const v = await verifySig(p.sol, MERCHANT_DEMO, p.raw, false);
-            msg += v ? ` · Solana: merchant +${fromUnits(v.delta, 6)} USDC ✓` : ' · Solana: not verified';
-          }
-          text(out, msg);
-        } catch (e) { text(out, 'Check failed (' + e.message + '), try again'); }
+        try { out.replaceChildren(...await checkProof(p)); } catch (e) { text(out, 'Check failed (' + e.message + '), try again'); }
         btn.disabled = false;
       };
       const run = () => { btn.disabled = true; text(out, 'Asking Aurora and Solana…'); proofQueue = proofQueue.then(check); };
       btn.onclick = run; checks.push(run);
-      box.append(t, n, l, btn, out);
-      return box;
-    });
-    $('proof-table').replaceChildren(...nodes);
+      el.append(t, n, l, btn, out);
+      return el;
+    };
+    const head = (s) => Object.assign(document.createElement('h3'), { className: 'proof-head', textContent: s });
+    $('proof-table').replaceChildren(head('Run on 4 Nov: what the judges asked to see'), ...PROOF.filter((p) => p.fresh).map(box),
+      head('Earlier runs, 29 Oct to 3 Nov'), ...PROOF.filter((p) => !p.fresh).map(box));
     $('btn-check-all').onclick = () => checks.forEach((f) => f());
   }
 
@@ -1096,9 +1135,8 @@
       const q = s.quoteResponse || {}; const qr = q.quoteRequest || {}; const qq = q.quote || {}; const d = s.swapDetails || {};
       const org = tokenName(qr.originAsset); const stg = C.stage(s.status);
       const raw = qr.swapType === 'EXACT_OUTPUT' && qr.destinationAsset === SOL_USDC ? BigInt(qr.amount) : null;
-      const hashes = (d.originChainTxHashes || []).map((t) => t.hash);
-      const sols = (d.destinationChainTxHashes || []).map((t) => t.hash);
-      support = { depositAddress: dep, status: s.status, sourceTxHash: hashes[0] || null, network: org ? org.net : null, asset: org ? org.sym : qr.originAsset || null,
+      const roles = C.txRoles(d); const sols = roles.solana;
+      support = { depositAddress: dep, status: s.status, sourceTxHash: roles.deposit, network: org ? org.net : null, asset: org ? org.sym : qr.originAsset || null,
         amount: d.depositedAmountFormatted || qq.amountInFormatted || null, correlationId: s.correlationId || null, refundReason: d.refundReason || null };
       rows.replaceChildren();
       if (raw !== null) rows.append(row('Invoice', `${pretty(raw)} USDC on Solana`));
@@ -1110,9 +1148,11 @@
         else if (s.status === 'PENDING_DEPOSIT' && qq.amountInFormatted) rows.append(row('Amount to send', `${qq.amountInFormatted} ${org.sym} on ${org.net}`));
         else rows.append(row('Paid with', `${org.sym} on ${org.net}`)); // a confidential record shows no amounts: none is guessed
       }
-      if (hashes[0]) rows.append(row('Deposit', txLink(org ? org.chain : '', hashes[0])));
-      if (d.refundedAmountFormatted && d.refundedAmountFormatted !== '0') rows.append(row('Refunded', `${d.refundedAmountFormatted} ${org ? org.sym : ''}${d.refundReason ? ` (${humanize(d.refundReason)})` : ''}`));
-      if (hashes[1]) rows.append(row('Refund tx', txLink(org ? org.chain : '', hashes[1])));
+      if (roles.deposit) rows.append(row('Deposit', txLink(org ? org.chain : '', roles.deposit)));
+      for (const h of roles.topups) rows.append(row('Further deposit', txLink(org ? org.chain : '', h)));
+      if (s.status === 'INCOMPLETE_DEPOSIT' && qq.amountInFormatted) rows.append(row('Short by', `${fromUnits(C.shortfall(qq.amountIn, d.depositedAmount), org ? org.decimals : 6)} ${org ? org.sym : ''}: it goes back to the payer after the deadline unless the rest arrives`));
+      if (roles.refunded) rows.append(row('Refunded', `${d.refundedAmountFormatted} ${org ? org.sym : ''}${d.refundReason ? ` (${humanize(d.refundReason)})` : s.status === 'SUCCESS' ? ' (the amount sent above the invoice)' : ''}`));
+      for (const h of roles.refunds) rows.append(row('Refund tx', txLink(org ? org.chain : '', h)));
       if (sols[0]) rows.append(row('Solana settlement', txLink('sol', sols[0])));
       let verified = null;
       if (sols[0] && raw !== null && C.isSolAddr(qr.recipient)) {
@@ -1121,7 +1161,8 @@
         rows.append(row('Checked on Solana', verified ? `merchant +${fromUnits(verified.delta, 6)} USDC ✓` : 'not verified'));
       }
       const titles = { refund: 'Refunded to the payer', fail: 'Payment failed', expired: 'Expired' };
-      text($('r-title'), verified ? 'Paid, verified on Solana' : titles[stg.end] || (s.status === 'SUCCESS' ? 'Provider says paid; checking Solana' : 'In progress'));
+      text($('r-title'), verified ? (roles.refunded ? 'Paid, verified on Solana. The overpayment went back' : 'Paid, verified on Solana')
+        : titles[stg.end] || (s.status === 'SUCCESS' ? 'Provider says paid; checking Solana' : s.status === 'INCOMPLETE_DEPOSIT' ? 'Short payment: waiting for the rest or the refund' : 'In progress'));
       text($('r-sub'), `Provider status: ${humanize(s.status)}`);
     } catch (e) { text($('r-title'), 'No record found'); text($('r-sub'), e.message || ''); }
   }
@@ -1152,7 +1193,7 @@
     const el = document.createElement('div'); el.className = 'lrow';
     const top = document.createElement('div'); top.className = 'ltop';
     const amt = document.createElement('b');
-    amt.textContent = r.kind === 'earn' ? `${pretty(r.usdc)} USDC into Kamino` : r.kind === 'usdc' ? `+${pretty(r.usdc)} USDC` : r.out ? `${r.out} USDC` : 'Payment';
+    amt.textContent = r.kind === 'earn' ? `${pretty(r.usdc)} USDC into Kamino` : r.kind === 'withdraw' ? `${fromUnits(r.shares, 6)} cUSDC → ${fromUnits(r.usdc, 6)} USDC` : r.kind === 'usdc' ? `+${pretty(r.usdc)} USDC` : r.out ? `${r.out} USDC` : 'Payment';
     const tag = document.createElement('span');
     const st = r.verified ? ['good', '✓ On Solana'] : r.status === 'REFUNDED' ? ['warn', 'Refunded to payer'] : r.status === 'FAILED' ? ['bad', 'Failed'] : r.status === 'SUCCESS' ? ['wait', 'Reported paid'] : ['wait', 'On its way'];
     tag.className = 'tag ' + st[0]; tag.textContent = st[1];
@@ -1160,7 +1201,8 @@
     const org = r.origin ? tokenName(r.origin) : null;
     // The amount the customer sent comes from this payment's record (what reached the deposit address), never from a list total.
     const back = r.refunded && org ? `, ${r.refunded} ${org.sym} refunded` : '';
-    const from = org ? `paid with ${r.paidIn ? r.paidIn + ' ' : ''}${org.sym} on ${org.net}${back}` : r.kind === 'earn' ? `${fromUnits(r.shares, 6)} cUSDC to your account` : r.kind === 'usdc' ? 'USDC received' : '';
+    const from = org ? `paid with ${r.paidIn ? r.paidIn + ' ' : ''}${org.sym} on ${org.net}${back}` : r.kind === 'earn' ? `${fromUnits(r.shares, 6)} cUSDC to your account`
+      : r.kind === 'withdraw' ? 'taken out of Kamino into your own USDC account' : r.kind === 'usdc' ? 'USDC received' : '';
     const sub = document.createElement('div'); sub.className = 'muted lsub'; sub.textContent = [from, when(r.at)].filter(Boolean).join(' · ');
     const links = document.createElement('div'); links.className = 'links';
     if (r.sig) { const s = document.createElement('span'); s.append('Solana: ', txLink('sol', r.sig)); links.append(s); }
@@ -1226,6 +1268,10 @@
     paintList($('m-latest'), pays.slice(0, 3), wait);
     paintList($('m-rows'), pays, wait);
     paintList($('m-earn-rows'), rows.filter((r) => r.kind === 'earn' && !r.dust), st.done ? 'No deposits into Kamino yet. Choose "Put it to work" when you make a link.' : 'Reading Solana…');
+    // Withdrawals are the merchant's own money moving, so they are listed here and never counted as payments.
+    const outs = st.credits.filter((c) => c && c.kind === 'withdraw').sort((a, b) => (b.at || 0) - (a.at || 0))
+      .map((c) => ({ kind: 'withdraw', verified: true, sig: c.sig, at: c.at, usdc: c.usdc, shares: c.shares }));
+    paintList($('m-out-rows'), outs, st.done ? 'Nothing taken out of Kamino yet.' : 'Reading Solana…');
     if (st.done) {
       const how = st.solError ? 'Solana could not be read just now, so only what Aurora reports is listed, marked as not checked. Reload to try again.'
         : `Every amount is read from Solana: ${st.scanned} transaction${st.scanned === 1 ? '' : 's'} to your USDC and cUSDC accounts, each checked on its own, so any USDC sent to this wallet shows, not only payments through Sluice. ${hist}${st.unread ? ` ${st.unread} of them could not be read just now and are not shown; reload to try again.` : ''}${dust ? ` ${dust} transfer${dust === 1 ? '' : 's'} under 0.01 USDC ${dust === 1 ? 'is' : 'are'} left out of the list and the totals.` : ''}`;
@@ -1364,7 +1410,7 @@
     }
   }
   async function pollPermanent(address, merchant, run) {
-    const list = (type) => fetch(`${AURORA}/api/persistent-deposit-status/${API_KEY}?address=${encodeURIComponent(address)}&type=${type}&limit=20`, { signal: AbortSignal.timeout(12000) }).then((x) => x.json()).then((j) => j.deposits || []);
+    const list = (type) => permList(address, type);
     const checked = new Map(); const box = $('p-rows');
     while (run === permRun) {
       try {

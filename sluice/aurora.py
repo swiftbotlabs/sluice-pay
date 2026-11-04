@@ -194,4 +194,28 @@ def summarize_status(s: dict) -> dict:
         "destinationExplorer": [x.get("explorerUrl") for x in d.get("destinationChainTxHashes") or []],
         "nearTx": list(d.get("nearTxHashes") or []),
         "intentHashes": list(d.get("intentHashes") or []),
+        **tx_roles(d),
     }
+
+
+def tx_roles(d: dict) -> dict:
+    """Aurora lists a refund either after the deposit in originChainTxHashes (October records) or among
+    destinationChainTxHashes (seen 2026-11-04). A Solana signature decodes to 64 bytes; any other destination hash is a refund
+    on the paying chain. Later paying-chain hashes are refunds only when a refunded amount is reported (else top-ups).
+    Same rules as txRoles() in docs/core.js."""
+    from . import solana as sol
+
+    def hashes(key):
+        out = []
+        for x in d.get(key) or []:
+            h = x.get("hash") if isinstance(x, dict) else x
+            if isinstance(h, str) and 20 <= len(h) <= 130 and h.isalnum():
+                out.append(h)
+        return out
+    origin, dest = hashes("originChainTxHashes"), hashes("destinationChainTxHashes")
+    raw = d.get("refundedAmount")
+    refunded = (int(raw) > 0) if isinstance(raw, str) and raw.isdigit() else any(c in "123456789" for c in str(d.get("refundedAmountFormatted") or ""))
+    dest_refunds = [h for h in dest if not sol.is_signature(h)]
+    return {"solanaTx": [h for h in dest if sol.is_signature(h)],
+            "refundTx": (origin[1:] + dest_refunds) if refunded else dest_refunds,
+            "topupTx": [] if refunded else origin[1:]}
