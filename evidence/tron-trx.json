@@ -1,0 +1,87 @@
+{
+ "what": "A Tron wallet (non-EVM) paid a 1.272 USDC invoice for the demo merchant with one plain TRX transfer, 4 Nov 2026",
+ "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+ "tron_wallet": "TNme9jraWRH7Emv3a8yUQcHBTp15J9gmgS",
+ "invoice_deposit_address": "TZ741NbBSgbTd23VTuhW6QeYGuKbbtZ1Gy",
+ "correlationId": "8a58e6f9-8cfc-49fc-9550-fceb9f2a37d3",
+ "tron_tx": "eb20838a927ee6b35aa49da6062440b49f09c22d46e89bd6264d79223f28fe21",
+ "checked_before_signing": {
+  "owner": "TNme9jraWRH7Emv3a8yUQcHBTp15J9gmgS",
+  "to": "TZ741NbBSgbTd23VTuhW6QeYGuKbbtZ1Gy",
+  "amount": 4026148,
+  "expiration": 1793812953000
+ },
+ "broadcast": {
+  "result": true,
+  "code": null,
+  "txid": "eb20838a927ee6b35aa49da6062440b49f09c22d46e89bd6264d79223f28fe21",
+  "message": null
+ },
+ "aurora_status": {
+  "status": "SUCCESS",
+  "updatedAt": "2026-11-04T17:24:18.000Z"
+ },
+ "swapDetails": {
+  "intentHashes": [
+   "81E1ZZsLkhkBpFvfrEPW7vKDd6TE2qxqQkGxr5zD9CDZ",
+   "AbB8HxEFFQfDRxGhUBJAAJ7DHGNyKL27Ga5z37Q7uR63"
+  ],
+  "nearTxHashes": [
+   "GsJeFg1XegYsj16pGm897FyYopgsBEWAZx8zfkBHaHcT",
+   "Gx3RqUqD5qDN7jPvpRzqYc1d98ZjPMN386sqWvuQuogC",
+   "Hqeixngx8Smr5foytrKD4AmvZbNnRZuiMF7V69BtMLYK",
+   "GTYekhLcymMHA6J548XC9Fk1aCphaYHQafysjX9ikX3N"
+  ],
+  "amountIn": "4012767",
+  "amountInFormatted": "4.012767",
+  "amountInUsd": "1.285899210684",
+  "amountOut": "1272000",
+  "amountOutFormatted": "1.272",
+  "amountOutUsd": "1.271586600000",
+  "slippage": 0,
+  "originChainTxHashes": [
+   {
+    "hash": "eb20838a927ee6b35aa49da6062440b49f09c22d46e89bd6264d79223f28fe21",
+    "explorerUrl": ""
+   }
+  ],
+  "destinationChainTxHashes": [
+   {
+    "hash": "33HSJXY5zPhYp8g7VXAdmuLMQZmUaeTHM8VbJo1UmCA28ve3fCScSuaJQCUhYY2vYyRyURvLiXe8uGiKMdyN5zci",
+    "explorerUrl": ""
+   }
+  ],
+  "refundedAmount": "0",
+  "refundedAmountFormatted": "0",
+  "refundedAmountUsd": "0",
+  "refundReason": null,
+  "depositedAmount": "4026148",
+  "depositedAmountFormatted": "4.026148",
+  "depositedAmountUsd": "1.290187178896"
+ },
+ "quote_request": {
+  "dry": false,
+  "swapType": "EXACT_OUTPUT",
+  "depositType": "ORIGIN_CHAIN",
+  "depositMode": "SIMPLE",
+  "confidentiality": "public",
+  "amount": "1272000",
+  "originAsset": "nep141:tron.omft.near",
+  "destinationAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+  "slippageTolerance": 100,
+  "refundTo": "TNme9jraWRH7Emv3a8yUQcHBTp15J9gmgS",
+  "refundType": "ORIGIN_CHAIN",
+  "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "recipientType": "DESTINATION_CHAIN",
+  "virtualChainRecipient": null,
+  "virtualChainRefundRecipient": null,
+  "deadline": "2026-11-04T23:21:25.000Z",
+  "referral": "aurora-2rcawk1l9n",
+  "appFees": [
+   {
+    "recipient": "2da316c13fcafc3a6c957ca6a9143622119a1a747bae0975c41a579d21a4cb6e",
+    "fee": 10
+   }
+  ]
+ }
+}

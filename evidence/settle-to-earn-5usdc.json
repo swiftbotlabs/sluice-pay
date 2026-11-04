@@ -1,0 +1,122 @@
+{
+ "what": "A 5.00 USDC settle-to-earn invoice for the demo merchant, paid from Base USDC, with Sluice's 50 bps fee in the same Solana transaction (4 Nov 2026)",
+ "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+ "payer_wallet": "B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW",
+ "payer_connect_account": "HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt",
+ "order_id": "ord_earn5_mw2de96y",
+ "reference": "BWV6FR7fQhFgwinCuDUBBuLtzexQVPMFPw9kyVq8ntF",
+ "sluice_fee_account": "3eThcJmUpfamiG61qSiUEyLUbQQgZFCJ4aCBKJp1y7CE",
+ "merchant_cusdc_account": "578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD",
+ "leg1_swap_api": {
+  "quote_request": {
+   "dry": false,
+   "swapType": "EXACT_OUTPUT",
+   "depositType": "ORIGIN_CHAIN",
+   "depositMode": "SIMPLE",
+   "quoteWaitingTimeMs": 0,
+   "confidentiality": "public",
+   "amount": "5190000",
+   "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+   "destinationAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+   "slippageTolerance": 100,
+   "refundTo": "0x2481E29895b43e87e547a50fB0BB5aa1E70585EB",
+   "refundType": "ORIGIN_CHAIN",
+   "recipient": "HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt",
+   "recipientType": "DESTINATION_CHAIN",
+   "deadline": "2026-11-04T23:03:17.000Z",
+   "referral": "aurora-2rcawk1l9n",
+   "appFees": [
+    {
+     "recipient": "2da316c13fcafc3a6c957ca6a9143622119a1a747bae0975c41a579d21a4cb6e",
+     "fee": 2
+    }
+   ]
+  },
+  "quote": {
+   "timeEstimate": 32,
+   "deadline": "2026-11-07T23:03:17.000Z",
+   "timeWhenInactive": "2026-11-07T23:03:17.000Z",
+   "depositAddress": "0x347d6f1D74555D928b746eC4Ca82aD544994811D",
+   "amountIn": "5501272",
+   "amountInFormatted": "5.501272",
+   "amountInUsd": "5.499132005192",
+   "minAmountIn": "5448831",
+   "amountOut": "5190000",
+   "amountOutFormatted": "5.19",
+   "amountOutUsd": "5.187981090000",
+   "minAmountOut": "5190000",
+   "refundFee": "2400",
+   "withdrawFee": "257261"
+  },
+  "correlationId": "0bffe8fc-74b0-4127-b552-34b559e80517",
+  "status_now": {
+   "status": "SUCCESS",
+   "updatedAt": "2026-11-04T17:07:35.000Z"
+  },
+  "swapDetails": {
+   "intentHashes": [
+    "CpS3eDE4KgmrUYuvnhZoGPPBkoRPdSnowuEmUa2CY5Ti",
+    "6NYmwT14niKUKSd8SQRhJBMkHtx4uiu2UWWpEmX9ymwU",
+    "CqSJp4yMj8oZYH2TfUMmakKxdUDLknxH9ZvrG2X3C3kW"
+   ],
+   "nearTxHashes": [
+    "FB7U1nrfJe8dSfvwtoYY141vgnwgooupda5Lus5m9fE2",
+    "oaM8qCpiGJpUQMBZB1omiCQS7FFwCuuExZauc7x7zFT",
+    "GTcmyLyo4Gsh13C2b3GToBjCYyaVJNbXLNTJwj4pUrCF",
+    "AZDHg8SiELEj4yG3FuUEkf6mtwHACcCB9VSXUqa7fHpJ",
+    "63AegX2wuxmW58wtYCAp5sNE6cUEFfFo7QKb8HD9prqM"
+   ],
+   "amountIn": "5448718",
+   "amountInFormatted": "5.448718",
+   "amountInUsd": "5.446533064082",
+   "amountOut": "5190000",
+   "amountOutFormatted": "5.19",
+   "amountOutUsd": "5.187918810000",
+   "slippage": 0,
+   "originChainTxHashes": [
+    {
+     "hash": "0x02fa3ab5d3011cd79c215a20e285539fc140038ad5dc47a28b97913aed5fdcea",
+     "explorerUrl": ""
+    }
+   ],
+   "destinationChainTxHashes": [
+    {
+     "hash": "6K1VFxxehZikD5rKD4FnaMCmhWVf3MtEdQuczMTpwopLA4szvSiTVixFzuKJ8VpJU8MEs4HCpnxqFYWgJ5RwCdd",
+     "explorerUrl": ""
+    },
+    {
+     "hash": "0x1c065d5cc9acf31c94c3653030feff0eb282cd78489cb5aebf1df5cdfe4d048f",
+     "explorerUrl": ""
+    }
+   ],
+   "refundedAmount": "882",
+   "refundedAmountFormatted": "0.000882",
+   "refundedAmountUsd": "0.000881638380",
+   "refundReason": null,
+   "depositedAmount": "5452000",
+   "depositedAmountFormatted": "5.452",
+   "depositedAmountUsd": "5.449813748000"
+  }
+ },
+ "connect_execution": {
+  "id": "f69749a7-16d7-45ae-adc2-b19fdb78e132",
+  "final": "SUCCESS",
+  "signing_standard": "raw_ed25519",
+  "network_fee_raw": "149068",
+  "audit": {
+   "instructions": 8,
+   "connectFee": "149068",
+   "sluiceFee": "25000",
+   "createsFeeAccount": true
+  }
+ },
+ "solana": {
+  "sig": "QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS",
+  "shares": "4134567",
+  "supplied": "5000000",
+  "sluiceFee": "25000",
+  "relayerFee": "149068",
+  "slot": 465380341,
+  "blockTime": 1793812148
+ }
+}

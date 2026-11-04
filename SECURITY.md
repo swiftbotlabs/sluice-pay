@@ -125,6 +125,13 @@ Sluice moves real money, so the design assumes every input is hostile and every 
   payload and both live Connect runs. If Aurora moves its fee elsewhere, the checkout, the CLI and Retry refuse to sign until the pin
   is updated; tests run the real payloads (positive control) and copies with the fee redirected. The fee stays capped at 120% of the
   preview and 0.30 USDC, and is shown before signing.
+- **Sluice's own fee is pinned too** (`SLUICE_FEE` in `docs/core.js`: 50 bps of a settle-to-earn invoice to the USDC account of
+  `8b9QYitF...RFEY8`). The audit allows exactly one `TransferChecked` of exactly that amount to exactly that account, with nothing
+  attached, plus the idempotent creation of that one account; any other amount, account or a fee on a plain-USDC invoice is refused.
+  Tests run the real 4 Nov payload (positive control) and copies with the fee raised, redirected or not agreed; mutants of the
+  amount and owner checks fail them. The fee account's key is not in the repo or the page.
+- A Solana wallet can authorise Intents Connect too (ed25519). Its NEAR-side id, the payload's signer and the MPC path, is the
+  wallet's public key in hex; `walletPath()` derives it and the audit requires it, exactly like the lowercased address of an EVM wallet.
 - The intermediary check pins the NEAR MPC root key and the proxy contract. If Aurora rotates them, the Connect rail stops and refuses
   rather than continuing, until the pin is updated.
 - A signed pay link proves who signed it, not that this is the merchant you meant to pay: compare the address with the merchant.

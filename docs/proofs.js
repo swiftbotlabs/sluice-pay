@@ -9,14 +9,18 @@
 })(typeof self !== 'undefined' ? self : globalThis, (C) => {
   'use strict';
   const MERCHANT = '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR';
-  const ASSETS = { base: ['USDC', 6], op: ['ETH', 18], arb: ['ETH', 18] };
+  const ASSETS = { base: ['USDC', 6], op: ['ETH', 18], arb: ['ETH', 18], tron: ['TRX', 6] };
   // `fresh` = run on 4 Nov 2026. `refund` = the refund tx on the paying chain. `src` = what the payer sent (symbol, decimals).
   const PROOF = [
+    { kind: 'connect', hero: true, fresh: true, name: 'A 5.00 USDC invoice paid from Base, settled into Kamino, with Sluice\'s fee', chain: 'base', dep: '0x02fa3ab5d3011cd79c215a20e285539fc140038ad5dc47a28b97913aed5fdcea', addr: '0x347d6f1D74555D928b746eC4Ca82aD544994811D', sol: 'QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS', ref: 'BWV6FR7fQhFgwinCuDUBBuLtzexQVPMFPw9kyVq8ntF', intermediary: 'HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt', raw: 5000000n, payerNewAccount: true, note: '5.452 USDC sent on Base reached the payer\'s own Solana account as 5.19 USDC. Then one Intents Connect transaction, signed by the payer\'s Solana wallet, supplied exactly 5.00 USDC to Kamino with the cUSDC going to the merchant, paid Sluice\'s 0.5% fee (0.025 USDC) to Sluice\'s account and attached the order reference' },
+    { kind: 'redeem', hero: true, fresh: true, supplied: 5000000n, since: '4 Nov', name: 'The merchant redeemed the 5.00 USDC position', chain: 'sol', sol: '4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv', note: 'One transaction signed by the merchant\'s own wallet burned the 4.134567 cUSDC and paid 5.000006 USDC (the 5.00 supplied plus interest) into its own USDC account, 37 minutes after the deposit' },
+    { fresh: true, name: 'Paid from TRX on Tron, a non-EVM wallet', chain: 'tron', dep: 'eb20838a927ee6b35aa49da6062440b49f09c22d46e89bd6264d79223f28fe21', addr: 'TZ741NbBSgbTd23VTuhW6QeYGuKbbtZ1Gy', sol: '33HSJXY5zPhYp8g7VXAdmuLMQZmUaeTHM8VbJo1UmCA28ve3fCScSuaJQCUhYY2vYyRyURvLiXe8uGiKMdyN5zci', raw: 1272000n, note: 'A Tron wallet signed one plain TRX transfer, 4.026148 TRX to the invoice\'s Tron deposit address (plus 1.1 TRX of Tron network fees for opening that address), and 1.272 USDC arrived for the merchant on Solana 2 min 39 s later' },
+    { fresh: true, name: 'Hosted 402 API, paid from Base USDC', chain: 'base', dep: '0x5e58153312331b01866d694dbda879cf5fcdd305828fbd899daaa5cdaa8a4793', addr: '0x1c8c4C2A7bB4db851c2F0ea9EFCCfB9182B27943', sol: '35PYLWiqtyAczHr3fNKqymGznSmPgCRewH78QntuC5dKZj5rw7guAymxMy3BDNDYR3uUWJXaMEURBSV6d3FnJ4NZ', raw: 200000n, note: 'sluice-api.swiftbotlab.workers.dev answered 402 with its price; the buyer sent 0.2122 USDC on Base and got the report exactly once, after the 0.20 USDC credit on Solana, with a signed receipt' },
     { kind: 'perm', fresh: true, name: 'Permanent address, real money (Intents Deposits)', chain: 'base', dep: '0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b', addr: '0xF06Ae506D1591aB9c49D442A7520671ab5c4Ea7E', sol: '2Jhg3e1bBxCi3oE1BogFcvTn7bivpY3SaJbfnqqbDUzviswDczjU9Fi4WuHbLqw7EVtgqmR7qsz6hgQRHxcvksiE', raw: 1n, note: '1.10 USDC sent on Base to the merchant\'s permanent address, with no quote and no form. 1.089777 USDC arrived on Solana 14 s later' },
     { fresh: true, name: 'Overpaid invoice: the excess came back', chain: 'base', dep: '0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4', addr: '0x57c2C008e9739E012D6878164E5E70BcA555b6B4', sol: '55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7', refund: '0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135', raw: 250000n, note: '0.30 USDC sent for a 0.25 invoice: exactly 0.25 to the merchant, and 0.037512 USDC back to the payer on Base 26 s later' },
     { fresh: true, name: 'Short invoice: refunded', chain: 'base', dep: '0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0', addr: '0xC7F06250568abB20Cf004dBC60fD9EC79bEF196B', sol: null, refund: '0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9', raw: 0n, note: '0.20 USDC sent for a 0.25 invoice: nothing reached the merchant, and 0.1976 USDC went back to the payer after the quote deadline (4 Nov, 14:58 UTC)' },
     { fresh: true, name: 'Paid from ETH on Optimism', chain: 'op', dep: '0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370', addr: '0xcd4587f5e161475a9b3ECFA6DDD22233634b0653', sol: '39uawZ5pSTz4jZEPv3DYZHYjxpQurRC6bvZWiac7GNkjqryzP3jpzfxKXs6e1aEgYye9WgjqHXDaYtBHUYwVJMfy', refund: '0x996f9e7fcc848f7068a2fb2a2727e0fbf9497c88674400f2a4c4e2234ee44c80', raw: 250000n, note: 'A second source chain: ETH on Optimism paid a 0.25 USDC invoice, and the 0.000021 ETH over-sent came back' },
-    { kind: 'redeem', fresh: true, name: 'Merchant took its Kamino position out', chain: 'sol', sol: '3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35', note: 'The merchant\'s own wallet turned 0.124074 cUSDC back into 0.150041 USDC (the 0.15 supplied plus interest), paid into its own USDC account' },
+    { kind: 'redeem', fresh: true, supplied: 150000n, since: '1 Nov', name: 'Merchant took its Kamino position out', chain: 'sol', sol: '3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35', note: 'The merchant\'s own wallet turned 0.124074 cUSDC back into 0.150041 USDC (the 0.15 supplied plus interest), paid into its own USDC account' },
     { kind: 'connect', name: 'Invoice settled into Kamino', chain: 'base', dep: '0x8e14bae0049ac8491469eac7087793f988bde603b515603095175b291f298379', addr: '0xeE62051e14B6d668CD3A55fe6C3dC091572759CE', sol: '558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv', ref: 'Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s', intermediary: 'Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr', raw: 150000n, note: 'One signature on Base: USDC supplied to Kamino, cUSDC in the merchant\'s own account, order reference attached' },
     { name: 'Paid from Base USDC', chain: 'base', dep: '0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52', addr: '0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5', sol: '3uyHowgryQxRWjsC9DrxMSxFd1nvpEtq3xsrR6iGJfodAdsRC6TyVN8Zk1GgUWunsLH1j6dnz9Tz2tsMhu3xiSG2', refund: '0x291a1b7a6eb2af6acc8a62da930f74c9a7fb92e123a42a0d943dfb81a87fe9d4', raw: 500000n, note: '0.50 USDC received; the 0.002659 USDC over-sent came back on its own' },
     { name: 'Refund: payer sent too little', chain: 'base', dep: '0x926b1cce75dac5750c8cbe0364519987aa3d56d93f7bfaae6bad08fe9084b6ed', addr: '0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56', sol: null, refund: '0x7654c9edaf4e4dc2f4dbca8e23638b8570baa736d3ea1b532836b0471314071b', raw: 0n, note: '0.40 sent for a 1.00 invoice; 0.3976 USDC refunded to the payer 30 s after the deadline' },
@@ -28,7 +32,8 @@
   ];
   // Row groups, in page order. The page (app.js) and the static copy in index.html (tools/render_static.mjs) both use them.
   const GROUPS = [
-    { title: 'Run on 4 Nov: a permanent address, two refunds, a second chain, a redemption', has: (p) => !!p.fresh },
+    { title: 'One invoice, start to finish (4 Nov): 5.00 USDC from Base into the merchant\'s Kamino position, Sluice\'s fee in the same transaction, then redeemed', has: (p) => !!p.hero },
+    { title: 'Also run on 4 Nov: a non-EVM payer on Tron, a permanent address, two refunds, a second chain, the hosted 402 API, the first redemption', has: (p) => !!p.fresh && !p.hero },
     { title: 'Earlier runs, 29 Oct to 3 Nov', has: (p) => !p.fresh },
   ];
   const id = (p) => p.dep || p.sol;
@@ -50,8 +55,16 @@
     const created = keys.map((k, i) => ({ k, pre: (tx.meta.preBalances || [])[i], post: (tx.meta.postBalances || [])[i] }))
       .filter((a) => a.pre === 0 && a.post > 0 && ownAccounts.includes(a.k)).map((a) => ({ account: a.k, lamports: a.post }));
     const d = (who, mint) => C.tokenDelta(tx, who, mint).toString();
-    return { slot: tx.slot, blockTime: tx.blockTime || null, err: tx.meta.err === null || tx.meta.err === undefined ? null : 'failed', feeLamports: tx.meta.fee, feePayer: keys[0] || null,
+    const sluiceUsdc = d(C.SLUICE_FEE.owner, C.USDC_MINT);
+    const out = { slot: tx.slot, blockTime: tx.blockTime || null, err: tx.meta.err === null || tx.meta.err === undefined ? null : 'failed', feeLamports: tx.meta.fee, feePayer: keys[0] || null,
       merchantUsdc: d(owner, C.USDC_MINT), merchantCusdc: d(owner, C.KLEND.cusdc), relayerUsdc: d(C.CONNECT_FEE.relayer, C.USDC_MINT), created };
+    if (sluiceUsdc !== '0') {
+      out.sluiceUsdc = sluiceUsdc;
+      // Sluice's fee account opened in this transaction (pre-balance 0): its rent is part of Intents Connect's fee
+      const opened = (tx.meta.preTokenBalances || []).every((b) => b.owner !== C.SLUICE_FEE.owner);
+      out.sluiceOpened = opened;
+    }
+    return out;
   }
 
   /** Where every unit went, from Aurora's record and the Solana transaction. Each group is a total and the parts it splits
@@ -64,10 +77,11 @@
     if (p.kind === 'redeem') {
       if (!s) return null;
       const usdc = BigInt(s.merchantUsdc); const shares = -BigInt(s.merchantCusdc);
+      const sup = BigInt(p.supplied || 0n); const gain = usdc - sup;
       T('USDC paid into the merchant\'s own account, for ' + fmt(shares, 6) + ' cUSDC burned', usdc, 6, 'USDC');
-      P('the 0.15 USDC supplied on 1 Nov', 150000n, 6, 'USDC', 'merchant'); P('interest earned since', usdc - 150000n, 6, 'USDC', 'merchant');
+      P(`the ${fmt(sup, 6)} USDC supplied on ${p.since}`, sup, 6, 'USDC', 'merchant'); P('interest earned since', gain, 6, 'USDC', 'merchant');
       return { groups, network: `${fmt(BigInt(s.feeLamports), 9)} SOL network fee, paid by the merchant`,
-        sentence: `The merchant burned ${fmt(shares, 6)} cUSDC and received ${fmt(usdc, 6)} USDC: the 0.15 supplied plus ${fmt(usdc - 150000n, 6)} interest, for a ${fmt(BigInt(s.feeLamports), 9)} SOL network fee.` };
+        sentence: `The merchant burned ${fmt(shares, 6)} cUSDC and received ${fmt(usdc, 6)} USDC: the ${fmt(sup, 6)} supplied plus ${fmt(gain, 6)} interest, for a ${fmt(BigInt(s.feeLamports), 9)} SOL network fee.` };
     }
     if (p.kind === 'perm') {
       if (!a || !s || big(a.sent) === null) return null;
@@ -97,13 +111,14 @@
     else if (left > 0n) P(`left over after the swap, not refunded (less than the ${RF !== null ? fmt(RF, dec) : '?'} ${sym} refund fee)`, left, dec, sym, 'fee');
     const connect = p.kind === 'connect';
     const rentSol = s && s.created && s.created.length ? s.created.reduce((n, c) => n + BigInt(c.lamports), 0n) : 0n;
-    const wLabel = 'Solana delivery fee (from the quote)' + (!connect && rentSol > 0n ? `, including rent for the merchant's new USDC account (${fmt(rentSol, 9)} SOL)` : '');
+    const wLabel = 'Solana delivery fee (from the quote)' + (!connect && rentSol > 0n ? `, including rent for the merchant's new USDC account (${fmt(rentSol, 9)} SOL)` : '')
+      + (p.payerNewAccount ? ', including opening the payer\'s Solana USDC account (once per payer)' : '');
     const words = [];
     if (sym === 'USDC') {
       T('Swapped', U);
       P(connect ? 'to the payer\'s own Solana account (Intents Connect)' : 'to the merchant on Solana (read from Solana)', O, 6, 'USDC', connect ? '' : 'merchant');
       P(wLabel, W, 6, 'USDC', 'fee'); P(`Aurora's ${fees} bps fee and the solver's price`, U - O - W, 6, 'USDC', 'fee');
-      words.push(`${fmt(W, 6)} Solana delivery`, `${fmt(U - O - W, 6)} Aurora's ${fees} bps fee and the solver's price`);
+      words.push(`${fmt(W, 6)} Solana delivery${p.payerNewAccount ? ' (it includes opening the payer\'s Solana USDC account, once)' : ''}`, `${fmt(U - O - W, 6)} Aurora's ${fees} bps fee and the solver's price`);
     } else {
       const usd = Number(a.amountInUsd); const usdcPx = Number(a.amountOutUsd) / (Number(O) / 1e6);
       const rest = usd - (Number(O + W) / 1e6) * usdcPx;
@@ -114,12 +129,14 @@
       words.push(`${fmt(W, 6)} USDC Solana delivery`, `about $${rest.toFixed(4)} Aurora's ${fees} bps fee and the solver's price`);
     }
     if (connect && s) {
-      const fee = BigInt(s.relayerUsdc); const paid = p.ref ? BigInt(p.raw) : BigInt(s.merchantUsdc);
+      const fee = BigInt(s.relayerUsdc); const paid = p.ref ? BigInt(p.raw) : BigInt(s.merchantUsdc); const sl = BigInt(s.sluiceUsdc || 0);
+      const opened = rentSol > 0n ? ' (it includes opening the merchant\'s new cUSDC account)' : s.sluiceOpened ? ' (it includes opening Sluice\'s fee account, once)' : '';
       T('Reached the payer\'s own Solana account, which then ran one transaction', O, 6, 'USDC');
       P(p.ref ? `supplied to Kamino for the merchant (who got ${fmt(BigInt(s.merchantCusdc), 6)} cUSDC)` : 'paid to the merchant, with the order reference (read from Solana)', paid, 6, 'USDC', 'merchant');
-      P('Intents Connect fee, to its relayer (pinned in the audit)' + (rentSol > 0n ? `, including rent for the merchant's new cUSDC account (${fmt(rentSol, 9)} SOL)` : ''), fee, 6, 'USDC', 'fee');
-      P('left in the payer\'s own Solana account', O - paid - fee, 6, 'USDC');
-      var steps = `That account ${p.ref ? `supplied ${fmt(paid, 6)} USDC to Kamino for the merchant` : `paid the merchant ${fmt(paid, 6)} USDC with the order reference`}, paid a ${fmt(fee, 6)} USDC Intents Connect fee${rentSol > 0n ? ' (it includes opening the merchant\'s new cUSDC account)' : ''} and kept ${fmt(O - paid - fee, 6)}.`;
+      if (sl > 0n) P(`Sluice's fee, ${Number(C.SLUICE_FEE.bps) / 100}% of the invoice, to Sluice's own account (pinned in the audit)`, sl, 6, 'USDC', 'sluice');
+      P('Intents Connect fee, to its relayer (pinned in the audit)' + (rentSol > 0n ? `, including rent for the merchant's new cUSDC account (${fmt(rentSol, 9)} SOL)` : s.sluiceOpened ? ', including opening Sluice\'s fee account (once)' : ''), fee, 6, 'USDC', 'fee');
+      P('left in the payer\'s own Solana account', O - paid - fee - sl, 6, 'USDC');
+      var steps = `That account ${p.ref ? `supplied ${fmt(paid, 6)} USDC to Kamino for the merchant` : `paid the merchant ${fmt(paid, 6)} USDC with the order reference`}, ${sl > 0n ? `paid Sluice's ${fmt(sl, 6)} USDC fee, ` : ''}paid a ${fmt(fee, 6)} USDC Intents Connect fee${opened} and kept ${fmt(O - paid - fee - sl, 6)}.`;
     }
     const back = R > 0n ? `${fmt(R, dec)} refunded` : null;
     const gas = R > 0n ? `${fmt(left, dec)} refund gas` : left > 0n ? `${fmt(left, dec)} left over, too small to refund` : null;

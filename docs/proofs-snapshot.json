@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-04T16:48:05.127Z",
+ "generated_at": "2026-11-04T17:36:20.445Z",
  "by": "tools/snapshot_proofs.mjs (same checks as the page: docs/proofs.js checkRow)",
  "sources": {
   "aurora": "https://intents-api.aurora.dev/api/status and /api/persistent-deposit-status (public integrator key)",
@@ -7,15 +7,428 @@
  },
  "merchant": {
   "address": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
-  "at": "2026-11-04T16:48:04.714Z",
-  "usdc": "4239818",
+  "at": "2026-11-04T17:36:20.041Z",
+  "usdc": "10511824",
   "cusdc": "0",
-  "runs": 13
+  "runs": 17
  },
  "rows": [
   {
+   "id": "0x02fa3ab5d3011cd79c215a20e285539fc140038ad5dc47a28b97913aed5fdcea",
+   "checked_at": "2026-11-04T17:36:03.728Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-11-04T17:07:35.000Z",
+    "deposited": "5452000",
+    "amountIn": "5448718",
+    "amountOut": "5190000",
+    "refunded": "882",
+    "amountInUsd": "5.446533064082",
+    "amountOutUsd": "5.187918810000",
+    "refundFormatted": "0.000882",
+    "refundReason": null,
+    "refundTxs": [
+     "0x1c065d5cc9acf31c94c3653030feff0eb282cd78489cb5aebf1df5cdfe4d048f"
+    ],
+    "withdrawFee": "257261",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS",
+    "slot": 465380341,
+    "blockTime": 1793812148,
+    "err": null,
+    "feeLamports": 15000,
+    "feePayer": "4QyuRL5EHUpEnu9aAwJwvpx6CES7iEs1qwSkgGghQfat",
+    "merchantUsdc": "0",
+    "merchantCusdc": "4134567",
+    "relayerUsdc": "149068",
+    "created": [],
+    "sluiceUsdc": "25000",
+    "sluiceOpened": true
+   },
+   "summary": [
+    "Aurora: success, 0.000882 returned to the payer",
+    " · refund ",
+    {
+     "tx": "0x1c065d5cc9acf31c94c3653030feff0eb282cd78489cb5aebf1df5cdfe4d048f",
+     "chain": "base"
+    },
+    " · Solana: merchant +4.134567 cUSDC, Kamino +5 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "5.452",
+       "raw": "5452000",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "5.448718",
+        "raw": "5448718",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "refunded to the payer (the excess)",
+        "amount": "0.000882",
+        "raw": "882",
+        "unit": "USDC",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0024",
+        "raw": "2400",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "5.448718",
+       "raw": "5448718",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the payer's own Solana account (Intents Connect)",
+        "amount": "5.19",
+        "raw": "5190000",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "Solana delivery fee (from the quote), including opening the payer's Solana USDC account (once per payer)",
+        "amount": "0.257261",
+        "raw": "257261",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.001457",
+        "raw": "1457",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Reached the payer's own Solana account, which then ran one transaction",
+       "amount": "5.19",
+       "raw": "5190000",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "supplied to Kamino for the merchant (who got 4.134567 cUSDC)",
+        "amount": "5.00",
+        "raw": "5000000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Sluice's fee, 0.5% of the invoice, to Sluice's own account (pinned in the audit)",
+        "amount": "0.025",
+        "raw": "25000",
+        "unit": "USDC",
+        "kind": "sluice"
+       },
+       {
+        "label": "Intents Connect fee, to its relayer (pinned in the audit), including opening Sluice's fee account (once)",
+        "amount": "0.149068",
+        "raw": "149068",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "left in the payer's own Solana account",
+        "amount": "0.015932",
+        "raw": "15932",
+        "unit": "USDC",
+        "kind": ""
+       }
+      ]
+     }
+    ],
+    "sentence": "5.452 USDC sent, 0.000882 refunded and 0.0024 USDC refund gas. The 5.448718 USDC swapped became 5.19 USDC in the payer's own Solana account, after 0.257261 Solana delivery (it includes opening the payer's Solana USDC account, once) and 0.001457 Aurora's 2 bps fee and the solver's price. That account supplied 5.00 USDC to Kamino for the merchant, paid Sluice's 0.025 USDC fee, paid a 0.149068 USDC Intents Connect fee (it includes opening Sluice's fee account, once) and kept 0.015932."
+   }
+  },
+  {
+   "id": "4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv",
+   "checked_at": "2026-11-04T17:36:04.627Z",
+   "ok": true,
+   "aurora": null,
+   "solana": {
+    "sig": "4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv",
+    "slot": 465387272,
+    "blockTime": 1793813637,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+    "merchantUsdc": "5000006",
+    "merchantCusdc": "-4134567",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Solana: merchant −4.134567 cUSDC, +5.000006 USDC in its own account ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "USDC paid into the merchant's own account, for 4.134567 cUSDC burned",
+       "amount": "5.000006",
+       "raw": "5000006",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "the 5.00 USDC supplied on 4 Nov",
+        "amount": "5.00",
+        "raw": "5000000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "interest earned since",
+        "amount": "0.000006",
+        "raw": "6",
+        "unit": "USDC",
+        "kind": "merchant"
+       }
+      ]
+     }
+    ],
+    "network": "0.000005 SOL network fee, paid by the merchant",
+    "sentence": "The merchant burned 4.134567 cUSDC and received 5.000006 USDC: the 5.00 supplied plus 0.000006 interest, for a 0.000005 SOL network fee."
+   }
+  },
+  {
+   "id": "eb20838a927ee6b35aa49da6062440b49f09c22d46e89bd6264d79223f28fe21",
+   "checked_at": "2026-11-04T17:36:04.848Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-11-04T17:24:18.000Z",
+    "deposited": "4026148",
+    "amountIn": "4012767",
+    "amountOut": "1272000",
+    "refunded": "0",
+    "amountInUsd": "1.285899210684",
+    "amountOutUsd": "1.271586600000",
+    "refundFormatted": "0",
+    "refundReason": null,
+    "refundTxs": [],
+    "withdrawFee": "10028",
+    "refundFee": "1300000",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 10
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "33HSJXY5zPhYp8g7VXAdmuLMQZmUaeTHM8VbJo1UmCA28ve3fCScSuaJQCUhYY2vYyRyURvLiXe8uGiKMdyN5zci",
+    "slot": 465384562,
+    "blockTime": 1793813058,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "1272000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success",
+    " · Solana: merchant +1.272 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Tron",
+       "amount": "4.026148",
+       "raw": "4026148",
+       "unit": "TRX"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "4.012767",
+        "raw": "4012767",
+        "unit": "TRX",
+        "kind": ""
+       },
+       {
+        "label": "left over after the swap, not refunded (less than the 1.30 TRX refund fee)",
+        "amount": "0.013381",
+        "raw": "13381",
+        "unit": "TRX",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped (Aurora values it at $1.2859)",
+       "amount": "4.012767",
+       "raw": "4012767",
+       "unit": "TRX"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "1.272",
+        "raw": "1272000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.010028",
+        "raw": "10028",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 10 bps fee and the solver's price",
+        "amount": "≈$0.0043",
+        "unit": "",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "4.026148 TRX sent, 0.013381 left over, too small to refund. The 4.012767 TRX swapped became 1.272 USDC to the merchant, after 0.010028 USDC Solana delivery and about $0.0043 Aurora's 10 bps fee and the solver's price."
+   }
+  },
+  {
+   "id": "0x5e58153312331b01866d694dbda879cf5fcdd305828fbd899daaa5cdaa8a4793",
+   "checked_at": "2026-11-04T17:36:05.328Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-11-04T16:30:14.000Z",
+    "deposited": "212200",
+    "amountIn": "210129",
+    "amountOut": "200000",
+    "refunded": "0",
+    "amountInUsd": "0.210041376207",
+    "amountOutUsd": "0.199916600000",
+    "refundFormatted": "0",
+    "refundReason": null,
+    "refundTxs": [],
+    "withdrawFee": "10077",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "35PYLWiqtyAczHr3fNKqymGznSmPgCRewH78QntuC5dKZj5rw7guAymxMy3BDNDYR3uUWJXaMEURBSV6d3FnJ4NZ",
+    "slot": 465369512,
+    "blockTime": 1793809814,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "200000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success",
+    " · Solana: merchant +0.2 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.2122",
+       "raw": "212200",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.210129",
+        "raw": "210129",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "left over after the swap, not refunded (less than the 0.0024 USDC refund fee)",
+        "amount": "0.002071",
+        "raw": "2071",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "0.210129",
+       "raw": "210129",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.20",
+        "raw": "200000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.010077",
+        "raw": "10077",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.000052",
+        "raw": "52",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.2122 sent = 0.20 to the merchant + 0.0122 USDC in fees (0.002071 left over, too small to refund, 0.010077 Solana delivery, 0.000052 Aurora's 2 bps fee and the solver's price)."
+   }
+  },
+  {
    "id": "0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b",
-   "checked_at": "2026-11-04T16:47:40.880Z",
+   "checked_at": "2026-11-04T17:36:05.826Z",
    "ok": true,
    "aurora": {
     "status": "DELIVERED",
@@ -70,7 +483,7 @@
   },
   {
    "id": "0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4",
-   "checked_at": "2026-11-04T16:47:59.014Z",
+   "checked_at": "2026-11-04T17:36:14.783Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -187,7 +600,7 @@
   },
   {
    "id": "0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0",
-   "checked_at": "2026-11-04T16:47:59.521Z",
+   "checked_at": "2026-11-04T17:36:15.293Z",
    "ok": true,
    "aurora": {
     "status": "REFUNDED",
@@ -254,7 +667,7 @@
   },
   {
    "id": "0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370",
-   "checked_at": "2026-11-04T16:47:59.779Z",
+   "checked_at": "2026-11-04T17:36:15.667Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -370,7 +783,7 @@
   },
   {
    "id": "3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35",
-   "checked_at": "2026-11-04T16:48:00.292Z",
+   "checked_at": "2026-11-04T17:36:16.131Z",
    "ok": true,
    "aurora": null,
    "solana": {
@@ -421,7 +834,7 @@
   },
   {
    "id": "0x8e14bae0049ac8491469eac7087793f988bde603b515603095175b291f298379",
-   "checked_at": "2026-11-04T16:48:00.532Z",
+   "checked_at": "2026-11-04T17:36:16.364Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -574,7 +987,7 @@
   },
   {
    "id": "0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52",
-   "checked_at": "2026-11-04T16:48:01.049Z",
+   "checked_at": "2026-11-04T17:36:16.883Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -696,7 +1109,7 @@
   },
   {
    "id": "0x926b1cce75dac5750c8cbe0364519987aa3d56d93f7bfaae6bad08fe9084b6ed",
-   "checked_at": "2026-11-04T16:48:01.970Z",
+   "checked_at": "2026-11-04T17:36:17.351Z",
    "ok": true,
    "aurora": {
     "status": "REFUNDED",
@@ -763,7 +1176,7 @@
   },
   {
    "id": "0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a",
-   "checked_at": "2026-11-04T16:48:02.278Z",
+   "checked_at": "2026-11-04T17:36:17.607Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -824,7 +1237,7 @@
   },
   {
    "id": "0x1f0c7e5f28450751799f7594f0ba5272b4b883c9efdd95b6c2f812017b240852",
-   "checked_at": "2026-11-04T16:48:02.764Z",
+   "checked_at": "2026-11-04T17:36:18.083Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -927,7 +1340,7 @@
   },
   {
    "id": "0x4c5789409a649fd11ed158476265c9230beda4104fa595944acfc96651a2e7b9",
-   "checked_at": "2026-11-04T16:48:03.249Z",
+   "checked_at": "2026-11-04T17:36:18.550Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -1030,7 +1443,7 @@
   },
   {
    "id": "0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc",
-   "checked_at": "2026-11-04T16:48:03.712Z",
+   "checked_at": "2026-11-04T17:36:19.043Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -1163,7 +1576,7 @@
   },
   {
    "id": "0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708",
-   "checked_at": "2026-11-04T16:48:04.201Z",
+   "checked_at": "2026-11-04T17:36:19.569Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",

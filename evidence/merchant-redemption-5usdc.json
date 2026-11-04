@@ -1,0 +1,11 @@
+{
+ "what": "The merchant redeemed its 5.00 USDC Kamino position with its own key (cli/redeem_earn.py flow), 4 Nov 2026",
+ "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+ "sig": "4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv",
+ "confirmed": true,
+ "err": null,
+ "merchant_usdc_delta": 5.000006,
+ "merchant_cusdc_delta": -4.134567,
+ "slot": 465387272,
+ "blockTime": 1793813637
+}

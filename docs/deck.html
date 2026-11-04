@@ -13,7 +13,7 @@
 <section class="slide cover">
   <img src="icon.svg" alt="" width="72" height="72">
   <h1>Sluice</h1>
-  <p class="big">Get paid in USDC on Solana, by anyone, from any chain.</p>
+  <p class="big">Get paid in USDC on Solana, from whatever your customer holds.</p>
   <p class="muted">Aurora Intents challenge · Encode Solana Hackathon 2026 · Swift Bot Labs</p>
 </section>
 <section class="slide">
@@ -24,7 +24,7 @@
 <section class="slide">
   <h2>Sluice</h2>
   <img class="art" src="hero.svg" alt="Five chains flow through Sluice into the merchant's USDC on Solana, or into Kamino.">
-  <ul><li><b>Pay links</b> signed by the merchant's Solana wallet</li><li><b>200+ assets on 30+ networks</b>, live from Aurora; paid live from Base, Arbitrum and Optimism</li><li><b>Nothing counts until Solana shows it</b></li></ul>
+  <ul><li><b>Pay links</b> signed by the merchant's Solana wallet</li><li><b>200+ assets on 30+ networks</b>, live from Aurora; paid live from Base, Arbitrum, Optimism and Tron (a non-EVM wallet)</li><li><b>Nothing counts until Solana shows it</b></li></ul>
 </section>
 <section class="slide">
   <h2>A page that never expires</h2>
@@ -36,7 +36,7 @@
   <h2>Invoices that earn</h2>
   <p class="big">The payer's money lands in the <b>merchant's own</b> yield position, in one atomic transaction.</p>
   <ol class="flow"><li><b>Base</b><span>Payer signs once, sends USDC</span></li><li><b>NEAR Intents</b><span>Routes it to Solana</span></li><li><b>Kamino</b><span>Supplies USDC, mints cUSDC</span></li><li><b>Merchant</b><span>Owns the position</span></li></ol>
-  <p class="muted">Two legs through Intents Connect: the cross-chain swap, then a call into a Solana program, with the order reference attached. <span id="earn-status">Live on mainnet both ways: 0.124074 cUSDC to the merchant from one signature on Base, then redeemed by the merchant for 0.150041 USDC.</span></p>
+  <p class="muted">Two legs through Intents Connect: the cross-chain swap, then a call into a Solana program, with the order reference attached. <span id="earn-status">Live on mainnet at a real size: a 5.00 USDC invoice paid from Base, supplied to Kamino with 4.134567 cUSDC to the merchant and Sluice's 0.025 USDC fee in the same Solana transaction, then redeemed by the merchant for 5.000006 USDC.</span></p>
 </section>
 <section class="slide">
   <h2>Refunds and settlement, proven</h2>
@@ -50,11 +50,11 @@
 </section>
 <section class="slide">
   <h2>You should not have to trust us</h2>
-  <ul><li><b>Links:</b> amount, address and how it settles are signed. One changed character and the checkout refuses</li><li><b>Signatures:</b> the page decodes the exact Solana transaction before your wallet opens, and refuses anything else</li><li><b>Payments:</b> anyone can re-check thirteen mainnet runs from the browser, no server involved</li><li><b>Orders:</b> a reference account makes each payment findable from Solana alone</li></ul>
+  <ul><li><b>Links:</b> amount, address and how it settles are signed. One changed character and the checkout refuses</li><li><b>Signatures:</b> the page decodes the exact Solana transaction before your wallet opens, and refuses anything else</li><li><b>Payments:</b> anyone can re-check seventeen mainnet runs from the browser, no server involved</li><li><b>Orders:</b> a reference account makes each payment findable from Solana alone</li></ul>
 </section>
 <section class="slide">
   <h2>Beyond people: APIs and agents</h2>
-  <p class="big">An API answers <code>402</code>. The buyer pays from any chain. The server delivers exactly once, after Solana confirms, with a signed receipt.</p>
+  <p class="big">An API answers <code>402</code>. The buyer pays from any supported chain. The server delivers exactly once, after Solana confirms, with a signed receipt.</p>
   <p class="muted">The buyer does not trust the seller: it cross-checks the deposit address with public NEAR Intents data before paying.</p>
   <p class="muted">Live: <code>curl -i sluice-api.swiftbotlab.workers.dev/api/report/&lt;address&gt;</code> answers 402 with the price and a live quote.</p>
 </section>
@@ -66,7 +66,7 @@
     <tr><td><b>Intents Deposits</b></td><td>A permanent address per network on each merchant's pay page</td></tr>
     <tr><td><b>Confidential Intents</b></td><td>Private-payment toggle, verified on Solana</td></tr>
   </tbody></table>
-  <p class="muted">Next: an integrator fee for revenue (60% of the fee goes to the integrator), and pilot merchants.</p>
+  <p class="muted">Revenue: Sluice takes 0.5% of each settle-to-earn invoice, paid on top by the payer inside the settlement transaction and pinned in the audit (live: 0.025 USDC on the 5.00 USDC run). Aurora's per-key integrator fee (60% to the integrator) is the route for plain-USDC invoices. Next: pilot merchants.</p>
 </section>
 <section class="slide cover">
   <h2>Try it</h2>

@@ -18,6 +18,11 @@
   // and in the fee transfers of the live runs 558Qh7GU and 3za9WNav. Pinned so a changed answer cannot route the fee elsewhere;
   // if Aurora rotates it, the checkout refuses to sign until this pin is updated (tests/js/core.test.mjs checks both values).
   const CONNECT_FEE = { relayer: '4NDD95L5DDDLzxX6TewnmYym3Vt6C2gar4SzjeAwnYfr', account: 'G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X' };
+  // Sluice's own integrator fee on settle-to-earn invoices: paid by the payer on top of the invoice, inside the same Solana
+  // transaction that supplies the merchant's USDC to Kamino, to Sluice's fee account. The merchant still gets exactly the invoice.
+  // Pinned here, so the checkout refuses a payload that sends a fee anywhere else or asks for a different amount.
+  const SLUICE_FEE = { owner: '8b9QYitFTUMoqZhGTZXX43fND4CLTQXkgxX45mwRFEY8', bps: 50n };
+  const sluiceFee = (price) => (BigInt(price) * SLUICE_FEE.bps) / 10000n;
   const SOL_USDC = 'nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near';
   // Kamino Main Market USDC reserve (docs.intents.aurora.dev, Kamino stake scenario)
   const KLEND = {
@@ -227,9 +232,16 @@
     return out;
   }
   /** The Solana account Intents Connect controls for this EVM wallet, computed here rather than read from an API. */
-  function deriveIntermediary(payer) {
-    if (!isEvmAddr(payer)) throw new Error('bad payer');
-    const h = sha3_256(utf8(`${MPC.tag}${MPC.predecessor},${payer.toLowerCase()}`));
+  /** The NEAR-side id of a payer wallet: an EVM wallet's lowercased address, or a Solana wallet's public key in hex
+   *  (its NEAR implicit account). It is both the signer of the payload and the MPC derivation path. */
+  function walletPath(payer) {
+    if (isEvmAddr(payer)) return payer.toLowerCase();
+    if (isSolAddr(payer)) return toHex(b58decode(payer));
+    throw new Error('bad payer');
+  }
+  function deriveIntermediary(payer) { return deriveFromPath(walletPath(payer)); }
+  function deriveFromPath(path) {
+    const h = sha3_256(utf8(`${MPC.tag}${MPC.predecessor},${path}`));
     let t = 0n;
     for (let i = 31; i >= 0; i--) t = (t << 8n) | BigInt(h[i]);
     const L = 2n ** 252n + 27742317777372353535851937790883648493n;
@@ -278,6 +290,21 @@
       discriminator: KLEND.deposit, args: [{ name: 'liquidity_amount', type: 'u64', value: String(price) }],
       accounts: [{ pubkey: '{INTERMEDIARY}', isSigner: true, isWritable: false }, rw(KLEND.reserve), ro(KLEND.market), ro(KLEND.authority),
         ro(USDC_MINT), rw(KLEND.supply), rw(KLEND.cusdc), rw(src), rw(dst), ro(TOKEN_PROGRAM), ro(TOKEN_PROGRAM), ro(KLEND.instructions), ro(ref)],
+    });
+    return steps;
+  }
+
+  /** Sluice's fee as Intents Connect steps: open Sluice's USDC account if needed, then one TransferChecked of exactly the fee. */
+  async function sluiceFeeSteps({ intermediary, price, createAta = true }) {
+    if (!isSolAddr(intermediary)) throw new Error('bad pubkey');
+    const fee = sluiceFee(price); if (fee <= 0n) return [];
+    const src = await ata(intermediary); const dst = await ata(SLUICE_FEE.owner);
+    const steps = [];
+    if (createAta) steps.push(createAtaStep('Create Sluice fee account (idempotent)', dst, SLUICE_FEE.owner, USDC_MINT));
+    steps.push({
+      metadata: { name: 'Sluice fee', description: `${fromUnits(fee, 6)} USDC (${SLUICE_FEE.bps} bps) to Sluice` }, programId: TOKEN_PROGRAM, discriminator: '0c',
+      args: [{ name: 'amount', type: 'u64', value: fee.toString() }, { name: 'decimals', type: 'u8', value: 6 }],
+      accounts: [rw(src), ro(USDC_MINT), rw(dst), { pubkey: '{INTERMEDIARY}', isSigner: true, isWritable: false }],
     });
     return steps;
   }
@@ -345,14 +372,17 @@
   /* Refuse to sign unless the Solana transaction does exactly what the invoice says.
    * ctx: { payer, intermediary, merchant, price: BigInt, settle: 'usdc'|'earn', src, dst, ref, maxFee: BigInt } */
   function auditPayload(payloadJson, ctx) {
-    const { payer, intermediary, merchant, price, settle, src, dst, ref, maxFee, now } = ctx;
+    const { payer, intermediary, merchant, price, settle, src, dst, ref, maxFee, now, feeAta = null } = ctx;
+    const want = ctx.sluiceFee === undefined ? 0n : BigInt(ctx.sluiceFee);
+    if (want > 0n && (settle !== 'earn' || want !== sluiceFee(price) || !isSolAddr(feeAta))) throw new Error('unexpected Sluice fee');
     const { message, signer, path } = messageFromPayload(payloadJson, now);
-    if (signer.toLowerCase() !== payer.toLowerCase()) throw new Error('payload is for another signer');
-    if (path.toLowerCase() !== payer.toLowerCase()) throw new Error('payload controls another account');
+    const id = walletPath(payer);
+    if (signer.toLowerCase() !== id) throw new Error('payload is for another signer');
+    if (path.toLowerCase() !== id) throw new Error('payload controls another account');
     const m = decodeMessage(message);
     if (!m.signers.includes(intermediary)) throw new Error('intermediary is not a signer');
     const mint = settle === 'earn' ? KLEND.cusdc : USDC_MINT;
-    let paid = 0; let fees = 0; let fee = 0n; let refreshed = 0; let createsAccount = false;
+    let paid = 0; let fees = 0; let fee = 0n; let refreshed = 0; let createsAccount = false; let sluiceFees = 0; let createsFeeAccount = false;
     for (const ix of m.instructions) {
       const { program: prog, accounts: acc, data } = ix;
       if (prog === COMPUTE_BUDGET) continue;
@@ -363,8 +393,10 @@
       if (prog === ATA_PROGRAM) {
         const merchantAcct = acc[1] === dst && acc[2] === merchant && acc[3] === mint;
         const ownUsdc = acc[1] === src && acc[2] === intermediary && acc[3] === USDC_MINT;
-        if (data.length !== 1 || data[0] !== 1 || acc.length < 4 || !(merchantAcct || ownUsdc)) throw new Error('unexpected token-account creation');
+        const feeAcct = want > 0n && acc[1] === feeAta && acc[2] === SLUICE_FEE.owner && acc[3] === USDC_MINT;
+        if (data.length !== 1 || data[0] !== 1 || acc.length < 4 || !(merchantAcct || ownUsdc || feeAcct)) throw new Error('unexpected token-account creation');
         if (merchantAcct) createsAccount = true;
+        if (feeAcct) createsFeeAccount = true;
         continue;
       }
       if (prog === KLEND.program) {
@@ -390,6 +422,11 @@
         if (op === 12 && data.length === 10 && acc.length >= 4) { // TransferChecked
           const amt = u64le(data, 1);
           if (acc[0] !== src || acc[1] !== USDC_MINT || acc[3] !== intermediary || data[9] !== 6) throw new Error('unexpected TransferChecked');
+          if (want > 0n && acc[2] === feeAta) { // Sluice's fee: exactly the pinned share, to Sluice's own account, nothing attached
+            if (amt !== want || acc.length !== 4) throw new Error('Sluice fee differs from the pinned fee');
+            sluiceFees += 1;
+            continue;
+          }
           if (settle === 'earn' || acc[2] !== dst || amt !== price) throw new Error('transfer to an unexpected account');
           if (!sameArr(acc.slice(4), [ref])) throw new Error('payment does not carry this order reference');
           paid += 1;
@@ -408,7 +445,8 @@
     }
     if (paid !== 1 || fees > 1) throw new Error(`expected one payment and at most one fee (got ${paid}/${fees})`);
     if (settle === 'earn' && refreshed !== 1) throw new Error('reserve refresh missing');
-    return { ok: true, instructions: m.instructions.length, fee, createsAccount };
+    if (sluiceFees !== (want > 0n ? 1 : 0)) throw new Error(want > 0n ? 'Sluice fee missing' : 'unexpected Sluice fee');
+    return { ok: true, instructions: m.instructions.length, fee, createsAccount, sluiceFee: want, createsFeeAccount };
   }
   /** personal_sign result -> the wire form Intents Connect expects: `secp256k1:<base58(r||s||v)>`, v in {0,1}. */
   function secpWire(hexSig) {
@@ -922,12 +960,12 @@
   return {
     cleanName, looksSecret, payoutCheck, linkInput, linkMessage, permanentLink, merchantCredit, ledgerRows, dailyTotals, earnValue, rememberLink, kaminoDepositTo,
     recordAmounts, createdIn, historyVerdict, readHistory,
-    USDC_MINT, TOKEN_PROGRAM, ATA_PROGRAM, SYSTEM_PROGRAM, SOL_USDC, KLEND, CHAINS, POPULAR, CONNECT_FEE,
+    USDC_MINT, TOKEN_PROGRAM, ATA_PROGRAM, SYSTEM_PROGRAM, SOL_USDC, KLEND, CHAINS, POPULAR, CONNECT_FEE, SLUICE_FEE, sluiceFee, sluiceFeeSteps,
     b58decode, b58encode, isSolAddr, concat, utf8, toHex, fromHex, sha256, toUnits, fromUnits, short,
     validRefund, isEvmAddr, isDepositAddr, onCurve, findPda, ata, referenceKey, paySteps, earnSteps,
     decodeMessage, messageFromPayload, auditPayload, secpWire, tokenDelta, verifyEarn, verifyUsdc, verifyRedeem, txRoles, permanentDelivered, tokenAccountAmount,
     paymentUri, solanaPayUri, assetIncident, settlementIncident, listAssets, isPopular, matchAsset, stage, shortfall,
     permanentRequest, permanentMatches, permanentMinUsd, minInAsset, depositRows,
-    MPC, sha3_256, deriveIntermediary, agreedTokens, checkPublicQuote, amountSane, restorable, earnDepositIn, referenceIn,
+    MPC, sha3_256, deriveIntermediary, deriveFromPath, walletPath, agreedTokens, checkPublicQuote, amountSane, restorable, earnDepositIn, referenceIn,
   };
 });

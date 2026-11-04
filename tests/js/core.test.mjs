@@ -640,3 +640,50 @@ test('the permanent page names the asset of a real received deposit, whose id co
   assert.equal(C.depositRows({ received: [{ asset_id: 'nep245:v2_1.omni.hot.tg:10_11111111111111111111', amount: '1', decimals: 18 }] })[0].assetId, 'nep245:v2_1.omni.hot.tg:10_11111111111111111111');
   assert.equal(C.depositRows({ received: [{ asset_id: '', amount: '1' }] })[0].assetId, null);
 });
+
+// Real payload of the 4 Nov 5.00 USDC run: a Solana wallet (raw_ed25519) authorises its Intents Connect account to supply the
+// invoice to Kamino for the merchant AND pay Sluice's pinned 50 bps fee, in one Solana transaction.
+const feeFx = JSON.parse(readFileSync(new URL('../fixture_connect_payload_fee.json', import.meta.url)));
+async function feeCtx(over = {}) {
+  const inter = feeFx.intermediary;
+  return { payer: feeFx.payer, intermediary: inter, merchant: feeFx.merchant, price: BigInt(feeFx.price), settle: 'earn', src: await C.ata(inter),
+    dst: await C.ata(feeFx.merchant, C.KLEND.cusdc), ref: await C.referenceKey(feeFx.orderId), maxFee: BigInt(feeFx.networkFee),
+    sluiceFee: C.sluiceFee(feeFx.price), feeAta: await C.ata(C.SLUICE_FEE.owner), ...over };
+}
+const swapIn = (pj, a, b) => {
+  const p = JSON.parse(pj); const r = JSON.parse(p.intents[0].msg).request; const A = C.toHex(C.b58decode(a)); const B = C.toHex(C.b58decode(b));
+  assert.ok(r.payload_v2.Eddsa.includes(A), 'value to tamper is in the message');
+  r.payload_v2.Eddsa = r.payload_v2.Eddsa.split(A).join(B);
+  return JSON.stringify({ ...p, intents: [{ ...p.intents[0], msg: JSON.stringify({ request: r }) }] });
+};
+test('a Solana wallet\'s Connect account is derived from its public key in hex, like the API answers', () => {
+  assert.equal(C.walletPath(feeFx.payer), C.toHex(C.b58decode(feeFx.payer)));
+  assert.equal(C.deriveIntermediary(feeFx.payer), feeFx.intermediary);
+  assert.equal(C.deriveIntermediary('0x2481E29895b43e87e547a50fB0BB5aa1E70585EB'), 'EzSGKy682NSa2ExF5bC9DzSRab2jwMY1YyB64gANjjbT');
+  assert.throws(() => C.walletPath('not-a-wallet'), /bad payer/);
+});
+test('Sluice fee: the real payload passes with the pinned fee, and every tampered copy is refused', async () => {
+  const c = await feeCtx();
+  const r = C.auditPayload(feeFx.payload_json, c);
+  assert.equal(r.ok, true); assert.equal(r.sluiceFee, 25000n); assert.equal(r.createsFeeAccount, true);
+  assert.equal(C.sluiceFee(5000000n), 25000n); assert.equal(C.SLUICE_FEE.bps, 50n);
+  const evil = '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin';
+  assert.throws(() => C.auditPayload(swapIn(feeFx.payload_json, c.feeAta, evil), c), /token-account creation|unexpected/);
+  assert.throws(() => C.auditPayload(swapIn(feeFx.payload_json, C.SLUICE_FEE.owner, evil), c), /token-account creation/);
+  const p = JSON.parse(feeFx.payload_json); const rq = JSON.parse(p.intents[0].msg).request;
+  const x10 = rq.payload_v2.Eddsa.replace('0ca86100000000000006', '0c90d003000000000006'); // 25000 -> 250000 micro-USDC
+  assert.notEqual(x10, rq.payload_v2.Eddsa);
+  rq.payload_v2.Eddsa = x10; const bumped = JSON.stringify({ ...p, intents: [{ ...p.intents[0], msg: JSON.stringify({ request: rq }) }] });
+  assert.throws(() => C.auditPayload(bumped, c), /Sluice fee differs/);
+  // a fee nobody agreed to is refused (no fee in the context), and so is a fee on a plain-USDC invoice
+  await assert.rejects(async () => C.auditPayload(feeFx.payload_json, await feeCtx({ sluiceFee: 0n })), /token-account creation|unexpected Sluice fee/);
+  await assert.rejects(async () => C.auditPayload(feeFx.payload_json, await feeCtx({ sluiceFee: 12500n })), /unexpected Sluice fee/);
+  await assert.rejects(async () => C.auditPayload(feeFx.payload_json, await feeCtx({ settle: 'usdc' })), /unexpected Sluice fee/);
+  await assert.rejects(async () => C.auditPayload(feeFx.payload_json, await feeCtx({ payer: 'B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMV' })), /another signer|bad payer/);
+});
+test('sluiceFeeSteps builds exactly the fee step the real payload carries', async () => {
+  const steps = await C.sluiceFeeSteps({ intermediary: feeFx.intermediary, price: feeFx.price, createAta: true });
+  assert.equal(steps.length, 2);
+  assert.equal(steps[1].args[0].value, '25000'); assert.equal(steps[1].accounts[2].pubkey, await C.ata(C.SLUICE_FEE.owner));
+  assert.deepEqual(await C.sluiceFeeSteps({ intermediary: feeFx.intermediary, price: '100', createAta: true }), []); // below 1 micro-USDC: no fee step
+});

@@ -1,6 +1,6 @@
 # Sluice
 
-**Get paid in USDC on Solana by anyone, from any chain.**
+**Get paid in USDC on Solana, from whatever your customer holds: paid live from Base, Arbitrum, Optimism and a Tron wallet.**
 
 ## One invoice, start to finish
 
@@ -8,8 +8,8 @@ You sell design work and want to be paid in USDC on Solana. On the [first-run pa
 Sluice checks on Solana while you paste it, choose to have invoices settle straight into Kamino, and get a pay link signed by your own
 wallet. Your client's money is on Base, and he has never used Solana. He opens the link, connects his wallet and signs once. Aurora
 Intents swaps and bridges his USDC through NEAR Intents, and Intents Connect then runs one atomic Solana transaction that supplies the
-invoice amount to Kamino with the cUSDC going to your own account
-([live run](https://solscan.io/tx/558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv)). Before
+invoice amount to Kamino with the cUSDC going to your own account and Sluice's 0.5% fee going to Sluice, in that same transaction
+([live run, 5.00 USDC](https://solscan.io/tx/QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS)). Before
 his wallet opens, the page decodes that transaction and refuses to sign anything else, and it marks the invoice paid only when the
 transaction is on Solana. Had he paid by address instead, say with ETH on Optimism from any wallet, the same link would have
 settled as plain USDC
@@ -18,11 +18,21 @@ sent too much or too little, the difference would have gone back to his own wall
 ([overpaid](https://basescan.org/tx/0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135),
 [short](https://basescan.org/tx/0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9)). When you want the cash, one
 transaction signed by your own key turns the cUSDC back into USDC plus interest (`cli/redeem_earn.py`,
-[live run](https://solscan.io/tx/3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35)).
+[live run](https://solscan.io/tx/4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv)).
 
-The earn payment, the Optimism payment, both refunds and the redemption all ran on mainnet with real money. The page re-checks all thirteen runs from your browser and shows, for
-each one, where every unit of the payment went: the 0.30 USDC sent for a 0.25 invoice became 0.25 for the merchant, 0.037512 refunded,
-and 0.012488 in fees (0.0024 refund gas, 0.010007 Solana delivery, 0.000081 Aurora's 2 bps fee and the solver's price).
+**That journey ran on mainnet on 4 Nov at a real size.** 5.452 USDC left Base ([deposit](https://basescan.org/tx/0x02fa3ab5d3011cd79c215a20e285539fc140038ad5dc47a28b97913aed5fdcea)) and arrived
+as 5.19 USDC in the payer's own Solana account, the one Intents Connect controls for his wallet. One Intents Connect transaction then
+supplied exactly 5.00 USDC to Kamino, minted 4.134567 cUSDC into the merchant's own account, paid Sluice's 0.025 USDC fee and the
+0.149068 USDC Connect fee, and kept 0.015932 for the payer. 37 minutes later the merchant's own key redeemed the 4.134567 cUSDC for
+5.000006 USDC. (This run's payer authorised Intents Connect with a Solana wallet, which signs ed25519, and moved its Base USDC into
+its Connect account with a plain Aurora swap. The checkout's own rail does both legs from an EVM wallet in one signature, as in the
+[1 Nov run](https://solscan.io/tx/558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv).)
+
+The same day a **Tron wallet** paid an invoice with one plain TRX transfer ([Tron tx](https://tronscan.org/#/transaction/eb20838a927ee6b35aa49da6062440b49f09c22d46e89bd6264d79223f28fe21)),
+and 1.272 USDC reached the merchant on Solana ([settlement](https://solscan.io/tx/33HSJXY5zPhYp8g7VXAdmuLMQZmUaeTHM8VbJo1UmCA28ve3fCScSuaJQCUhYY2vYyRyURvLiXe8uGiKMdyN5zci)). With the Optimism payment, both refunds and
+both redemptions, seventeen runs used real money on mainnet. The page re-checks all of them from your browser and shows, for each one,
+where every unit went: the 0.30 USDC sent for a 0.25 invoice became 0.25 for the merchant, 0.037512 refunded, and 0.012488 in fees
+(0.0024 refund gas, 0.010007 Solana delivery, 0.000081 Aurora's 2 bps fee and the solver's price).
 
 The merchant receives exactly the invoiced USDC. The one exception is by design: a private payment (Confidential Intents) adds a tag
 of 0.000001 to 0.000999 USDC on top of the invoice, because Aurora publishes no hashes for it and the tag is how Sluice finds the
@@ -52,23 +62,23 @@ No account, no wallet and no money needed.
 |---|---|---|
 | 1 min | Open the [first-run flow](https://apps.swiftbotlab.workers.dev/sluice-pay/#start), paste any Solana wallet address | Three steps to a working checkout: name and payout address (checked on Solana as you paste it: token accounts, mints, 0x addresses and recovery phrases are refused), USDC or settle-to-earn, then a pay link or permanent pay page with a live preview of what the customer sees, a QR and a save-your-link screen. |
 | 1 min | Open the [live demo invoice](https://apps.swiftbotlab.workers.dev/sluice-pay/#p=eyJhbXQiOiIwLjUwIiwiZXhwIjoxODAwMDEzMzY3LCJrIjoiOWNZRnpybUhSY3NZekxoQVdzTmVtekN5NzVaaEVUbjJweDRNUzhvRERSZVIiLCJyZWYiOiJkZW1vLWludm9pY2UtMTA0MiIsInMiOiJlYXJuIiwidG8iOiI5Y1lGenJtSFJjc1l6TGhBV3NOZW16Q3k3NVpoRVRuMnB4NE1TOG9ERFJlUiIsInYiOjF9.XDSG4A7YmbS97B2hAIbGSnT3aJ3sOlasUS3qWgHLkXP8qTCp9P3Iqp71OrojPLT19vcn39eOTFU0IcZZ6b3PCQ) | A merchant-signed invoice, 200+ assets on 30+ networks from Aurora's live list, a live price for whichever asset you tap. Change one character of the link: the checkout refuses it. |
-| 1 min | Open the [home page](https://apps.swiftbotlab.workers.dev/sluice-pay/), go to **Live proof** | Thirteen real mainnet runs, each with the verification stored on 4 Nov (what Aurora and Solana said, and when) and a breakdown of every fee. **Re-check all** reads Aurora and Solana again from your browser. If Aurora is slow, a row says it is showing the 4 Nov verification while the live check is pending. |
+| 1 min | Open the [home page](https://apps.swiftbotlab.workers.dev/sluice-pay/), go to **Live proof** (it reads the same without JavaScript) | Seventeen real mainnet runs, each with the verification stored on 4 Nov (what Aurora and Solana said, and when) and a breakdown of every fee. **Re-check all** reads Aurora and Solana again from your browser. If Aurora is slow, a row says it is showing the 4 Nov verification while the live check is pending. |
 | 1 min | `curl -i https://sluice-api.swiftbotlab.workers.dev/api/report/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR` | The hosted 402: price 0.20 USDC on Solana, the merchant, the assets it accepts, the receipt key and a live indicative quote. [Pay it from your own wallet](#pay-per-call-the-hosted-402-api) to get the report and a signed receipt. |
 | 1 min | Open a [refunded payment](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56) and a [paid one](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0xDF4FE7105893cB3BC78579A703b551d65eBa7c54) | Shareable records built only from Aurora and Solana data: what was sent, what came back, and the Solana check. |
 | 1 min | `git clone https://github.com/swiftbotlabs/sluice-pay && cd sluice-pay && python3 cli/simulate_earn.py` | The Intents Connect transaction that settles an invoice into Kamino, run through Solana's simulator on live mainnet state. Standard library only. |
-| 1 min | `node --test tests/js/core.test.mjs tests/js/proofs.test.mjs tests/js/worker.test.mjs` and, after `pip install -r requirements.txt`, `python3 -m unittest discover -s tests` | 77 checkout, proof and hosted-API tests and 63 server, CLI and parity tests, offline. They include real Intents Connect payloads, real mainnet transactions and refund records, and tampered copies of them. |
+| 1 min | `node --test tests/js/core.test.mjs tests/js/proofs.test.mjs tests/js/worker.test.mjs` and, after `pip install -r requirements.txt`, `python3 -m unittest discover -s tests` | 86 checkout, proof and hosted-API tests and 63 server, CLI and parity tests, offline. They include real Intents Connect payloads, real mainnet transactions and refund records, and tampered copies of them. |
 
 ## How it meets the judging criteria
 
 | Criterion | Where to look |
 |---|---|
-| **Working integration, demoed live** | Four products, each run with real money on mainnet: Swap API and Confidential Intents in the checkout, Intents Deposits on permanent pay pages, Intents Connect in the checkout and the CLI. [Thirteen mainnet runs](#live-on-mainnet-real-money-real-links) you can re-check from the page. The 402 API is [hosted](#pay-per-call-the-hosted-402-api). |
+| **Working integration, demoed live** | Four products, each run with real money on mainnet: Swap API and Confidential Intents in the checkout, Intents Deposits on permanent pay pages, Intents Connect in the checkout and the CLI. [Seventeen mainnet runs](#live-on-mainnet-real-money-real-links) you can re-check from the page. The 402 API is [hosted](#pay-per-call-the-hosted-402-api). |
 | **Removes a real cross-chain friction point** | A customer pays from what they hold, in one step, and the merchant never touches a bridge. A [permanent pay page](#permanent-pay-pages) removes even the checkout. Machine buyers get a [402 flow](#pay-per-call-the-hosted-402-api) with no human to rescue a half-finished bridge. |
 | **Correct settlement and refund handling** | [Settlement and refund table](#settlement-and-refund-handling), with live refunds on mainnet for an overpaid and a short invoice, and every fee of every run itemised so the amounts add up. Provider `SUCCESS` is only a hint: delivery waits for the balance change on Solana. A short deposit can be completed in place. A failed Intents Connect step can be retried from the page, with the same order reference so it cannot pay twice. Routes under an active Aurora incident are hidden. |
 | **Clean UX, no unnecessary actions** | A merchant goes from nothing to a shareable checkout in three steps, with a live preview of what the customer will see. Connect a wallet and the refund address, chain and asset fill themselves. On EVM chains, Bitcoin and Solana the QR carries the amount too, so nothing is typed. Paying with USDC already on Solana skips the bridge entirely. Mobile first. |
 | **Fit and creativity** | [Invoices that earn](#invoices-that-earn): the payer's money lands in the merchant's own yield position, in one atomic transaction. Merchant-signed links. Order references you can look up on Solana. |
-| **Bonus: multi-chain sources** | 200+ assets on 30+ networks, read live from Aurora's list. Real runs from Base (USDC), Arbitrum (ETH) and Optimism (ETH). |
-| **Bonus: contract-level composability** | Intents Connect runs `refresh_reserve` and `deposit_reserve_liquidity` on Kamino, or `TransferChecked` with a reference, after the bridge lands. The page decodes the exact transaction before the wallet signs, including who receives the Intents Connect fee. |
+| **Bonus: multi-chain sources** | 200+ assets on 30+ networks, read live from Aurora's list. Real runs from Base (USDC), Arbitrum (ETH), Optimism (ETH) and Tron (TRX, a non-EVM wallet). |
+| **Bonus: contract-level composability** | Intents Connect runs `refresh_reserve` and `deposit_reserve_liquidity` on Kamino (cUSDC to the merchant) and Sluice's fee transfer in one transaction, or `TransferChecked` with a reference, after the bridge lands. The page decodes the exact transaction before the wallet signs, including who receives each fee. |
 | **Bonus: Confidential Intents** | The private-payment toggle, with a real Arbitrum ETH run verified on Solana. |
 
 ## The problem
@@ -126,9 +136,14 @@ signs once, sends USDC --> routes through NEAR Intents --> create merchant cUSDC
                                                              source  = payer's intermediary USDC
                                                              cUSDC   = MERCHANT's token account
                                                              + read-only order reference account
+                                                           TransferChecked(0.5% of the invoice) to Sluice
 ```
 
 - The payer's intermediary never holds the position, and the order's reference travels with the deposit.
+- **Sluice's fee is in the same transaction.** The payer adds 0.5% on top of the invoice (`SLUICE_FEE` in `docs/core.js`), sent with
+  one `TransferChecked` to Sluice's own USDC account (owner `8b9QYitF...RFEY8`). The merchant still gets exactly the invoice. The
+  checkout lists the fee before the wallet opens, and the audit refuses a fee of any other amount or to any other account
+  (tests run the real 4 Nov payload and copies with the fee raised or redirected).
 - **The page audits what it asks you to sign.** A wallet shows opaque text, so `auditPayload()` in `docs/core.js` checks every field
   of the signed JSON and decodes the Solana transaction inside it. It refuses anything but this: the merchant's cUSDC account, the
   invoiced amount, this order's reference, the expected reserve, and one fee within the previewed cap. The payer's Solana account is
@@ -142,7 +157,9 @@ signs once, sends USDC --> routes through NEAR Intents --> create merchant cUSDC
 - **Without a wallet** (paying from an exchange, or from a non-EVM chain) the same invoice settles as plain USDC. The page says so
   before the payer commits.
 
-**Status: live on mainnet, both ways.** The deposit above went through the published checkout with real money. On 4 Nov the merchant took the position
+**Status: live on mainnet, both ways, at a real size.** On 4 Nov a 5.00 USDC invoice settled into the merchant's Kamino position with
+Sluice's fee in the same transaction ([QzqYDzy2...](https://solscan.io/tx/QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS)), and the merchant redeemed it for 5.000006 USDC
+([4XnJMN2q...](https://solscan.io/tx/4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv)). The first, smaller deposit went through the published checkout with real money on 1 Nov; on 4 Nov the merchant took that position
 back out: one transaction signed by the merchant's own wallet burned the 0.124074 cUSDC and paid 0.150041 USDC (the 0.15 supplied plus interest) into
 its own USDC account ([3PoYZEFg...eK35](https://solscan.io/tx/3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35),
 record: [merchant-redemption.json](evidence/merchant-redemption.json)). The merchant view lists it under Earn. To check settle-to-earn without a wallet,
@@ -188,10 +205,15 @@ Intents Connect rail stay on the self-hosted server. Details in [SECURITY.md](SE
 ## Live on mainnet (real money, real links)
 
 Every row below is a real payment. The page shows each one as verified on 4 Nov (the stored check: what Aurora and Solana said,
-and when), and its "Check live" buttons read Aurora's status API and Solana mainnet again from your browser.
+and when; also rendered into the HTML, so it reads without JavaScript), and its "Check live" buttons read Aurora's status API and
+Solana mainnet again from your browser.
 
 | Run | What it proves | Source chain deposit | Solana settlement |
 |---|---|---|---|
+| **5.00 USDC invoice into Kamino, with Sluice's fee, 4 Nov** | 5.452 USDC sent on Base reached the payer's own Solana account as 5.19 USDC; one Intents Connect transaction supplied exactly 5.00 USDC to Kamino, minted 4.134567 cUSDC to the merchant, paid Sluice's 0.025 USDC fee and the 0.149068 Connect fee, with the order reference attached. Record: [settle-to-earn-5usdc.json](evidence/settle-to-earn-5usdc.json) | [0x02fa3ab5...dcea](https://basescan.org/tx/0x02fa3ab5d3011cd79c215a20e285539fc140038ad5dc47a28b97913aed5fdcea) | [QzqYDzy2...XnxS](https://solscan.io/tx/QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS) |
+| **Merchant redeemed the 5.00 USDC, 4 Nov** | The merchant's own wallet burned 4.134567 cUSDC and received 5.000006 USDC (5.00 plus interest) in its own account, 37 minutes later. Record: [merchant-redemption-5usdc.json](evidence/merchant-redemption-5usdc.json) | none (Solana only) | [4XnJMN2q...gWqv](https://solscan.io/tx/4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv) |
+| **Tron wallet (non-EVM), 4 Nov** | One plain TRX transfer, 4.026148 TRX, signed by a Tron wallet to the invoice's Tron deposit address; 1.272 USDC reached the merchant on Solana 2 min 39 s later. Record: [tron-trx.json](evidence/tron-trx.json) | [eb20838a92...fe21](https://tronscan.org/#/transaction/eb20838a927ee6b35aa49da6062440b49f09c22d46e89bd6264d79223f28fe21) | [33HSJXY5...5zci](https://solscan.io/tx/33HSJXY5zPhYp8g7VXAdmuLMQZmUaeTHM8VbJo1UmCA28ve3fCScSuaJQCUhYY2vYyRyURvLiXe8uGiKMdyN5zci) |
+| **Hosted 402 API, 4 Nov** | The public Worker answered 402, the buyer paid 0.2122 USDC on Base, and got the report exactly once after the 0.20 USDC credit, with a signed receipt. Record: [api-call-hosted.json](evidence/api-call-hosted.json) | [0x5e581533...4793](https://basescan.org/tx/0x5e58153312331b01866d694dbda879cf5fcdd305828fbd899daaa5cdaa8a4793) | [35PYLWiq...J4NZ](https://solscan.io/tx/35PYLWiqtyAczHr3fNKqymGznSmPgCRewH78QntuC5dKZj5rw7guAymxMy3BDNDYR3uUWJXaMEURBSV6d3FnJ4NZ) |
 | **Permanent address (Intents Deposits), 4 Nov** | A plain 1.10 USDC transfer to the merchant's permanent address, with no quote and no form, arrived as 1.089777 USDC on Solana 14 s after Aurora saw it. Record: [persistent-deposit-base.json](evidence/persistent-deposit-base.json) | [0xc6b89c8e...da9b](https://basescan.org/tx/0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b) | [2Jhg3e1b...ksiE](https://solscan.io/tx/2Jhg3e1bBxCi3oE1BogFcvTn7bivpY3SaJbfnqqbDUzviswDczjU9Fi4WuHbLqw7EVtgqmR7qsz6hgQRHxcvksiE) |
 | **Overpaid invoice, 4 Nov** | 0.30 USDC sent for a 0.25 invoice: exactly 0.25 to the merchant, and **0.037512 USDC refunded** to the payer 26 s later ([refund tx](https://basescan.org/tx/0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135)). Record: [refund-overpay-base.json](evidence/refund-overpay-base.json) | [0xcef3352b...85a4](https://basescan.org/tx/0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4) | [55V6UFtj...7eM7](https://solscan.io/tx/55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7) |
 | **Short invoice, 4 Nov** | 0.20 USDC sent for a 0.25 invoice: `INCOMPLETE_DEPOSIT`, nothing reached the merchant, and **0.1976 USDC was refunded** to the payer after the quote deadline ([refund tx](https://basescan.org/tx/0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9)). Record: [refund-short-base.json](evidence/refund-short-base.json) | [0x40689997...93a0](https://basescan.org/tx/0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0) | none (refunded) |
@@ -216,6 +238,10 @@ amount swapped and what arrived. A leftover smaller than the refund fee is not r
 
 | Run | Where the money went |
 |---|---|
+| 5.00 USDC into Kamino, 4 Nov | 5.452 USDC sent, 0.000882 refunded and 0.0024 USDC refund gas. The 5.448718 USDC swapped became 5.19 USDC in the payer's own Solana account, after 0.257261 Solana delivery (it includes opening the payer's Solana USDC account, once) and 0.001457 Aurora's 2 bps fee and the solver's price. That account supplied 5.00 USDC to Kamino for the merchant, paid Sluice's 0.025 USDC fee, paid a 0.149068 USDC Intents Connect fee (it includes opening Sluice's fee account, once) and kept 0.015932. |
+| Merchant redeemed the 5.00, 4 Nov | The merchant burned 4.134567 cUSDC and received 5.000006 USDC: the 5.00 supplied plus 0.000006 interest, for a 0.000005 SOL network fee. |
+| Tron wallet, 4 Nov | 4.026148 TRX sent (plus 1.1 TRX of Tron network fees to open the deposit address), 0.013381 left over, too small to refund. The 4.012767 TRX swapped became 1.272 USDC to the merchant, after 0.010028 USDC Solana delivery and about $0.0043 Aurora's 10 bps fee and the solver's price. |
+| Hosted 402 API, 4 Nov | 0.2122 sent = 0.20 to the merchant + 0.0122 USDC in fees (0.002071 left over, too small to refund, 0.010077 Solana delivery, 0.000052 Aurora's 2 bps fee and the solver's price). |
 | Permanent address, 4 Nov | 1.10 sent = 1.089777 to the merchant + 0.010223 USDC for Solana delivery and Aurora's fee. |
 | Overpaid invoice, 4 Nov | 0.30 sent = 0.25 to the merchant + 0.037512 refunded + 0.012488 USDC in fees (0.0024 refund gas, 0.010007 Solana delivery, 0.000081 Aurora's 2 bps fee and the solver's price). |
 | Short invoice, 4 Nov | 0.20 sent = 0.1976 refunded + 0.0024 USDC refund fee. Nothing reached the merchant. |
@@ -368,8 +394,9 @@ sluice/server.py    HTTP API (402 flow), rate limits, strict input handling
 cli/                sluice_buy.py (headless buyer), verify_receipt.py, make_link.py, simulate_earn.py, redeem_earn.py
 docs/core.js        the checkout's money logic: PDAs, steps, payload audit, payment URIs, Solana checks (no DOM, no network)
 docs/app.js         the checkout: wallets, routes, status, records, merchant view (GitHub Pages)
-docs/proofs.js      the 13 live proofs: rows, checks and fee arithmetic, shared by the page and tools/snapshot_proofs.mjs
-docs/proofs-snapshot.json  the stored verification of all 13 runs (what each check read, and when)
+docs/proofs.js      the 17 live proofs: rows, checks and fee arithmetic, shared by the page and tools/snapshot_proofs.mjs
+docs/proofs-snapshot.json  the stored verification of all 17 runs (what each check read, and when)
+tools/render_static.mjs    writes that stored verification into index.html, so the proof list reads without JavaScript
 worker/             the hosted 402 API (Cloudflare Worker + Durable Object ledger), same money rules via docs/core.js
 tests/              offline unit, HTTP, browser-core and Python/JS parity tests
 evidence/           records of the mainnet runs
@@ -377,9 +404,14 @@ evidence/           records of the mainnet runs
 
 ## Business model
 
-Aurora shares fees with integrators: 60% of the fee set on an API key goes to the integrator, up to 500 bps, with no code
-change. This page's key runs at Aurora's floor today, so Sluice takes nothing. At 30 bps a merchant's customers would pay
-0.30% and Sluice would keep 0.18%, which suits a checkout that is cheaper than a card rail.
+- **Settle-to-earn invoices: 0.5%, live.** The payer adds 0.5% on top of the invoice, inside the very Solana transaction that settles
+  into Kamino, to Sluice's own account. On the 4 Nov 5.00 USDC run that was 0.025 USDC
+  ([transaction](https://solscan.io/tx/QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS), instruction 7). A card rail charges a merchant about 3%; here the merchant pays nothing
+  and gets exactly the invoice, in a yield position.
+- **Plain-USDC invoices:** Aurora shares fees with integrators (60% of the fee set on an API key, up to 500 bps, configured in Aurora's
+  portal, no code change). This page's key runs at Aurora's floor today (2 bps on stables, 10 bps otherwise, all to Aurora), so plain
+  invoices earn Sluice nothing yet; at 30 bps a customer would pay 0.30% and Sluice would keep 0.18%.
+- **Pay-per-call APIs:** the hosted 402 API sells data for USDC; the same rail can carry a per-call margin.
 
 ## Builder notes for the Aurora team
 
@@ -410,7 +442,8 @@ change. This page's key runs at Aurora's floor today, so Sluice takes nothing. A
 - The first payment to a merchant that has never held the settlement token costs more: about 0.25 USDC on the Swap route
   and about 0.15 USDC on the Connect route (Solana token-account rent). Both show it in the quote, and later payments do not pay it.
 - Not every listed asset has a route at every moment. Each is quoted live, and the page says so when one has none.
-- The checkout connects EVM wallets only. Solana wallets pay by QR, other chains by address or QR.
+- The checkout connects EVM wallets only. Solana wallets pay by QR, other chains by address or QR. The 4 Nov Tron run paid a Swap API
+  deposit address with a plain TRX transfer, exactly as a Tron wallet or exchange would from the QR.
 - The checkout's history lists payments made through this page's API key.
 - The Aurora API key in `docs/app.js` is a public integrator key by Aurora's design (it is meant to ship in web pages).
   The server uses its own, separate key.

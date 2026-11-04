@@ -19,7 +19,7 @@
   const RPC = { helium: 'https://solana-rpc.web.helium.io', tatum: 'https://solana-mainnet.gateway.tatum.io', leo: 'https://solana.leorpc.com/?api_key=FREE', vibe: 'https://public.rpc.solanavibestation.com' };
   const RPC_ORDER = { getSignaturesForAddress: [RPC.helium, RPC.leo, RPC.vibe], getTransaction: [RPC.helium, RPC.tatum, RPC.vibe, RPC.leo], default: [RPC.tatum, RPC.helium, RPC.vibe, RPC.leo] };
   const DEMO_LINK = 'p=eyJhbXQiOiIwLjUwIiwiZXhwIjoxODAwMDEzMzY3LCJrIjoiOWNZRnpybUhSY3NZekxoQVdzTmVtekN5NzVaaEVUbjJweDRNUzhvRERSZVIiLCJyZWYiOiJkZW1vLWludm9pY2UtMTA0MiIsInMiOiJlYXJuIiwidG8iOiI5Y1lGenJtSFJjc1l6TGhBV3NOZW16Q3k3NVpoRVRuMnB4NE1TOG9ERFJlUiIsInYiOjF9.XDSG4A7YmbS97B2hAIbGSnT3aJ3sOlasUS3qWgHLkXP8qTCp9P3Iqp71OrojPLT19vcn39eOTFU0IcZZ6b3PCQ';
-  const EARN_TX = '558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv'; // the first live settle-to-earn run
+  const EARN_TX = 'QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS'; // the 4 Nov 5.00 USDC settle-to-earn run, with Sluice's fee
   const MERCHANT_DEMO = '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR';
   const ROUTED = /^#(p=|to=|s=|c=|m=|a=|start)/;
   // Real mainnet runs: rows, checks and fee arithmetic live in proofs.js (shared with tools/snapshot_proofs.mjs).
@@ -493,9 +493,12 @@
     const dst = await C.ata(invoice.to, earn ? KLEND.cusdc : USDC_MINT);
     const exists = (await accountAmount(dst)) !== null;
     const a = { intermediary: inter, merchant: invoice.to, orderId: oid, price: price.toString(), createAta: !exists };
-    const steps = earn ? await C.earnSteps(a) : await C.paySteps(a);
+    // Settle-to-earn invoices carry Sluice's pinned fee (core.SLUICE_FEE), paid on top, in the same Solana transaction.
+    const fee = earn ? C.sluiceFee(price) : 0n;
+    const feeSteps = fee > 0n ? await C.sluiceFeeSteps({ intermediary: inter, price: price.toString(), createAta: (await accountAmount(await C.ata(C.SLUICE_FEE.owner))) === null }) : [];
+    const steps = [...(earn ? await C.earnSteps(a) : await C.paySteps(a)), ...feeSteps];
     const body = { version: '1.0', type: 'solana', dry,
-      quote: { originAsset: c.token.assetId, destinationAsset: SOL_USDC, amount: (price + 2000n).toString(), swapType: 'EXACT_OUTPUT', slippageTolerance: 100, deadline: new Date(Date.now() + 18 * 60 * 1000).toISOString().replace(/\.\d+Z$/, 'Z') },
+      quote: { originAsset: c.token.assetId, destinationAsset: SOL_USDC, amount: (price + fee + 2000n).toString(), swapType: 'EXACT_OUTPUT', slippageTolerance: 100, deadline: new Date(Date.now() + 18 * 60 * 1000).toISOString().replace(/\.\d+Z$/, 'Z') },
       steps, metadata: { title: `Sluice ${oid}`, intent: earn ? 'sluice_settle_to_earn' : 'sluice_pay_with_reference' } };
     const x = await cx('POST', `/api/v1/executions/${w.address}`, body, true);
     return { x, inter, oid, dst, exists, earn };
@@ -539,11 +542,13 @@
     const fee = BigInt(d.networkFee || 0);
     const maxFee = (() => { const m = fee + fee / 5n + 2000n; return m > 300000n ? 300000n : m; })();
     const ref = await C.referenceKey(oid); const src = await C.ata(inter);
-    const audit = C.auditPayload(payload, { payer: w.address, intermediary: inter, merchant: invoice.to, price: invoice.raw, settle: earn ? 'earn' : 'usdc', src, dst, ref, maxFee });
+    const sluiceFee = earn ? C.sluiceFee(invoice.raw) : 0n; const feeAta = await C.ata(C.SLUICE_FEE.owner);
+    const audit = C.auditPayload(payload, { payer: w.address, intermediary: inter, merchant: invoice.to, price: invoice.raw, settle: earn ? 'earn' : 'usdc', src, dst, ref, maxFee, sluiceFee, feeAta });
     const facts = [
       earn ? `${pretty(invoice.raw)} USDC is supplied to Kamino and the cUSDC goes to ${short(invoice.to)}, not to you` : `${pretty(invoice.raw)} USDC goes to ${short(invoice.to)}`,
       `This order's reference ${short(ref)} is attached, so the payment can be found on Solana`,
-      `Network fee ${round(audit.fee, 6)} USDC${audit.createsAccount ? ', including a one-time account for this merchant' : ''}`,
+      ...(sluiceFee > 0n ? [`Sluice fee ${round(sluiceFee, 6)} USDC (${Number(C.SLUICE_FEE.bps) / 100}%), in the same transaction, to Sluice's account ${short(C.SLUICE_FEE.owner)}`] : []),
+      `Network fee ${round(audit.fee, 6)} USDC${audit.createsAccount ? ', including a one-time account for this merchant' : ''}${audit.createsFeeAccount ? ', including opening Sluice\'s fee account (once)' : ''}`,
       youSend,
     ];
     $('sign-facts').replaceChildren(...facts.map((f) => { const li = document.createElement('li'); li.textContent = f; return li; }));
@@ -568,7 +573,8 @@
       const inter = await ownIntermediary(wallet.address);
       const dst = dstNow;
       const a = { intermediary: inter, merchant: invoice.to, orderId: o.exec.oid, price: o.raw, createAta: (await accountAmount(dst)) === null };
-      const steps = earn ? await C.earnSteps(a) : await C.paySteps(a);
+      const feeSteps = earn ? await C.sluiceFeeSteps({ intermediary: inter, price: String(o.raw), createAta: (await accountAmount(await C.ata(C.SLUICE_FEE.owner))) === null }) : [];
+      const steps = [...(earn ? await C.earnSteps(a) : await C.paySteps(a)), ...feeSteps];
       const x = await cx('POST', `/api/v1/executions/${wallet.address}/steps`, { version: '1.0', type: 'solana', destinationAsset: SOL_USDC, steps, dry: false,
         metadata: { title: `Sluice ${o.exec.oid} retry`, intent: earn ? 'sluice_settle_to_earn' : 'sluice_pay_with_reference' } }, true);
       await auditAndSign(x, { inter, oid: o.exec.oid, dst, earn, youSend: 'Nothing new leaves your wallet: this uses the funds already in your Solana account' });
@@ -605,7 +611,7 @@
       if (held !== null && held < BigInt(q.amountIn)) throw new Error(`this payment needs ${round(q.amountIn, c.token.decimals)} ${c.sym}, your wallet holds ${round(held, c.token.decimals)}. Pick another asset or top up first.`);
       if (q.recipient !== inter || q.destinationAsset !== SOL_USDC || q.originAsset !== c.token.assetId) throw new Error('quote did not match this payment');
       if (!C.isEvmAddr(q.depositAddress)) throw new Error('unexpected deposit address');
-      if (!C.amountSane(q.amountIn, c.token, invoice.raw, 300000n)) throw new Error('the amount asked is far above this invoice');
+      if (!C.amountSane(q.amountIn, c.token, invoice.raw, 300000n + (earn ? C.sluiceFee(invoice.raw) : 0n))) throw new Error('the amount asked is far above this invoice');
       await checkPublic({ depositAddress: q.depositAddress, recipient: inter, originAsset: c.token.assetId, refundTo: w.address, amountIn: q.amountIn });
       const ref = await auditAndSign(x, { inter, oid, dst, earn, youSend: `You send ${round(q.amountIn, c.token.decimals)} ${c.sym} on ${c.net}` });
       order = { rail: 'connect', to: invoice.to, settle: earn ? 'earn' : 'usdc', createdAt: Math.floor(Date.now() / 1000), chain: c.chain, sym: c.sym, net: c.net, chainId: c.chainId, fam: c.fam,
@@ -1017,7 +1023,7 @@
     $('o-again').onclick = () => { $('o-amt').value = ''; $('o-ref').value = ''; go(3); };
     $('o-forget').onclick = () => { const p = profile(); store.del(PROFILE); store.del(LINKS); if (p) store.del(FLAGS + p.to); location.hash = '#start'; location.reload(); };
     $('o-ref').onkeydown = $('o-amt').onkeydown = (e) => { if (e.key === 'Enter') $('o-next').click(); };
-    const proof = $('o-earn-proof'); proof.append(txLink('sol', EARN_TX), ': 0.15 USDC paid on Base, supplied to Kamino, cUSDC in the merchant\'s own account.');
+    const proof = $('o-earn-proof'); proof.append(txLink('sol', EARN_TX), ': a 5.00 USDC invoice paid from Base, supplied to Kamino, cUSDC in the merchant\'s own account, Sluice\'s 0.5% fee in the same transaction.');
     syncOnb();
     if (me) checkPayout();
     loadTokens().then(() => syncOnb(), () => {});
