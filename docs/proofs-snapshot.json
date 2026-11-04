@@ -1,0 +1,1275 @@
+{
+ "generated_at": "2026-11-04T16:10:25.033Z",
+ "by": "tools/snapshot_proofs.mjs (same checks as the page: docs/proofs.js checkRow)",
+ "sources": {
+  "aurora": "https://intents-api.aurora.dev/api/status and /api/persistent-deposit-status (public integrator key)",
+  "solana": "getTransaction jsonParsed, commitment confirmed: https://solana-rpc.web.helium.io, https://solana-mainnet.gateway.tatum.io, https://public.rpc.solanavibestation.com"
+ },
+ "rows": [
+  {
+   "id": "0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b",
+   "checked_at": "2026-11-04T16:10:17.537Z",
+   "ok": true,
+   "aurora": {
+    "status": "DELIVERED",
+    "sent": "1100000",
+    "received_at": "2026-11-04T11:02:35.302Z"
+   },
+   "solana": {
+    "sig": "2Jhg3e1bBxCi3oE1BogFcvTn7bivpY3SaJbfnqqbDUzviswDczjU9Fi4WuHbLqw7EVtgqmR7qsz6hgQRHxcvksiE",
+    "slot": 465278400,
+    "blockTime": 1793790256,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "1089777",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: received and delivered",
+    " · Solana: merchant +1.089777 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base to the permanent address",
+       "amount": "1.10",
+       "raw": "1100000",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "1.089777",
+        "raw": "1089777",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery and Aurora's fee (Aurora's record of a permanent address does not split the two)",
+        "amount": "0.010223",
+        "raw": "10223",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "1.10 sent = 1.089777 to the merchant + 0.010223 USDC for Solana delivery and Aurora's fee."
+   }
+  },
+  {
+   "id": "0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4",
+   "checked_at": "2026-11-04T16:10:19.231Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-11-04T11:04:45.000Z",
+    "deposited": "300000",
+    "amountIn": "260088",
+    "amountOut": "250000",
+    "refunded": "37512",
+    "amountInUsd": "0.259931166936",
+    "amountOutUsd": "0.249849250000",
+    "refundFormatted": "0.037512",
+    "refundReason": null,
+    "refundTxs": [
+     "0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135"
+    ],
+    "withdrawFee": "10007",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7",
+    "slot": 465278415,
+    "blockTime": 1793790259,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "250000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success, 0.037512 returned to the payer",
+    " · refund ",
+    {
+     "tx": "0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135",
+     "chain": "base"
+    },
+    " · Solana: merchant +0.25 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.30",
+       "raw": "300000",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.260088",
+        "raw": "260088",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "refunded to the payer (the excess)",
+        "amount": "0.037512",
+        "raw": "37512",
+        "unit": "USDC",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0024",
+        "raw": "2400",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "0.260088",
+       "raw": "260088",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.25",
+        "raw": "250000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.010007",
+        "raw": "10007",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.000081",
+        "raw": "81",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.30 sent = 0.25 to the merchant + 0.037512 refunded + 0.012488 USDC in fees (0.0024 refund gas, 0.010007 Solana delivery, 0.000081 Aurora's 2 bps fee and the solver's price)."
+   }
+  },
+  {
+   "id": "0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0",
+   "checked_at": "2026-11-04T16:10:19.983Z",
+   "ok": true,
+   "aurora": {
+    "status": "REFUNDED",
+    "updatedAt": "2026-11-04T14:59:35.000Z",
+    "deposited": "200000",
+    "amountIn": null,
+    "amountOut": null,
+    "refunded": "197600",
+    "amountInUsd": null,
+    "amountOutUsd": null,
+    "refundFormatted": "0.1976",
+    "refundReason": "QUOTE_EXPIRED",
+    "refundTxs": [
+     "0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9"
+    ],
+    "withdrawFee": "10007",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": null,
+   "summary": [
+    "Aurora: refunded 0.1976 to the payer (quote expired)",
+    " · refund ",
+    {
+     "tx": "0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9",
+     "chain": "base"
+    }
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.20",
+       "raw": "200000",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "refunded to the payer",
+        "amount": "0.1976",
+        "raw": "197600",
+        "unit": "USDC",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0024",
+        "raw": "2400",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.20 sent = 0.1976 refunded + 0.0024 USDC refund fee. Nothing reached the merchant."
+   }
+  },
+  {
+   "id": "0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370",
+   "checked_at": "2026-11-04T16:10:20.263Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-11-04T11:05:31.000Z",
+    "deposited": "133368898372899",
+    "amountIn": "112126150436235",
+    "amountOut": "250000",
+    "refunded": "20982670536664",
+    "amountInUsd": "0.260760575455",
+    "amountOutUsd": "0.249849250000",
+    "refundFormatted": "0.000020982670536664",
+    "refundReason": null,
+    "refundTxs": [
+     "0x996f9e7fcc848f7068a2fb2a2727e0fbf9497c88674400f2a4c4e2234ee44c80"
+    ],
+    "withdrawFee": "10007",
+    "refundFee": "260077400000",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 10
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "39uawZ5pSTz4jZEPv3DYZHYjxpQurRC6bvZWiac7GNkjqryzP3jpzfxKXs6e1aEgYye9WgjqHXDaYtBHUYwVJMfy",
+    "slot": 465278660,
+    "blockTime": 1793790311,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "250000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success, 0.00002098 returned to the payer",
+    " · refund ",
+    {
+     "tx": "0x996f9e7fcc848f7068a2fb2a2727e0fbf9497c88674400f2a4c4e2234ee44c80",
+     "chain": "op"
+    },
+    " · Solana: merchant +0.25 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Optimism",
+       "amount": "0.000133368898372899",
+       "raw": "133368898372899",
+       "unit": "ETH"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.000112126150436235",
+        "raw": "112126150436235",
+        "unit": "ETH",
+        "kind": ""
+       },
+       {
+        "label": "refunded to the payer (the excess)",
+        "amount": "0.000020982670536664",
+        "raw": "20982670536664",
+        "unit": "ETH",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0000002600774",
+        "raw": "260077400000",
+        "unit": "ETH",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped (Aurora values it at $0.2608)",
+       "amount": "0.000112126150436235",
+       "raw": "112126150436235",
+       "unit": "ETH"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.25",
+        "raw": "250000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.010007",
+        "raw": "10007",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 10 bps fee and the solver's price",
+        "amount": "≈$0.0009",
+        "unit": "",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.000133368898372899 ETH sent, 0.000020982670536664 refunded and 0.0000002600774 ETH refund gas. The 0.000112126150436235 ETH swapped became 0.25 USDC to the merchant, after 0.010007 USDC Solana delivery and about $0.0009 Aurora's 10 bps fee and the solver's price."
+   }
+  },
+  {
+   "id": "3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35",
+   "checked_at": "2026-11-04T16:10:20.762Z",
+   "ok": true,
+   "aurora": null,
+   "solana": {
+    "sig": "3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35",
+    "slot": 465278771,
+    "blockTime": 1793790335,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+    "merchantUsdc": "150041",
+    "merchantCusdc": "-124074",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Solana: merchant −0.124074 cUSDC, +0.150041 USDC in its own account ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "USDC paid into the merchant's own account, for 0.124074 cUSDC burned",
+       "amount": "0.150041",
+       "raw": "150041",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "the 0.15 USDC supplied on 1 Nov",
+        "amount": "0.15",
+        "raw": "150000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "interest earned since",
+        "amount": "0.000041",
+        "raw": "41",
+        "unit": "USDC",
+        "kind": "merchant"
+       }
+      ]
+     }
+    ],
+    "network": "0.000005 SOL network fee, paid by the merchant",
+    "sentence": "The merchant burned 0.124074 cUSDC and received 0.150041 USDC: the 0.15 supplied plus 0.000041 interest, for a 0.000005 SOL network fee."
+   }
+  },
+  {
+   "id": "0x8e14bae0049ac8491469eac7087793f988bde603b515603095175b291f298379",
+   "checked_at": "2026-11-04T16:10:21.002Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-11-01T12:48:25.000Z",
+    "deposited": "311943",
+    "amountIn": "308926",
+    "amountOut": "298830",
+    "refunded": "617",
+    "amountInUsd": "0.308903757328",
+    "amountOutUsd": "0.298808484240",
+    "refundFormatted": "0.000617",
+    "refundReason": null,
+    "refundTxs": [
+     "0x5043e590de8d0edd57c901b33a5770e24b933f8747187ebbe26b059397dd2ce9"
+    ],
+    "withdrawFee": "10001",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv",
+    "slot": 464097698,
+    "blockTime": 1793537295,
+    "err": null,
+    "feeLamports": 15000,
+    "feePayer": "4j3frhd96xMfM9hYjpxEHQUfpDctZdgzg861FC9Ay4NG",
+    "merchantUsdc": "0",
+    "merchantCusdc": "124074",
+    "relayerUsdc": "146830",
+    "created": [
+     {
+      "account": "578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD",
+      "lamports": 1488440
+     }
+    ]
+   },
+   "summary": [
+    "Aurora: success, 0.000617 returned to the payer",
+    " · refund ",
+    {
+     "tx": "0x5043e590de8d0edd57c901b33a5770e24b933f8747187ebbe26b059397dd2ce9",
+     "chain": "base"
+    },
+    " · Solana: merchant +0.124074 cUSDC, Kamino +0.15 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.311943",
+       "raw": "311943",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.308926",
+        "raw": "308926",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "refunded to the payer (the excess)",
+        "amount": "0.000617",
+        "raw": "617",
+        "unit": "USDC",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0024",
+        "raw": "2400",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "0.308926",
+       "raw": "308926",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the payer's own Solana account (Intents Connect)",
+        "amount": "0.29883",
+        "raw": "298830",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.010001",
+        "raw": "10001",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.000095",
+        "raw": "95",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Reached the payer's own Solana account, which then ran one transaction",
+       "amount": "0.29883",
+       "raw": "298830",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "supplied to Kamino for the merchant (who got 0.124074 cUSDC)",
+        "amount": "0.15",
+        "raw": "150000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Intents Connect fee, to its relayer (pinned in the audit), including rent for the merchant's new cUSDC account (0.00148844 SOL)",
+        "amount": "0.14683",
+        "raw": "146830",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "left in the payer's own Solana account",
+        "amount": "0.002",
+        "raw": "2000",
+        "unit": "USDC",
+        "kind": ""
+       }
+      ]
+     }
+    ],
+    "sentence": "0.311943 USDC sent, 0.000617 refunded and 0.0024 USDC refund gas. The 0.308926 USDC swapped became 0.29883 USDC in the payer's own Solana account, after 0.010001 Solana delivery and 0.000095 Aurora's 2 bps fee and the solver's price. That account supplied 0.15 USDC to Kamino for the merchant, paid a 0.14683 USDC Intents Connect fee (it includes opening the merchant's new cUSDC account) and kept 0.002."
+   }
+  },
+  {
+   "id": "0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52",
+   "checked_at": "2026-11-04T16:10:21.508Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-10-29T18:25:56.000Z",
+    "deposited": "773463",
+    "amountIn": "768404",
+    "amountOut": "500000",
+    "refunded": "2659",
+    "amountInUsd": "0.768044386928",
+    "amountOutUsd": "0.499766000000",
+    "refundFormatted": "0.002659",
+    "refundReason": null,
+    "refundTxs": [
+     "0x291a1b7a6eb2af6acc8a62da930f74c9a7fb92e123a42a0d943dfb81a87fe9d4"
+    ],
+    "withdrawFee": "268287",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "3uyHowgryQxRWjsC9DrxMSxFd1nvpEtq3xsrR6iGJfodAdsRC6TyVN8Zk1GgUWunsLH1j6dnz9Tz2tsMhu3xiSG2",
+    "slot": 462981257,
+    "blockTime": 1793298353,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "500000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": [
+     {
+      "account": "AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9",
+      "lamports": 1488440
+     }
+    ]
+   },
+   "summary": [
+    "Aurora: success, 0.002659 returned to the payer",
+    " · refund ",
+    {
+     "tx": "0x291a1b7a6eb2af6acc8a62da930f74c9a7fb92e123a42a0d943dfb81a87fe9d4",
+     "chain": "base"
+    },
+    " · Solana: merchant +0.5 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.773463",
+       "raw": "773463",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.768404",
+        "raw": "768404",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "refunded to the payer (the excess)",
+        "amount": "0.002659",
+        "raw": "2659",
+        "unit": "USDC",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0024",
+        "raw": "2400",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "0.768404",
+       "raw": "768404",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.50",
+        "raw": "500000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote), including rent for the merchant's new USDC account (0.00148844 SOL)",
+        "amount": "0.268287",
+        "raw": "268287",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.000117",
+        "raw": "117",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.773463 sent = 0.50 to the merchant + 0.002659 refunded + 0.270804 USDC in fees (0.0024 refund gas, 0.268287 Solana delivery, 0.000117 Aurora's 2 bps fee and the solver's price)."
+   }
+  },
+  {
+   "id": "0x926b1cce75dac5750c8cbe0364519987aa3d56d93f7bfaae6bad08fe9084b6ed",
+   "checked_at": "2026-11-04T16:10:22.002Z",
+   "ok": true,
+   "aurora": {
+    "status": "REFUNDED",
+    "updatedAt": "2026-10-29T18:32:21.000Z",
+    "deposited": "400000",
+    "amountIn": null,
+    "amountOut": null,
+    "refunded": "397600",
+    "amountInUsd": null,
+    "amountOutUsd": null,
+    "refundFormatted": "0.3976",
+    "refundReason": "AMOUNT_MORE_THAN_BALANCE",
+    "refundTxs": [
+     "0x7654c9edaf4e4dc2f4dbca8e23638b8570baa736d3ea1b532836b0471314071b"
+    ],
+    "withdrawFee": "10005",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": null,
+   "summary": [
+    "Aurora: refunded 0.3976 to the payer (amount more than balance)",
+    " · refund ",
+    {
+     "tx": "0x7654c9edaf4e4dc2f4dbca8e23638b8570baa736d3ea1b532836b0471314071b",
+     "chain": "base"
+    }
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.40",
+       "raw": "400000",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "refunded to the payer",
+        "amount": "0.3976",
+        "raw": "397600",
+        "unit": "USDC",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0024",
+        "raw": "2400",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.40 sent = 0.3976 refunded + 0.0024 USDC refund fee. Nothing reached the merchant."
+   }
+  },
+  {
+   "id": "0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a",
+   "checked_at": "2026-11-04T16:10:22.517Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "",
+    "deposited": null,
+    "amountIn": null,
+    "amountOut": null,
+    "refunded": null,
+    "amountInUsd": null,
+    "amountOutUsd": null,
+    "refundFormatted": null,
+    "refundReason": null,
+    "refundTxs": [],
+    "withdrawFee": null,
+    "refundFee": null,
+    "quoteRequest": {
+     "appFees": []
+    }
+   },
+   "solana": {
+    "sig": "44GN5eYQhed3UHLkwCXxi2nJU53xeHot1Ff5x4YQNNZn9PG4vy8XVMhrvof6V4fJ9C2SEKCJ9ev8dAXUDZtuB6Cj",
+    "slot": 462983351,
+    "blockTime": 1793298802,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "500000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success",
+    " · Solana: merchant +0.5 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Arbitrum (the deposit transaction)",
+       "amount": "0.000222930139609761",
+       "raw": "222930139609761",
+       "unit": "ETH"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.50",
+        "raw": "500000",
+        "unit": "USDC",
+        "kind": "merchant"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.000222930139609761 ETH sent, 0.50 USDC to the merchant. Aurora publishes no amounts for a private payment, so the fee split is not public (the quote listed 45 bps of app fees)."
+   }
+  },
+  {
+   "id": "0x1f0c7e5f28450751799f7594f0ba5272b4b883c9efdd95b6c2f812017b240852",
+   "checked_at": "2026-11-04T16:10:23.010Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-10-29T18:55:29.000Z",
+    "deposited": "161561",
+    "amountIn": "160030",
+    "amountOut": "150000",
+    "refunded": "0",
+    "amountInUsd": "0.159949504910",
+    "amountOutUsd": "0.149924550000",
+    "refundFormatted": "0",
+    "refundReason": null,
+    "refundTxs": [],
+    "withdrawFee": "10006",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "49Uz6rAsJMQEx2qcX9JdCJqSzCdbpWSKBttYaJNrjaPKjAfZ5qH6SdLr3mwAw34rucxM6hy2i91FcAJe1nVVAxZV",
+    "slot": 462989565,
+    "blockTime": 1793300128,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "150000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success",
+    " · Solana: merchant +0.15 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.161561",
+       "raw": "161561",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.16003",
+        "raw": "160030",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "left over after the swap, not refunded (less than the 0.0024 USDC refund fee)",
+        "amount": "0.001531",
+        "raw": "1531",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "0.16003",
+       "raw": "160030",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.15",
+        "raw": "150000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.010006",
+        "raw": "10006",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.000024",
+        "raw": "24",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.161561 sent = 0.15 to the merchant + 0.011561 USDC in fees (0.001531 left over, too small to refund, 0.010006 Solana delivery, 0.000024 Aurora's 2 bps fee and the solver's price)."
+   }
+  },
+  {
+   "id": "0x4c5789409a649fd11ed158476265c9230beda4104fa595944acfc96651a2e7b9",
+   "checked_at": "2026-11-04T16:10:23.517Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-10-29T19:16:31.000Z",
+    "deposited": "161535",
+    "amountIn": "160040",
+    "amountOut": "150000",
+    "refunded": "0",
+    "amountInUsd": "0.159958699680",
+    "amountOutUsd": "0.149923800000",
+    "refundFormatted": "0",
+    "refundReason": null,
+    "refundTxs": [],
+    "withdrawFee": "9983",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "4oPn2qbtaHY2JiDi88BAFivHjDcHJs8QbmBDhbPezWuuZT2VVPcU7m5tb7kSwxxeY7pN6CNPj448xEZT3q7PL9Hs",
+    "slot": 462995470,
+    "blockTime": 1793301390,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "150000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success",
+    " · Solana: merchant +0.15 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.161535",
+       "raw": "161535",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.16004",
+        "raw": "160040",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "left over after the swap, not refunded (less than the 0.0024 USDC refund fee)",
+        "amount": "0.001495",
+        "raw": "1495",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "0.16004",
+       "raw": "160040",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.15",
+        "raw": "150000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.009983",
+        "raw": "9983",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.000057",
+        "raw": "57",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.161535 sent = 0.15 to the merchant + 0.011535 USDC in fees (0.001495 left over, too small to refund, 0.009983 Solana delivery, 0.000057 Aurora's 2 bps fee and the solver's price)."
+   }
+  },
+  {
+   "id": "0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc",
+   "checked_at": "2026-11-04T16:10:24.027Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-10-29T19:24:36.000Z",
+    "deposited": "71028266525738",
+    "amountIn": "70356645992748",
+    "amountOut": "153555",
+    "refunded": "0",
+    "amountInUsd": "0.163714286693",
+    "amountOutUsd": "0.153476072730",
+    "refundFormatted": "0",
+    "refundReason": null,
+    "refundTxs": [],
+    "withdrawFee": "9983",
+    "refundFee": "1200000000000",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 10
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs",
+    "slot": 462997783,
+    "blockTime": 1793301884,
+    "err": null,
+    "feeLamports": 15000,
+    "feePayer": "4j3frhd96xMfM9hYjpxEHQUfpDctZdgzg861FC9Ay4NG",
+    "merchantUsdc": "150000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "1556",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success",
+    " · Solana: merchant +0.15 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Arbitrum",
+       "amount": "0.000071028266525738",
+       "raw": "71028266525738",
+       "unit": "ETH"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.000070356645992748",
+        "raw": "70356645992748",
+        "unit": "ETH",
+        "kind": ""
+       },
+       {
+        "label": "left over after the swap, not refunded (less than the 0.0000012 ETH refund fee)",
+        "amount": "0.00000067162053299",
+        "raw": "671620532990",
+        "unit": "ETH",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped (Aurora values it at $0.1637)",
+       "amount": "0.000070356645992748",
+       "raw": "70356645992748",
+       "unit": "ETH"
+      },
+      "parts": [
+       {
+        "label": "to the payer's own Solana account (Intents Connect)",
+        "amount": "0.153555",
+        "raw": "153555",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.009983",
+        "raw": "9983",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 10 bps fee and the solver's price",
+        "amount": "≈$0.0003",
+        "unit": "",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Reached the payer's own Solana account, which then ran one transaction",
+       "amount": "0.153555",
+       "raw": "153555",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "paid to the merchant, with the order reference (read from Solana)",
+        "amount": "0.15",
+        "raw": "150000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Intents Connect fee, to its relayer (pinned in the audit)",
+        "amount": "0.001556",
+        "raw": "1556",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "left in the payer's own Solana account",
+        "amount": "0.001999",
+        "raw": "1999",
+        "unit": "USDC",
+        "kind": ""
+       }
+      ]
+     }
+    ],
+    "sentence": "0.000071028266525738 ETH sent, 0.00000067162053299 left over, too small to refund. The 0.000070356645992748 ETH swapped became 0.153555 USDC in the payer's own Solana account, after 0.009983 USDC Solana delivery and about $0.0003 Aurora's 10 bps fee and the solver's price. That account paid the merchant 0.15 USDC with the order reference, paid a 0.001556 USDC Intents Connect fee and kept 0.001999."
+   }
+  },
+  {
+   "id": "0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708",
+   "checked_at": "2026-11-04T16:10:24.534Z",
+   "ok": true,
+   "aurora": {
+    "status": "SUCCESS",
+    "updatedAt": "2026-10-29T18:46:53.000Z",
+    "deposited": "414193",
+    "amountIn": "410154",
+    "amountOut": "400000",
+    "refunded": "1639",
+    "amountInUsd": "0.409946872230",
+    "amountOutUsd": "0.399798000000",
+    "refundFormatted": "0.001639",
+    "refundReason": null,
+    "refundTxs": [
+     "0x8afbd277cb504d8b6637f8e18732855ba396298ec38c0b7cfc9684e7c6df8a88"
+    ],
+    "withdrawFee": "10028",
+    "refundFee": "2400",
+    "quoteRequest": {
+     "appFees": [
+      {
+       "fee": 2
+      }
+     ]
+    }
+   },
+   "solana": {
+    "sig": "45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX",
+    "slot": 462986998,
+    "blockTime": 1793299582,
+    "err": null,
+    "feeLamports": 5000,
+    "feePayer": "DuSs7rCr7oTLHjM29QQ8NwDViaahTU58qqxaJVyAkgbn",
+    "merchantUsdc": "400000",
+    "merchantCusdc": "0",
+    "relayerUsdc": "0",
+    "created": []
+   },
+   "summary": [
+    "Aurora: success, 0.001639 returned to the payer",
+    " · refund ",
+    {
+     "tx": "0x8afbd277cb504d8b6637f8e18732855ba396298ec38c0b7cfc9684e7c6df8a88",
+     "chain": "base"
+    },
+    " · Solana: merchant +0.4 USDC ✓"
+   ],
+   "fees": {
+    "groups": [
+     {
+      "total": {
+       "label": "Sent on Base",
+       "amount": "0.414193",
+       "raw": "414193",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "swapped",
+        "amount": "0.410154",
+        "raw": "410154",
+        "unit": "USDC",
+        "kind": ""
+       },
+       {
+        "label": "refunded to the payer (the excess)",
+        "amount": "0.001639",
+        "raw": "1639",
+        "unit": "USDC",
+        "kind": "refund"
+       },
+       {
+        "label": "refund fee (gas for the refund transaction)",
+        "amount": "0.0024",
+        "raw": "2400",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     },
+     {
+      "total": {
+       "label": "Swapped",
+       "amount": "0.410154",
+       "raw": "410154",
+       "unit": "USDC"
+      },
+      "parts": [
+       {
+        "label": "to the merchant on Solana (read from Solana)",
+        "amount": "0.40",
+        "raw": "400000",
+        "unit": "USDC",
+        "kind": "merchant"
+       },
+       {
+        "label": "Solana delivery fee (from the quote)",
+        "amount": "0.010028",
+        "raw": "10028",
+        "unit": "USDC",
+        "kind": "fee"
+       },
+       {
+        "label": "Aurora's 2 bps fee and the solver's price",
+        "amount": "0.000126",
+        "raw": "126",
+        "unit": "USDC",
+        "kind": "fee"
+       }
+      ]
+     }
+    ],
+    "sentence": "0.414193 sent = 0.40 to the merchant + 0.001639 refunded + 0.012554 USDC in fees (0.0024 refund gas, 0.010028 Solana delivery, 0.000126 Aurora's 2 bps fee and the solver's price)."
+   }
+  }
+ ]
+}

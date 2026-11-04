@@ -68,7 +68,7 @@
         <button id="btn-sol-refund" class="link hidden" type="button">Use my Phantom address</button>
       </label>
       <p id="refund-auto" class="muted hint hidden"></p>
-      <label class="toggle" id="private-row"><input type="checkbox" id="confidential"> <span><b>Private payment</b> <span class="muted">· Confidential Intents hides which wallet paid. Private quotes are not public, so this page cannot cross-check them.</span></span></label>
+      <label class="toggle" id="private-row"><input type="checkbox" id="confidential"> <span><b>Private payment</b> <span class="muted">· Confidential Intents hides which wallet paid. Private quotes are not public, so this page cannot cross-check them. To find the payment on Solana without Aurora's hashes, the amount gets a tag of 0.000001 to 0.000999 USDC, which the merchant receives on top of the invoice.</span></span></label>
       <div id="quote-error" class="error hidden" role="alert"></div>
       <div class="paybar">
         <button id="btn-quote" class="primary wide" type="button" disabled>Get deposit address</button>
@@ -375,7 +375,8 @@
   <div id="home">
     <section class="hero">
       <h1>Get paid in USDC on Solana, by anyone, from any chain.</h1>
-      <p class="lead">Share a link. Your customer pays with what they already hold. You receive the exact amount in your Solana wallet, or straight into yield, and nothing counts until Solana itself shows it.</p>
+      <p class="lead">Share a link. Your customer pays with what they already hold. You receive exactly the invoiced USDC in your Solana wallet, or straight into yield, and nothing counts until Solana itself shows it.</p>
+      <p class="muted hint">One exception, by design: a private payment adds a tag of 0.000001 to 0.000999 USDC on top of the invoice, so Sluice can find it on Solana without Aurora's transaction hashes.</p>
       <div class="row gap">
         <a class="button primary" href="#start">Start accepting payments</a>
         <a id="btn-demo" class="button ghost" href="#">See a live invoice</a>
@@ -439,7 +440,7 @@ Solana settlement re-verified: True</code></pre>
 
     <section id="proof" class="card">
       <h2>Live proof on mainnet</h2>
-      <p class="muted">Real payments, real refunds, from Base, Arbitrum and Optimism. Each check reads Aurora and Solana from your browser, right now.</p>
+      <p class="muted">Thirteen real payments and refunds from Base, Arbitrum and Optimism. Each row shows what was verified on 4 Nov, read from Aurora and Solana, and where every unit of the payment went. Press Check live to read both again from your browser, right now.</p>
       <button id="btn-check-all" class="ghost" type="button">Re-check all</button>
       <div id="proof-table"></div>
     </section>
@@ -448,6 +449,7 @@ Solana settlement re-verified: True</code></pre>
 <footer class="wrap muted">Sluice by Swift Bot Labs. Routing by Aurora Intents, powered by NEAR Intents. Settlement verified on Solana mainnet. <a href="https://github.com/swiftbotlabs/sluice-pay">Open source</a>.</footer>
 <script src="qrcode.min.js"></script>
 <script src="core.js"></script>
+<script src="proofs.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

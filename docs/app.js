@@ -22,23 +22,8 @@
   const EARN_TX = '558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv'; // the first live settle-to-earn run
   const MERCHANT_DEMO = '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR';
   const ROUTED = /^#(p=|to=|s=|c=|m=|a=|start)/;
-  // Real mainnet runs. "Check" re-reads each one from Aurora and from Solana in your browser.
-  // `fresh` = run on 4 Nov 2026 for the four things the judges asked to see live. `refund` = the refund tx on the paying chain.
-  const PROOF = [
-    { kind: 'perm', fresh: true, name: 'Permanent address, real money (Intents Deposits)', chain: 'base', dep: '0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b', addr: '0xF06Ae506D1591aB9c49D442A7520671ab5c4Ea7E', sol: '2Jhg3e1bBxCi3oE1BogFcvTn7bivpY3SaJbfnqqbDUzviswDczjU9Fi4WuHbLqw7EVtgqmR7qsz6hgQRHxcvksiE', raw: 1n, note: '1.10 USDC sent on Base to the merchant\'s permanent address, with no quote and no form. 1.089777 USDC arrived on Solana 14\u00a0s later' },
-    { fresh: true, name: 'Overpaid invoice: the excess came back', chain: 'base', dep: '0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4', addr: '0x57c2C008e9739E012D6878164E5E70BcA555b6B4', sol: '55V6UFtjVaCzWuK7WEDxBnS8LvXb2GLqdZFoDRXRXkbR472Rw4h9n9nWNdYJEKKYXaNxfrs9apB1WmiQVYzp7eM7', refund: '0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135', raw: 250000n, note: '0.30 USDC sent for a 0.25 invoice: exactly 0.25 to the merchant, and 0.037512 USDC back to the payer on Base 26\u00a0s later' },
-    { fresh: true, name: 'Short invoice: refunded', chain: 'base', dep: '0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0', addr: '0xC7F06250568abB20Cf004dBC60fD9EC79bEF196B', sol: null, refund: '0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9', raw: 0n, note: '0.20 USDC sent for a 0.25 invoice: nothing reached the merchant, and 0.1976 USDC went back to the payer after the quote deadline (4 Nov, 14:58 UTC)' },
-    { fresh: true, name: 'Paid from ETH on Optimism', chain: 'op', dep: '0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370', addr: '0xcd4587f5e161475a9b3ECFA6DDD22233634b0653', sol: '39uawZ5pSTz4jZEPv3DYZHYjxpQurRC6bvZWiac7GNkjqryzP3jpzfxKXs6e1aEgYye9WgjqHXDaYtBHUYwVJMfy', refund: '0x996f9e7fcc848f7068a2fb2a2727e0fbf9497c88674400f2a4c4e2234ee44c80', raw: 250000n, note: 'A second source chain: ETH on Optimism paid a 0.25 USDC invoice, and the 0.000021 ETH over-sent came back' },
-    { kind: 'redeem', fresh: true, name: 'Merchant took its Kamino position out', chain: 'sol', sol: '3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35', note: 'The merchant\'s own wallet turned 0.124074 cUSDC back into 0.150041 USDC (the 0.15 supplied plus interest), paid into its own USDC account' },
-    { name: 'Invoice settled into Kamino', chain: 'base', dep: '0x8e14bae0049ac8491469eac7087793f988bde603b515603095175b291f298379', addr: '0xeE62051e14B6d668CD3A55fe6C3dC091572759CE', sol: '558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv', ref: 'Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s', raw: 150000n, note: 'One signature on Base: USDC supplied to Kamino, cUSDC in the merchant\'s own account, order reference attached' },
-    { name: 'Paid from Base USDC', chain: 'base', dep: '0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52', addr: '0xd1EFDa88E49e98c3a9881C8CfcB0c9dfED19D8A5', sol: '3uyHowgryQxRWjsC9DrxMSxFd1nvpEtq3xsrR6iGJfodAdsRC6TyVN8Zk1GgUWunsLH1j6dnz9Tz2tsMhu3xiSG2', refund: '0x291a1b7a6eb2af6acc8a62da930f74c9a7fb92e123a42a0d943dfb81a87fe9d4', raw: 500000n, note: '0.50 USDC received; the 0.002659 USDC over-sent came back on its own' },
-    { name: 'Refund: payer sent too little', chain: 'base', dep: '0x926b1cce75dac5750c8cbe0364519987aa3d56d93f7bfaae6bad08fe9084b6ed', addr: '0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56', sol: null, refund: '0x7654c9edaf4e4dc2f4dbca8e23638b8570baa736d3ea1b532836b0471314071b', raw: 0n, note: '0.40 sent for a 1.00 invoice; 0.3976 USDC refunded to the payer 30 s after the deadline' },
-    { name: 'Private payment from Arbitrum ETH', chain: 'arb', dep: '0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a', addr: '0xFAae838d6717EBE699118255Ae94e0a970064CC1', sol: '44GN5eYQhed3UHLkwCXxi2nJU53xeHot1Ff5x4YQNNZn9PG4vy8XVMhrvof6V4fJ9C2SEKCJ9ev8dAXUDZtuB6Cj', raw: 500000n, note: 'Confidential Intents: the provider shows no hashes, the credit is found on Solana' },
-    { name: 'Signed link on this checkout', chain: 'base', dep: '0x1f0c7e5f28450751799f7594f0ba5272b4b883c9efdd95b6c2f812017b240852', addr: '0x6919bC22A44a4E3941318dBa908e7a282C2B22BE', sol: '49Uz6rAsJMQEx2qcX9JdCJqSzCdbpWSKBttYaJNrjaPKjAfZ5qH6SdLr3mwAw34rucxM6hy2i91FcAJe1nVVAxZV', raw: 150000n, note: 'Signed link, deposit address and QR, paid from another wallet, verified by the page' },
-    { name: 'Filmed for the demo video', chain: 'base', dep: '0x4c5789409a649fd11ed158476265c9230beda4104fa595944acfc96651a2e7b9', addr: '0xDF4FE7105893cB3BC78579A703b551d65eBa7c54', sol: '4oPn2qbtaHY2JiDi88BAFivHjDcHJs8QbmBDhbPezWuuZT2VVPcU7m5tb7kSwxxeY7pN6CNPj448xEZT3q7PL9Hs', raw: 150000n, note: 'One take on the published checkout' },
-    { name: 'Intents Connect with order reference', chain: 'arb', dep: '0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc', addr: '0xBE59F73BB339EA403102cDCb17f85Bd807a469fE', sol: '3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs', raw: 150000n, note: 'Bridged into the payer\'s Solana account, which paid with the order reference attached' },
-    { name: 'API call paid by the CLI', chain: 'base', dep: '0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708', addr: '0x0497bb48C0335f1D22f147B2983ffDC6dA054042', sol: '45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX', raw: 400000n, note: '402, order, deposit, verified, report plus a signed receipt' },
-  ];
+  // Real mainnet runs: rows, checks and fee arithmetic live in proofs.js (shared with tools/snapshot_proofs.mjs).
+  const PR = window.SluiceProofs; const PROOF = PR.PROOF;
 
   const $ = (id) => document.getElementById(id);
   const show = (el, on = true) => el.classList.toggle('hidden', !on);
@@ -1039,43 +1024,41 @@
   }
 
   // ---------- proof ----------
-  let proofQueue = Promise.resolve(); const checks = [];
-  const permList = (address, type) => fetch(`${AURORA}/api/persistent-deposit-status/${API_KEY}?address=${encodeURIComponent(address)}&type=${type}&limit=20`, { signal: AbortSignal.timeout(12000) })
+  // Each row shows the stored verification (docs/proofs-snapshot.json, made by tools/snapshot_proofs.mjs with the same checks)
+  // at once; "Check live" re-reads Aurora and Solana from this browser. A slow or failed live check never paints a row red:
+  // the row keeps saying what was verified and when, and that the live check is pending.
+  let proofQueue = Promise.resolve(); const checks = []; let SNAP = null;
+  // Aurora's list endpoint can stall for a while: give it 25 s and one retry, like the status call.
+  const permOnce = (address, type) => fetch(`${AURORA}/api/persistent-deposit-status/${API_KEY}?address=${encodeURIComponent(address)}&type=${type}&limit=20`, { signal: AbortSignal.timeout(25000) })
     .then((x) => x.json()).then((j) => (Array.isArray(j.deposits) ? j.deposits : []));
-  /** One live check of a proof row, from Aurora and Solana, in this browser. Returns text and links; never guesses an amount. */
-  async function checkProof(p) {
-    const parts = [];
-    if (p.kind === 'redeem') {
-      const [usdcAcct, cusdcAcct] = await Promise.all([C.ata(MERCHANT_DEMO), C.ata(MERCHANT_DEMO, KLEND.cusdc)]);
-      const v = C.verifyRedeem(await getTx(p.sol), MERCHANT_DEMO, { usdcAcct, cusdcAcct });
-      parts.push(v ? `Solana: merchant −${fromUnits(v.shares, 6)} cUSDC, +${fromUnits(v.usdc, 6)} USDC in its own account ✓` : 'Solana: not verified');
-      return parts;
+  const permList = (address, type) => permOnce(address, type).catch(() => sleep(1500).then(() => permOnce(address, type)));
+  const proofIo = { swapStatus, getTx, permList };
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+  function summaryNodes(items) {
+    return (items || []).map((x) => (typeof x === 'string' ? document.createTextNode(x) : x && x.tx && safeHash(x.tx) && CHAINS[x.chain] ? txLink(x.chain, x.tx) : document.createTextNode('')));
+  }
+  function feeBox(fees) {
+    const wrap = document.createElement('div'); wrap.className = 'fees';
+    if (!fees) return wrap;
+    const p = document.createElement('p'); p.className = 'feeline'; p.textContent = fees.sentence; wrap.append(p);
+    const d = document.createElement('details'); const sm = document.createElement('summary'); sm.textContent = 'Where every unit went';
+    d.append(sm);
+    for (const g of fees.groups || []) {
+      const t = document.createElement('table'); t.className = 'feetab';
+      const row = (label, amount, unit, cls) => { const tr = document.createElement('tr'); if (cls) tr.className = cls; const a = document.createElement('td'); a.textContent = label; const b = document.createElement('td'); const u = document.createElement('span'); u.className = 'u'; u.textContent = unit ? ' ' + unit : ''; b.append(amount, u); tr.append(a, b); return tr; };
+      t.append(row(g.total.label, g.total.amount, g.total.unit, 'tot'));
+      for (const x of g.parts) t.append(row(x.label, x.amount, x.unit, x.kind ? 'k-' + x.kind : ''));
+      d.append(t);
     }
-    if (p.kind === 'perm') {
-      const [received, success] = await Promise.all([permList(p.addr, 'received'), permList(p.addr, 'success')]);
-      const hit = C.permanentDelivered({ received, success }, { address: p.addr, merchant: MERCHANT_DEMO, depositTx: p.dep, solanaTx: p.sol });
-      parts.push(hit ? 'Aurora: received and delivered' : 'Aurora: not listed for this address');
-      const v = await verifySig(p.sol, MERCHANT_DEMO, p.raw, false);
-      parts.push(v ? ` · Solana: merchant +${fromUnits(v.delta, 6)} USDC ✓` : ' · Solana: not verified');
-      return parts;
-    }
-    const st = await swapStatus(p.addr); const d = st.swapDetails || {}; const roles = C.txRoles(d);
-    const amt = (v) => { const m = /^(\d+)(?:\.(\d+))?$/.exec(String(v || '')); return m ? (m[2] ? `${m[1]}.${m[2].slice(0, 8)}`.replace(/0+$/, '') : m[1]) : '?'; };
-    let msg = `Aurora: ${humanize(st.status)}`;
-    if (st.status === 'INCOMPLETE_DEPOSIT') msg += `: only ${amt(d.depositedAmountFormatted)} arrived, so it goes back to the payer after the deadline`;
-    else if (st.status === 'REFUNDED') msg += ` ${amt(d.refundedAmountFormatted)} to the payer${d.refundReason ? ` (${humanize(d.refundReason)})` : ''}`;
-    else if (roles.refunded) msg += `, ${amt(d.refundedAmountFormatted)} returned to the payer`;
-    parts.push(msg);
-    if (roles.refunded && roles.refunds[0]) parts.push(' · refund ', txLink(p.chain, roles.refunds[0]));
-    if (p.ref) {
-      const dst = await C.ata(MERCHANT_DEMO, KLEND.cusdc);
-      const v = C.verifyEarn(await getTx(p.sol), MERCHANT_DEMO, p.raw, { dst, ref: p.ref });
-      parts.push(v ? ` · Solana: merchant +${fromUnits(v.shares, 6)} cUSDC, Kamino +${fromUnits(v.supplied, 6)} USDC ✓` : ' · Solana: not verified');
-    } else if (p.sol) {
-      const v = await verifySig(p.sol, MERCHANT_DEMO, p.raw, false);
-      parts.push(v ? ` · Solana: merchant +${fromUnits(v.delta, 6)} USDC ✓` : ' · Solana: not verified');
-    }
-    return parts;
+    if (fees.network) { const n = document.createElement('p'); n.className = 'muted'; n.textContent = fees.network; d.append(n); }
+    wrap.append(d);
+    return wrap;
+  }
+  function showResult(out, res, live) {
+    const head = document.createElement('span'); head.className = live ? 'when live' : 'when';
+    head.textContent = live ? 'Checked live just now: ' : `${PR.snapshotLabel(res)}: `;
+    out.replaceChildren(head, ...summaryNodes(res.summary), feeBox(res.fees));
+    out.className = 'out' + (res.ok ? ' ok' : '');
   }
   function renderProof() {
     const box = (p) => {
@@ -1094,19 +1077,40 @@
       l.append(rec);
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ghost chk'; btn.textContent = 'Check live';
       const out = document.createElement('div'); out.className = 'out';
+      const pend = document.createElement('div'); pend.className = 'pending muted';
+      const stored = () => (SNAP && SNAP.get(PR.id(p))) || null;
+      const paintStored = () => { const s = stored(); if (s) showResult(out, s, false); else text(out, 'Not checked yet on this page: press Check live.'); };
+      paintStored();
       const check = async () => {
-        try { out.replaceChildren(...await checkProof(p)); } catch (e) { text(out, 'Check failed (' + e.message + '), try again'); }
+        try {
+          const res = await withTimeout(PR.checkRow(p, proofIo), 45000);
+          if (res.ok || !stored()) { showResult(out, res, true); text(pend, ''); }
+          else text(pend, `Live check did not confirm it this time (${humanize((res.aurora || {}).status) || 'no answer'}); showing the stored verification. Try again in a minute.`);
+        } catch (e) {
+          text(pend, stored() ? `Showing the ${PR.snapshotLabel(stored()).replace(/^Verified /, '').replace(/,.*$/, '')} verification, live check pending: Aurora or Solana is slow right now (${String(e.message || e).slice(0, 60)}). Try again in a minute.` : `Live check pending: Aurora or Solana is slow right now. Try again in a minute.`);
+        }
         btn.disabled = false;
       };
-      const run = () => { btn.disabled = true; text(out, 'Asking Aurora and Solana…'); proofQueue = proofQueue.then(check); };
+      const run = () => {
+        btn.disabled = true;
+        text(pend, stored() ? `Showing the ${PR.snapshotLabel(stored()).replace(/^Verified /, '').replace(/,.*$/, '')} verification, live check pending…` : 'Asking Aurora and Solana…');
+        proofQueue = proofQueue.then(check);
+      };
       btn.onclick = run; checks.push(run);
-      el.append(t, n, l, btn, out);
+      el.append(t, n, l, out, pend, btn);
+      el._paint = paintStored;
       return el;
     };
     const head = (s) => Object.assign(document.createElement('h3'), { className: 'proof-head', textContent: s });
-    $('proof-table').replaceChildren(head('Run on 4 Nov: what the judges asked to see'), ...PROOF.filter((p) => p.fresh).map(box),
-      head('Earlier runs, 29 Oct to 3 Nov'), ...PROOF.filter((p) => !p.fresh).map(box));
+    const fresh = PROOF.filter((p) => p.fresh).map(box); const older = PROOF.filter((p) => !p.fresh).map(box);
+    $('proof-table').replaceChildren(head('Run on 4 Nov: a permanent address, two refunds, a second chain, a redemption'), ...fresh,
+      head('Earlier runs, 29 Oct to 3 Nov'), ...older);
     $('btn-check-all').onclick = () => checks.forEach((f) => f());
+    fetch('proofs-snapshot.json', { signal: AbortSignal.timeout(15000) }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+      if (!j || !Array.isArray(j.rows)) return;
+      SNAP = new Map(j.rows.filter((r) => r && typeof r.id === 'string').map((r) => [r.id, r]));
+      for (const el of [...fresh, ...older]) el._paint();
+    }).catch(() => {});
   }
 
   // ---------- views ----------
