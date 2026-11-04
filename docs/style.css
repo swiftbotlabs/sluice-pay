@@ -194,6 +194,9 @@ details input { flex: 1 1 200px; }
 .proof .pending { font-size: 15px; margin-top: 4px; }
 .proof .pending:empty { display: none; }
 .fees { margin-top: 6px; }
+.apians { font-size: 15px; margin: 8px 0 4px; overflow-wrap: anywhere; }
+.apians:empty { display: none; }
+#btn-ask-api { min-height: 44px; }
 .fees .feeline { margin: 4px 0; font-size: 15px; overflow-wrap: anywhere; }
 .fees details { margin-top: 2px; }
 .fees summary { cursor: pointer; color: var(--accent); font-size: 15px; min-height: 32px; display: flex; align-items: center; }

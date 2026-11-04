@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://intents-api.aurora.dev https://intents-connect-api.aurora.dev https://1click.chaindefuser.com https://solana-rpc.web.helium.io https://solana-mainnet.gateway.tatum.io https://solana.leorpc.com https://public.rpc.solanavibestation.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://sluice-api.swiftbotlab.workers.dev https://intents-api.aurora.dev https://intents-connect-api.aurora.dev https://1click.chaindefuser.com https://solana-rpc.web.helium.io https://solana-mainnet.gateway.tatum.io https://solana.leorpc.com https://public.rpc.solanavibestation.com; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#0c6b63">
 <title>Sluice Pay</title>
@@ -427,11 +427,17 @@
 
     <section id="agents" class="card">
       <h2>For APIs and agents</h2>
-      <p>The same rail works without a browser. A Sluice API answers <code>402 Payment Required</code> with its price in USDC on Solana. The buyer pays from any supported chain and calls again. The server delivers exactly once, only after it has seen the USDC land on Solana, and returns a signed receipt.</p>
-<pre><code>$ python3 cli/sluice_buy.py https://api.example.com/api/report/&lt;address&gt; \
-    --pay base:USDC --key-file payer.key --max-usd 0.60
-402: price 0.40 USDC on Solana -&gt; 9cYF…DReR
-order ord_…: send 0.410… USDC on Base to 0x…
+      <p>The same rail works without a browser. A Sluice API answers <code>402 Payment Required</code> with its price in USDC on Solana. The buyer pays from any supported chain and calls again. The server delivers exactly once, only after it has read the USDC credit on Solana, and returns a signed receipt.</p>
+      <p>A hosted one is live. Ask it for its price:</p>
+<pre><code>curl -i https://sluice-api.swiftbotlab.workers.dev/api/report/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR</code></pre>
+      <button id="btn-ask-api" class="ghost" type="button">Ask the live API from this page</button>
+      <div id="api-answer" class="apians muted" aria-live="polite"></div>
+      <p>Then create an order with your own refund address, send the exact amount it quotes from your own wallet, and call again with <code>X-Sluice-Order</code>. The receipt key is published at <a href="https://sluice-api.swiftbotlab.workers.dev/.well-known/sluice.json">/.well-known/sluice.json</a>. Every step, with the headless buyer that checks the quote against NEAR Intents' public record before it pays:</p>
+<pre><code>$ python3 cli/sluice_buy.py https://sluice-api.swiftbotlab.workers.dev/api/report/&lt;address&gt; \
+    --pay base:USDC --key-file payer.key --max-usd 0.30
+402: price 0.2 USDC on Solana -&gt; 9cYF…DReR
+order ord_…: send 0.2121… via base:USDC to 0x…
+  quote independently checked with NEAR Intents: recipient, amount, asset, refund address
 deposit ok: https://basescan.org/tx/0x…
   SETTLED: Paid: verified on Solana
 receipt signature valid: True; body hash matches: True

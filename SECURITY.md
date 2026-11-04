@@ -110,7 +110,9 @@ Sluice moves real money, so the design assumes every input is hostile and every 
 - Single-process SQLite reference server; run behind a TLS proxy and set `SLUICE_TRUST_PROXY=1` only if the proxy
   sets `X-Forwarded-For`.
 - Confidential payments are matched by an exact tagged amount (base price + 1..999 micro-USDC). The tag is unique among
-  open private orders for the same price, and already-claimed settlement signatures are skipped when scanning.
+  open private orders for the same price, and already-claimed settlement signatures are skipped when scanning. The payer pays the
+  tag and the merchant receives it on top of the invoice, so a private payment is the one case where the merchant does not receive
+  exactly the invoiced USDC; the checkout says so next to the private-payment toggle.
 - An order id works like a bearer token for its delivered response; do not publish order ids of private calls.
 - Unpaid orders expire 30 minutes after the quote deadline and stop counting toward the open-order limits (50 total,
   5 per client); an expired order is still re-checked every 5 minutes, so a late deposit can settle or be refunded.
@@ -118,7 +120,10 @@ Sluice moves real money, so the design assumes every input is hostile and every 
   Aurora and no public record of these addresses exists, so a compromised Aurora API could show a wrong address. The page's status list
   comes from Aurora too; the delivered amount shown comes only from Solana. Failed deposits are retried, not refunded, and the page says so.
 - Private quotes are not public, so they cannot be cross-checked or re-checked after a reload. The page says so.
-- The Intents Connect fee recipient is not pinned, so that a relayer change does not stop payments. The fee is capped at 120% of the
+- The Intents Connect fee recipient is pinned (`CONNECT_FEE` in `docs/core.js`, `CONNECT_FEE_ACCOUNT` in `sluice/connect.py`): the one
+  fee transfer allowed must go to the relayer's USDC account `G9jWhbCR...pA3X` (owner `4NDD95L5...nYfr`), the account in every real
+  payload and both live Connect runs. If Aurora moves its fee elsewhere, the checkout, the CLI and Retry refuse to sign until the pin
+  is updated; tests run the real payloads (positive control) and copies with the fee redirected. The fee stays capped at 120% of the
   preview and 0.30 USDC, and is shown before signing.
 - The intermediary check pins the NEAR MPC root key and the proxy contract. If Aurora rotates them, the Connect rail stops and refuses
   rather than continuing, until the pin is updated.
@@ -130,6 +135,45 @@ Sluice moves real money, so the design assumes every input is hostile and every 
 - Kamino is a third-party protocol. Settling into it carries smart-contract and liquidity risk until the merchant redeems.
 - The checkout page trusts the browser's WebCrypto Ed25519 to verify signed links; older browsers show the link as
   "cannot verify" instead of "signed".
+
+## Hosted 402 API (worker/)
+`https://sluice-api.swiftbotlab.workers.dev` is the public pay-per-call endpoint: a Cloudflare Worker in front of one Durable Object
+that keeps the order ledger in its own SQLite database. No port is open on any machine of ours.
+- **No key that can move money.** The Worker's secrets are the Aurora integrator id (it can create quotes, not move funds) and the
+  ed25519 key that signs receipts; that key's Solana address is never funded. The merchant is a public address in the config. If
+  either secret is missing or the receipt key does not match its public half (checked by signing and verifying at start), every
+  route answers 503 instead of running half-configured.
+- **Delivery only after Solana.** Aurora's `SUCCESS` is a hint. The order settles only when a Solana signature from Aurora's
+  destination list (sorted by `txRoles`, so an EVM refund hash is never looked up as a settlement) is a successful transaction, at
+  `confirmed`, not older than the order (2 minutes of clock slack), that grows the merchant's USDC balance by at least the price
+  (`verifyUsdc` from `docs/core.js`, the checkout's own rule).
+- **One settlement, one order, one delivery.** `UNIQUE(deposit_address)` and `UNIQUE(settle_sig)` in the ledger; settling and
+  delivering are conditional updates on the row's current state. One producer per order runs the paid work, and the stored body
+  and receipt are written only over a settled row with no body yet, so concurrent or repeated collects get the same bytes and the
+  same receipt. A failed report build answers 503 and keeps the order paid; the next call delivers.
+- **The request is bound.** An order pays for one resource and one address (`request_hash`, byte-identical to the Python server's,
+  tested across both languages); collecting another address with it answers 409.
+- **Quotes are checked.** Aurora's quote must echo our recipient, refund address, assets, amount and EXACT_OUTPUT, carry at most
+  30 bps of app fees and deliver exactly the price; the deposit address must have the expected format. Otherwise no order is stored.
+- **Inputs.** JSON bodies only, at most 8 KB (checked by header and by bytes read), unknown fields refused, strict patterns for the
+  address, order id, `pay_with` and tx hashes, refund addresses validated per chain family (`validRefund`). URL and query length are
+  capped. Only the Swap rail with public quotes is accepted; `confidential: true` and the Connect rail are refused with a pointer to
+  the self-hosted server.
+- **Limits.** Per client (the `CF-Connecting-IP` address set by Cloudflare, or its IPv6 /64): 120 reads a minute (burst 40), 60
+  status or collect calls (burst 20), 6 orders (burst 3), 10 quotes for a named asset (burst 4); 60 orders a minute in total; 5 unpaid orders per
+  client and 50 in total. Buckets are LRU-bounded. Indicative quotes are cached for a minute per asset, the token list for ten.
+  Limits live in the Durable Object's memory and reset if it restarts.
+- **Upstream calls** go only to Aurora's API host and four named Solana RPCs over https, with `redirect: manual` (a redirect is an
+  error), a timeout on every call and a 2 MB cap on every response body, counted while reading.
+- **Logs** hold method, a path with addresses and order ids replaced by placeholders, status and duration, plus one line per poller
+  pass. No bodies, headers, IP addresses or secrets. Responses carry `nosniff`, `no-store`, `no-referrer`; CORS is open
+  because nothing is authenticated by cookies (an order id is the only bearer value, as on the reference server).
+- **Health is checked, not assumed.** `/healthz` probes Aurora and a Solana RPC (cached a minute) and reports the background
+  poller's failure streak; it answers 503 after five failed passes in a row, and the poller then backs off to once a minute.
+- **Known limits.** Fifty unpaid orders from many addresses can fill the open-order cap until they expire (30 minutes after the
+  quote deadline). The paid resource is a read of public Solana data, so a buyer gets nothing secret for the 0.20 USDC.
+- Tests: `tests/js/worker.test.mjs` (real SQLite, real Ed25519, a real mainnet transaction) with positive controls; removing the
+  Solana check, the UNIQUE settlement, the single producer, the quote echo check or the request binding each makes a test fail.
 
 ## Reporting
 Open a GitHub issue without exploit details, or email swiftbotlabs@gmail.com.

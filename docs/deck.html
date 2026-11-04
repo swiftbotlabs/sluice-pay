@@ -24,7 +24,7 @@
 <section class="slide">
   <h2>Sluice</h2>
   <img class="art" src="hero.svg" alt="Five chains flow through Sluice into the merchant's USDC on Solana, or into Kamino.">
-  <ul><li><b>Pay links</b> signed by the merchant's Solana wallet</li><li><b>202 assets on 34 networks</b>, live from Aurora; paid live from Base, Arbitrum and Optimism</li><li><b>Nothing counts until Solana shows it</b></li></ul>
+  <ul><li><b>Pay links</b> signed by the merchant's Solana wallet</li><li><b>200+ assets on 30+ networks</b>, live from Aurora; paid live from Base, Arbitrum and Optimism</li><li><b>Nothing counts until Solana shows it</b></li></ul>
 </section>
 <section class="slide">
   <h2>A page that never expires</h2>
@@ -42,7 +42,7 @@
   <h2>Refunds and settlement, proven</h2>
   <table><thead><tr><th>Situation</th><th>What happens</th></tr></thead><tbody>
     <tr><td>Exact payment</td><td>Delivered after the merchant's balance is read on Solana</td></tr>
-    <tr><td>Too much</td><td>Merchant gets exactly the invoice, the excess goes back: 0.30 sent for 0.25, 0.037512 USDC refunded on Base (mainnet, 4 Nov)</td></tr>
+    <tr><td>Too much</td><td>Merchant gets exactly the invoice, the excess goes back: 0.30 sent for 0.25, 0.037512 USDC refunded on Base (mainnet, 4 Nov). The other 0.012488 is itemised: 0.0024 refund gas, 0.010007 Solana delivery, 0.000081 Aurora's fee and the solver's price</td></tr>
     <tr><td>Too little</td><td>Top up in place, or refunded to the payer: 0.40 sent for 1.00, 0.3976 USDC back (mainnet); 0.20 sent for 0.25, 0.1976 back (4 Nov)</td></tr>
     <tr><td>Route incident</td><td>Asset leaves the list; Solana delivery incidents pause payments</td></tr>
     <tr><td>Provider says success, Solana disagrees</td><td>Not delivered</td></tr>
@@ -56,6 +56,7 @@
   <h2>Beyond people: APIs and agents</h2>
   <p class="big">An API answers <code>402</code>. The buyer pays from any chain. The server delivers exactly once, after Solana confirms, with a signed receipt.</p>
   <p class="muted">The buyer does not trust the seller: it cross-checks the deposit address with public NEAR Intents data before paying.</p>
+  <p class="muted">Live: <code>curl -i sluice-api.swiftbotlab.workers.dev/api/report/&lt;address&gt;</code> answers 402 with the price and a live quote.</p>
 </section>
 <section class="slide">
   <h2>Aurora Intents products used</h2>

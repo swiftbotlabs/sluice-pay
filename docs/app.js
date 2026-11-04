@@ -1113,6 +1113,24 @@
     }).catch(() => {});
   }
 
+  // ---------- hosted 402 API ----------
+  const API402 = 'https://sluice-api.swiftbotlab.workers.dev';
+  async function askApi() {
+    const out = $('api-answer'); const btn = $('btn-ask-api'); btn.disabled = true; text(out, 'Asking…');
+    try {
+      const r = await fetch(`${API402}/api/report/${MERCHANT_DEMO}`, { signal: AbortSignal.timeout(20000) });
+      const j = await r.json();
+      if (r.status !== 402 || !j || !j.price) throw new Error(`HTTP ${r.status}`);
+      const ok = (v, rx) => (typeof v === 'string' && rx.test(v) ? v : '?');
+      const lines = [`${r.status} Payment Required: ${ok(j.price.amount, /^\d+(\.\d+)?$/)} USDC on Solana to ${short(ok(j.price.recipient, /^[1-9A-HJ-NP-Za-km-z]{32,44}$/))}`,
+        `Accepts ${Array.isArray(j.accepts) ? j.accepts.length : 0} assets, for example ${(Array.isArray(j.accepts) ? j.accepts.slice(0, 4) : []).map((x) => ok(x, /^[a-z]{2,5}:[A-Z]{2,5}$/)).join(', ')}`,
+        j.indicative ? `Right now that is about ${ok(j.indicative.send_about, /^\d+(\.\d+)?$/)} ${ok(j.indicative.asset, /^[A-Za-z ]{3,40}$/)} (an indicative quote; each order gets its own)` : 'Indicative quote unavailable right now',
+        `Receipts are signed by ${short(ok(j.receipt_key, /^[1-9A-HJ-NP-Za-km-z]{32,44}$/))}`];
+      out.replaceChildren(...lines.map((l) => Object.assign(document.createElement('div'), { textContent: l })));
+    } catch (e) { text(out, `No answer right now (${String(e.message || e).slice(0, 60)}). The curl line above asks the same thing.`); }
+    btn.disabled = false;
+  }
+
   // ---------- views ----------
   function view(name) {
     for (const v of ['pay', 'perm', 'receipt', 'merchant', 'home', 'setup']) show($(v), v === name);
@@ -1558,6 +1576,7 @@
       }));
     }
     renderProof();
+    $('btn-ask-api').onclick = askApi;
     const ep = $('earn-proof');
     if (EARN_TX) ep.append('Live on mainnet: ', txLink('sol', EARN_TX));
     else text(ep, 'Run it yourself with no wallet: cli/simulate_earn.py sends this exact transaction through Solana\'s simulator against live mainnet state.');
