@@ -611,7 +611,9 @@
   /** Merge Aurora's received/success/failed lists into one newest-first timeline. */
   function depositRows({ received = [], success = [], failed = [] } = {}) {
     const fmt = (d) => (d.decimals != null && /^\d+$/.test(String(d.amount)) ? fromUnits(d.amount, d.decimals) : String(d.amount ?? ''));
-    const row = (kind) => (d) => ({ kind, amount: fmt(d), assetId: d.asset_id || null, chain: d.fromChain || d.destinationChain || null, tx: d.tx_hash || null, at: d.created_at || null });
+    // The received list names assets without the nep141: prefix ("base-0x8335...omft.near"); the token list always has it.
+    const aid = (id) => (typeof id !== 'string' || !id ? null : /^nep\d+:/.test(id) ? id : /\.near$/.test(id) ? 'nep141:' + id : id);
+    const row = (kind) => (d) => ({ kind, amount: fmt(d), assetId: aid(d.asset_id), chain: d.fromChain || d.destinationChain || null, tx: d.tx_hash || null, at: d.created_at || null });
     const all = [...received.map(row('received')), ...success.map(row('delivered')), ...failed.map(row('failed'))];
     return all.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   }

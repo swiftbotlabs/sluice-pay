@@ -618,3 +618,11 @@ test('a permanent-address payment counts only when Aurora lists that deposit and
   assert.equal(C.permanentDelivered({ received: permFx.lists.received, success: [] }, q), null);
   assert.equal(C.permanentDelivered(null, q), null);
 });
+test('the permanent page names the asset of a real received deposit, whose id comes without the nep141: prefix', () => {
+  const rows = C.depositRows(permFx.lists);
+  assert.deepEqual(rows.map((r) => [r.kind, r.amount, r.assetId]), [
+    ['delivered', '1.089777', 'nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near'],
+    ['received', '1.1', 'nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near']]);
+  assert.equal(C.depositRows({ received: [{ asset_id: 'nep245:v2_1.omni.hot.tg:10_11111111111111111111', amount: '1', decimals: 18 }] })[0].assetId, 'nep245:v2_1.omni.hot.tg:10_11111111111111111111');
+  assert.equal(C.depositRows({ received: [{ asset_id: '', amount: '1' }] })[0].assetId, null);
+});
