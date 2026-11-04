@@ -1,0 +1,86 @@
+{
+ "run": "Short invoice, refunded",
+ "date": "2026-11-04",
+ "what_it_proves": "0.20 USDC sent on Base for a 0.25 USDC invoice (quote asked 0.262612): INCOMPLETE_DEPOSIT, nothing reached the merchant, and the deposit was refunded to the payer after the quote deadline.",
+ "merchant": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+ "quote_request": {
+  "dry": false,
+  "swapType": "EXACT_OUTPUT",
+  "depositType": "ORIGIN_CHAIN",
+  "depositMode": "SIMPLE",
+  "originAsset": "nep141:base-0x833589fcd6edb6e08f4c7c32d4f71b54bda02913.omft.near",
+  "destinationAsset": "nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near",
+  "amount": "250000",
+  "slippageTolerance": 100,
+  "refundTo": "0x2481E29895b43e87e547a50fB0BB5aa1E70585EB",
+  "refundType": "ORIGIN_CHAIN",
+  "recipient": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "recipientType": "DESTINATION_CHAIN",
+  "deadline": "2026-11-04T14:58:36.000Z",
+  "confidentiality": "public",
+  "quoteWaitingTimeMs": 0
+ },
+ "quote": {
+  "timeEstimate": 32,
+  "deadline": "2026-11-07T14:58:36.000Z",
+  "timeWhenInactive": "2026-11-07T14:58:36.000Z",
+  "depositAddress": "0xC7F06250568abB20Cf004dBC60fD9EC79bEF196B",
+  "amountIn": "262612",
+  "amountInFormatted": "0.262612",
+  "amountInUsd": "0.262448130112",
+  "minAmountIn": "260085",
+  "amountOut": "250000",
+  "amountOutFormatted": "0.25",
+  "amountOutUsd": "0.249844000000",
+  "minAmountOut": "250000",
+  "refundFee": "2400",
+  "withdrawFee": "10007"
+ },
+ "quote_correlation_id": "305acbcd-d3ee-4b61-a4dc-dcee8a92c75e",
+ "public_cross_check": "NEAR Intents 1click status agreed on recipient, refundTo, origin asset, amountIn and EXACT_OUTPUT before the send; problems: []",
+ "source_chain": "base",
+ "deposit_tx": "0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0",
+ "refund_tx": "0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9",
+ "solana_settlement": null,
+ "solana_check": null,
+ "final_status": {
+  "status": "REFUNDED",
+  "updatedAt": "2026-11-04T14:59:35.000Z"
+ },
+ "swap_details": {
+  "intentHashes": [
+   "AjMzUQU9xsyJjqHFhbXeCwYYh8EJ78nCK42vT7o1mpeh"
+  ],
+  "nearTxHashes": [
+   "36oygeAUN2GvcP6ZXSMc5VQWCU9bRHVbmpJr7A8zNA3f",
+   "LMu3Y2MsDB8ynamHomKoeNmbk9k9EpnQWjzSVKKJ788",
+   "HbNFhHBffQ191DBtgbiyLg3p6xNFkQr6xcyWzYMYYqmU"
+  ],
+  "amountIn": null,
+  "amountInFormatted": null,
+  "amountInUsd": null,
+  "amountOut": null,
+  "amountOutFormatted": null,
+  "amountOutUsd": null,
+  "slippage": null,
+  "originChainTxHashes": [
+   {
+    "hash": "0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0",
+    "explorerUrl": ""
+   }
+  ],
+  "destinationChainTxHashes": [
+   {
+    "hash": "0x3c2630ff73008fcf2f8956511bb954b8d97fca18f72261e38f338a0156ead7c9",
+    "explorerUrl": ""
+   }
+  ],
+  "refundedAmount": "197600",
+  "refundedAmountFormatted": "0.1976",
+  "refundedAmountUsd": "0.197485589600",
+  "refundReason": "QUOTE_EXPIRED",
+  "depositedAmount": "200000",
+  "depositedAmountFormatted": "0.2",
+  "depositedAmountUsd": "0.199884200000"
+ }
+}
