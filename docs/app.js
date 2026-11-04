@@ -72,7 +72,7 @@
     }
     throw new Error('rate limited, try again in a minute');
   }
-  const swapStatus = (addr) => fetch(`${AURORA}/api/status/${API_KEY}?depositAddress=${encodeURIComponent(addr)}`, { signal: AbortSignal.timeout(10000) }).then((r) => r.json());
+  const swapStatus = (addr) => fetch(`${AURORA}/api/status/${API_KEY}?depositAddress=${encodeURIComponent(addr)}`, { signal: AbortSignal.timeout(25000) }).then((r) => r.json());
   async function cx(method, path, body, withKey) {
     const headers = { 'content-type': 'application/json' }; if (withKey) headers['x-api-key'] = API_KEY;
     const r = await fetch(CONNECT + path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(45000) });
