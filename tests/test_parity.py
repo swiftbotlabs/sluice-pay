@@ -48,6 +48,19 @@ class AuditTests(unittest.TestCase):
             with self.assertRaises(cn.PayloadRejected, msg=str(over)):
                 cn.audit_earn_payload(FX["payload_json"], **self.kw(**over))
 
+    def test_fee_recipient_is_pinned(self):
+        self.assertEqual(sol.ata(cn.CONNECT_FEE_RELAYER), cn.CONNECT_FEE_ACCOUNT)
+        self.assertTrue(cn.audit_earn_payload(FX["payload_json"], **self.kw())["ok"])  # positive control
+        a = sol.b58decode(cn.CONNECT_FEE_ACCOUNT).hex()
+        for evil in ("B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW", sol.ata("B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW")):
+            q = json.loads(FX["payload_json"]); m = json.loads(q["intents"][0]["msg"])
+            h = m["request"]["payload_v2"]["Eddsa"]
+            self.assertIn(a, h)
+            m["request"]["payload_v2"]["Eddsa"] = h.replace(a, sol.b58decode(evil).hex())
+            q["intents"][0]["msg"] = json.dumps(m, separators=(",", ":"))
+            with self.assertRaisesRegex(cn.PayloadRejected, "fee goes to an unexpected account"):
+                cn.audit_earn_payload(json.dumps(q, separators=(",", ":")), **self.kw())
+
     def test_whole_envelope_is_checked(self):
         now = 1793534400  # 2026-11-01T12:00Z, the fixture's validity window
         p = json.loads(FX["payload_json"])

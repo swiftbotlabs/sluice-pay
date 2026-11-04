@@ -5,3 +5,5 @@ data/
 *.db-*
 __pycache__/
 .venv/
+.wrangler/
+.dev.vars

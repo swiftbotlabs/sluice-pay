@@ -14,6 +14,10 @@
   const ATA_PROGRAM = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
   const SYSTEM_PROGRAM = '11111111111111111111111111111111';
   const COMPUTE_BUDGET = 'ComputeBudget111111111111111111111111111111';
+  // Intents Connect's fee recipient: the relayer's USDC account, the same in every real payload we have seen (29 Oct to 4 Nov 2026)
+  // and in the fee transfers of the live runs 558Qh7GU and 3za9WNav. Pinned so a changed answer cannot route the fee elsewhere;
+  // if Aurora rotates it, the checkout refuses to sign until this pin is updated (tests/js/core.test.mjs checks both values).
+  const CONNECT_FEE = { relayer: '4NDD95L5DDDLzxX6TewnmYym3Vt6C2gar4SzjeAwnYfr', account: 'G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X' };
   const SOL_USDC = 'nep141:sol-5ce3bf3a31af18be40ba30f721101b4341690186.omft.near';
   // Kamino Main Market USDC reserve (docs.intents.aurora.dev, Kamino stake scenario)
   const KLEND = {
@@ -391,9 +395,10 @@
           paid += 1;
           continue;
         }
-        if (op === 3 && data.length === 9 && acc.length >= 3) { // plain Transfer: only the service fee
+        if (op === 3 && data.length === 9 && acc.length >= 3) { // plain Transfer: only the service fee, only to Intents Connect's relayer
           const amt = u64le(data, 1);
           if (acc[0] !== src || acc[2] !== intermediary || amt > maxFee) throw new Error('unexpected Transfer');
+          if (acc[1] !== CONNECT_FEE.account) throw new Error('fee goes to an unexpected account');
           fees += 1; fee += amt;
           continue;
         }
@@ -917,7 +922,7 @@
   return {
     cleanName, looksSecret, payoutCheck, linkInput, linkMessage, permanentLink, merchantCredit, ledgerRows, dailyTotals, earnValue, rememberLink, kaminoDepositTo,
     recordAmounts, createdIn, historyVerdict, readHistory,
-    USDC_MINT, TOKEN_PROGRAM, ATA_PROGRAM, SYSTEM_PROGRAM, SOL_USDC, KLEND, CHAINS, POPULAR,
+    USDC_MINT, TOKEN_PROGRAM, ATA_PROGRAM, SYSTEM_PROGRAM, SOL_USDC, KLEND, CHAINS, POPULAR, CONNECT_FEE,
     b58decode, b58encode, isSolAddr, concat, utf8, toHex, fromHex, sha256, toUnits, fromUnits, short,
     validRefund, isEvmAddr, isDepositAddr, onCurve, findPda, ata, referenceKey, paySteps, earnSteps,
     decodeMessage, messageFromPayload, auditPayload, secpWire, tokenDelta, verifyEarn, verifyUsdc, verifyRedeem, txRoles, permanentDelivered, tokenAccountAmount,

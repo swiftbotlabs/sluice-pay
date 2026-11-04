@@ -290,6 +290,12 @@ def derive_intermediary(payer: str) -> str:
     return sol.b58encode((y | ((x & 1) << 255)).to_bytes(32, "little"))
 
 
+# Intents Connect's fee recipient (relayer 4NDD95L5... and its USDC account), the same in every real payload seen 29 Oct-4 Nov 2026.
+# Same pin as CONNECT_FEE in docs/core.js; a payload that pays the fee anywhere else is refused.
+CONNECT_FEE_RELAYER = "4NDD95L5DDDLzxX6TewnmYym3Vt6C2gar4SzjeAwnYfr"
+CONNECT_FEE_ACCOUNT = "G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X"
+
+
 def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant: str, price: int, order_id: str,
                   max_fee: int = 20000, mint: str = sol.USDC_MINT) -> dict:
     """Refuse to sign unless the Solana transaction does exactly: (optional ATA create for the merchant),
@@ -331,6 +337,8 @@ def audit_payload(payload_json: str, *, payer: str, intermediary: str, merchant:
                 amt = int.from_bytes(data[1:9], "little")
                 if acc[0] != src or acc[2] != intermediary or amt > max_fee:
                     raise PayloadRejected("unexpected Transfer")
+                if acc[1] != CONNECT_FEE_ACCOUNT:
+                    raise PayloadRejected("fee goes to an unexpected account")
                 fees += 1
                 continue
             raise PayloadRejected("unexpected Token instruction")
@@ -429,6 +437,8 @@ def audit_earn_payload(payload_json: str, *, payer: str, intermediary: str, merc
         if prog == sol.TOKEN_PROGRAM and data[:1] == b"\x03" and len(data) == 9 and len(acc) >= 3:
             if acc[0] != src or acc[2] != intermediary or int.from_bytes(data[1:], "little") > max_fee:
                 raise PayloadRejected("unexpected Transfer")
+            if acc[1] != CONNECT_FEE_ACCOUNT:
+                raise PayloadRejected("fee goes to an unexpected account")
             fees += 1
             continue
         raise PayloadRejected(f"unexpected program {prog}")

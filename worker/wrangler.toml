@@ -1,0 +1,24 @@
+# Sluice hosted pay-per-call API (HTTP 402). Deploy: see worker/README.md.
+# Secrets (never in this file): AURORA_API_KEY, RECEIPT_SECRET_B58  ->  wrangler secret put <NAME>
+name = "sluice-api"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+
+[vars]
+MERCHANT = "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR"
+PRICE_RAW = "200000"
+DEADLINE_S = "1800"   # 30 min to pay from a wallet app by hand
+PUBLIC_URL = "https://sluice-api.swiftbotlab.workers.dev"
+
+[[durable_objects.bindings]]
+name = "LEDGER"
+class_name = "Ledger"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Ledger"]
+
+[observability]
+enabled = true

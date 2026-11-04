@@ -61,6 +61,20 @@ test('audit refuses a fee above the cap (positive control: the same payload pass
   assert.throws(() => C.auditPayload(fx.payload_json, { ...c, maxFee: 147408n }), /unexpected Transfer/);
   assert.equal(C.auditPayload(fx.payload_json, { ...c, maxFee: 147409n }).ok, true);
 });
+test('Intents Connect fee recipient is pinned: the relayer\'s USDC account, as in every real payload', async () => {
+  assert.equal(await C.ata(C.CONNECT_FEE.relayer), C.CONNECT_FEE.account, 'the pin is the relayer\'s own USDC account');
+  const c = await earnCtx();
+  assert.equal(C.auditPayload(fx.payload_json, c).ok, true, 'positive control: the real fee recipient passes');
+  const evils = ['B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW', await C.ata('B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW')];
+  for (const evil of evils) {
+    assert.throws(() => C.auditPayload(tamper(fx.payload_json, C.CONNECT_FEE.account, evil), c), /fee goes to an unexpected account/);
+  }
+  const ctx = { payer: refFx.payer || '0x8d9716A9f13FE82BA59E74b3Ce032842EB357818', intermediary: refFx.intermediary || 'Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr',
+    merchant: refFx.merchant || '9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR', price: BigInt(refFx.price || 150000), settle: 'usdc', maxFee: 20000n };
+  ctx.src = await C.ata(ctx.intermediary); ctx.dst = await C.ata(ctx.merchant); ctx.ref = await C.referenceKey(refFx.order_id || refFx.order);
+  const other = await C.ata(ctx.merchant, C.KLEND.cusdc);
+  assert.throws(() => C.auditPayload(tamper(refFx.payload, C.CONNECT_FEE.account, other), ctx), /fee goes to an unexpected account/);
+});
 test('audit refuses lending instructions on a plain USDC invoice', async () => {
   await assert.rejects(async () => C.auditPayload(fx.payload_json, await earnCtx({ settle: 'usdc', dst: await C.ata(fx.merchant) })), /token-account creation|lending/);
 });

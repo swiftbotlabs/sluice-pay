@@ -31,8 +31,8 @@ def mutate(payload_json: str, old: bytes, new: bytes) -> str:
     h = msg["request"]["payload_v2"]["Eddsa"]
     assert old.hex() in h
     msg["request"]["payload_v2"]["Eddsa"] = h.replace(old.hex(), new.hex(), 1)
-    p["intents"][0]["msg"] = json.dumps(msg)
-    return json.dumps(p)
+    p["intents"][0]["msg"] = json.dumps(msg, separators=(",", ":"))  # canonical, so the audit judges the edit, not the formatting
+    return json.dumps(p, separators=(",", ":"))
 
 
 class TestConnectAudit(unittest.TestCase):
@@ -66,6 +66,12 @@ class TestConnectAudit(unittest.TestCase):
             self.audit(FIX["payload"], max_fee=1000)  # the real fee (1555) is above this cap
         with self.assertRaises(cn.PayloadRejected):
             self.audit(FIX_MEMO["payload"])  # old memo design: no reference account, Memo program not allowed
+
+    def test_fee_to_another_account_rejected(self):
+        """Positive control: the real payload's fee goes to the pinned relayer account and passes (test_real_payload_passes)."""
+        bad = mutate(FIX["payload"], sol.b58decode(cn.CONNECT_FEE_ACCOUNT), sol.b58decode(sol.ata("B5jEjGHi5HyNomGTPerQYVsJ5biMZyGp7G5rWG3ZfwMW")))
+        with self.assertRaisesRegex(cn.PayloadRejected, "fee goes to an unexpected account"):
+            self.audit(bad)
 
     def test_memo_hex_in_metadata_is_not_enough(self):
         p = json.loads(FIX["payload"])
