@@ -11,7 +11,8 @@ Intents swaps and bridges his USDC through NEAR Intents, and Intents Connect the
 invoice amount to Kamino with the cUSDC going to your own account
 ([live run](https://solscan.io/tx/558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv)). Before
 his wallet opens, the page decodes that transaction and refuses to sign anything else, and it marks the invoice paid only when the
-transaction is on Solana. Had he paid with ETH on Optimism instead, the same link would have settled as plain USDC
+transaction is on Solana. Had he paid by address instead, say with ETH on Optimism from any wallet, the same link would have
+settled as plain USDC
 ([live run](https://solscan.io/tx/39uawZ5pSTz4jZEPv3DYZHYjxpQurRC6bvZWiac7GNkjqryzP3jpzfxKXs6e1aEgYye9WgjqHXDaYtBHUYwVJMfy)), and had he
 sent too much or too little, the difference would have gone back to his own wallet on its own
 ([overpaid](https://basescan.org/tx/0x32c814bfd4e1c22fc1bd34d0c44228cd3ee5c70cd44b5058a35445c5a136b135),
@@ -19,7 +20,7 @@ sent too much or too little, the difference would have gone back to his own wall
 transaction signed by your own key turns the cUSDC back into USDC plus interest (`cli/redeem_earn.py`,
 [live run](https://solscan.io/tx/3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35)).
 
-Every step of that story has run on mainnet with real money. The page re-checks all thirteen runs from your browser and shows, for
+The earn payment, the Optimism payment, both refunds and the redemption all ran on mainnet with real money. The page re-checks all thirteen runs from your browser and shows, for
 each one, where every unit of the payment went: the 0.30 USDC sent for a 0.25 invoice became 0.25 for the merchant, 0.037512 refunded,
 and 0.012488 in fees (0.0024 refund gas, 0.010007 Solana delivery, 0.000081 Aurora's 2 bps fee and the solver's price).
 
