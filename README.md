@@ -40,7 +40,7 @@ credit on Solana.
 
 - **Live checkout:** https://apps.swiftbotlab.workers.dev/sluice-pay/ (static page, no backend: quotes, deposit addresses and status come live from Aurora Intents, settlement is checked live on Solana mainnet)
 - **Hosted pay-per-call API:** `curl -i https://sluice-api.swiftbotlab.workers.dev/api/report/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR` answers `402 Payment Required` with the price and a live quote ([how to pay it](#pay-per-call-the-hosted-402-api))
-- **Demo video:** [youtu.be/OQ74RaJUksk](https://youtu.be/OQ74RaJUksk) (3:23, Nov 4: merchant first run, a real Base payment, then the 4 Nov runs with real money: permanent address, overpay and short refunds, ETH on Optimism, Kamino redemption)
+- **Demo video:** [youtu.be/_ZwvKTsjK_8](https://youtu.be/_ZwvKTsjK_8) (3:26, 4 Nov: one invoice start to finish with real money: merchant first run, the 5.00 USDC invoice, Base to Solana, the Intents Connect transaction decoded on Solscan with Sluice's fee, the merchant's Kamino position and its redemption, then the Tron payer, permanent page, hosted 402 API and private payments). Earlier cut: [youtu.be/OQ74RaJUksk](https://youtu.be/OQ74RaJUksk)
 - Built by Swift Bot Labs for the Encode Club Solana Hackathon 2026, Aurora Intents challenge. Category: consumer/payments, with an infra rail for APIs.
 
 ## What ships
