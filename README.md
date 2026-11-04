@@ -183,10 +183,7 @@ probes Aurora and Solana live. The Worker holds no key that can move money: its 
 receipt-signing key, and the merchant is a public address. It takes the Swap API rail with public quotes; private payments and the
 Intents Connect rail stay on the self-hosted server. Details in [SECURITY.md](SECURITY.md#hosted-402-api-worker).
 
-**Status: live since 4 Nov, checked up to the payment.** The 402, a real order whose deposit address NEAR Intents' public record
-confirms, the refusals (unpaid 402, a different request 409, the Connect rail 400, a wrong content type 415) and the rate limit were
-checked against the deployed Worker. The paid path (credit read from Solana, delivery once, receipt) is covered by 16 offline tests
-built on a real mainnet transaction, and ran on mainnet on 29 Oct through the same flow on the reference server (the API call row below).
+**Status: live, paid on mainnet.** On 2026-11-04 order `ord_cZOWTyzZJkidGFJT` was paid from Base and delivered: the merchant's +0.20 USDC was read on Solana ([35PYLWiq...](https://solscan.io/tx/35PYLWiqtyAczHr3fNKqymGznSmPgCRewH78QntuC5dKZj5rw7guAymxMy3BDNDYR3uUWJXaMEURBSV6d3FnJ4NZ)), two collects returned the same bytes and the same receipt, and the receipt verifies against the published key. Record: [api-call-hosted.json](evidence/api-call-hosted.json). The refusals (unpaid 402, a different request 409, the Connect rail 400, a wrong content type 415) and the rate limit were checked on the same Worker, and the paid path is also covered by 16 offline tests built on a real mainnet transaction.
 
 ## Live on mainnet (real money, real links)
 

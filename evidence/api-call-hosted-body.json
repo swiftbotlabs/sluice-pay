@@ -1,0 +1,24 @@
+{
+  "address": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "executable": false,
+  "exists": true,
+  "generated_at": 1793809820,
+  "owner_program": "11111111111111111111111111111111",
+  "recent_activity": {
+    "failed_in_last_100": 0,
+    "newest_tx_time": 1793809814,
+    "oldest_in_window": 1793298353,
+    "tx_count_last_100": 13
+  },
+  "sol": 0.001495,
+  "source": "Solana mainnet RPC (read-only)",
+  "token_accounts_nonzero": 1,
+  "top_holdings": [
+    {
+      "amount": "4.239818",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "symbol": "USDC",
+      "token_account": "AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9"
+    }
+  ]
+}
