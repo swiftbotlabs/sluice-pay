@@ -30,9 +30,25 @@ for (const p of P.PROOF) {
   rows.push(r);
 }
 if (rows.some((r) => !r.ok)) { console.error('not every row verified: snapshot not written'); process.exit(1); }
+// The demo merchant's balances right now, for the merchant view's "last verified" line while its live read runs.
+const C = req('../docs/core.js');
+async function tokenBal(acct) {
+  for (const u of RPCS) {
+    try {
+      const j = await getJson(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTokenAccountBalance', params: [acct, { commitment: 'confirmed' }] }) });
+      if (j.result && j.result.value && /^\d+$/.test(j.result.value.amount)) return j.result.value.amount;
+      if (j.error && /could not find account/i.test(String(j.error.message))) return '0';
+    } catch { /* next endpoint */ }
+  }
+  throw new Error('no Solana RPC answered getTokenAccountBalance');
+}
+const [usdcAcct, cusdcAcct] = await Promise.all([C.ata(P.MERCHANT), C.ata(P.MERCHANT, C.KLEND.cusdc)]);
+const merchant = { address: P.MERCHANT, at: new Date().toISOString(), usdc: await tokenBal(usdcAcct), cusdc: await tokenBal(cusdcAcct), runs: rows.length };
+console.log('merchant', merchant.usdc, 'USDC raw,', merchant.cusdc, 'cUSDC raw');
 writeFileSync(new URL('../docs/proofs-snapshot.json', import.meta.url), JSON.stringify({
   generated_at: new Date().toISOString(), by: 'tools/snapshot_proofs.mjs (same checks as the page: docs/proofs.js checkRow)',
   sources: { aurora: AURORA + '/api/status and /api/persistent-deposit-status (public integrator key)', solana: 'getTransaction jsonParsed, commitment confirmed: ' + RPCS.join(', ') },
+  merchant,
   rows,
 }, null, 1) + '\n');
 console.log('wrote docs/proofs-snapshot.json with', rows.length, 'verified rows');

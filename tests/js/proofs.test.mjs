@@ -81,3 +81,37 @@ test('shipped snapshot: all 13 rows, verified, with the chain data each check re
   }
   assert.match(P.snapshotLabel(snap.rows[0]), /^Verified 4 Nov, \d\d:\d\d UTC$/);
 });
+
+// The static copy of the panel in index.html (tools/render_static.mjs): what a reader without JavaScript gets.
+test('index.html carries every proof row, verified, with its transaction links, and is in step with the snapshot', async () => {
+  const R = await import('../../tools/render_static.mjs');
+  const html = readFileSync(new URL('../../docs/index.html', import.meta.url), 'utf8');
+  assert.equal(R.inject(html, R.render(snap)), html, 'static block is stale: run node tools/render_static.mjs');
+  const block = html.slice(html.indexOf('<!-- static:proof:start'), html.indexOf('<!-- static:proof:end -->'));
+  const rows = block.match(/<div class="proof[^"]*" data-id="[^"]+">/g) || [];
+  assert.equal(rows.length, P.PROOF.length);
+  for (const p of P.PROOF) {
+    assert.ok(block.includes(`data-id="${P.id(p)}"`), p.name);
+    if (p.dep) assert.ok(block.includes(p.dep), p.name + ': deposit link');
+    if (p.sol) assert.ok(block.includes('https://solscan.io/tx/' + p.sol), p.name + ': Solana link');
+    if (p.refund) assert.ok(block.includes(p.refund), p.name + ': refund link');
+  }
+  assert.equal((block.match(/class="out ok"><span class="when">Verified /g) || []).length, P.PROOF.length);
+  assert.ok(!/<script/i.test(block));
+});
+
+test('the static renderer refuses a snapshot with an unverified or missing row, and escapes what it writes', async () => {
+  const R = await import('../../tools/render_static.mjs');
+  const bad = JSON.parse(JSON.stringify(snap)); bad.rows[0].ok = false;
+  assert.throws(() => R.render(bad), /verified/);
+  const gone = JSON.parse(JSON.stringify(snap)); gone.rows.pop();
+  assert.throws(() => R.render(gone));
+  const evil = JSON.parse(JSON.stringify(snap)); evil.rows[0].summary = ['<img src=x onerror=alert(1)>'];
+  const out = R.render(evil);
+  assert.ok(!out.includes('<img src=x'), 'summary text is escaped');
+  assert.ok(out.includes('&lt;img src=x'));
+  // stale-block positive control: a changed snapshot no longer matches the file
+  const html = readFileSync(new URL('../../docs/index.html', import.meta.url), 'utf8');
+  const moved = JSON.parse(JSON.stringify(snap)); moved.generated_at = '2026-11-01T00:00:00.000Z';
+  assert.notEqual(R.inject(html, R.render(moved)), html);
+});

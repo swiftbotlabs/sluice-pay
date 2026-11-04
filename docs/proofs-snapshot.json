@@ -1,14 +1,21 @@
 {
- "generated_at": "2026-11-04T16:10:25.033Z",
+ "generated_at": "2026-11-04T16:48:05.127Z",
  "by": "tools/snapshot_proofs.mjs (same checks as the page: docs/proofs.js checkRow)",
  "sources": {
   "aurora": "https://intents-api.aurora.dev/api/status and /api/persistent-deposit-status (public integrator key)",
   "solana": "getTransaction jsonParsed, commitment confirmed: https://solana-rpc.web.helium.io, https://solana-mainnet.gateway.tatum.io, https://public.rpc.solanavibestation.com"
  },
+ "merchant": {
+  "address": "9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR",
+  "at": "2026-11-04T16:48:04.714Z",
+  "usdc": "4239818",
+  "cusdc": "0",
+  "runs": 13
+ },
  "rows": [
   {
    "id": "0xc6b89c8e5f80eeae72b9eb7b428b035c5b907c67cac238d899f649a4541ada9b",
-   "checked_at": "2026-11-04T16:10:17.537Z",
+   "checked_at": "2026-11-04T16:47:40.880Z",
    "ok": true,
    "aurora": {
     "status": "DELIVERED",
@@ -63,7 +70,7 @@
   },
   {
    "id": "0xcef3352b2ba6fd3cf1ceae4bdcf5bbdc284525c0d783611e9afb4f5ac04b85a4",
-   "checked_at": "2026-11-04T16:10:19.231Z",
+   "checked_at": "2026-11-04T16:47:59.014Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -180,7 +187,7 @@
   },
   {
    "id": "0x40689997843ddba14ce0ed20c401249e98dc35beed7e48730097317324f093a0",
-   "checked_at": "2026-11-04T16:10:19.983Z",
+   "checked_at": "2026-11-04T16:47:59.521Z",
    "ok": true,
    "aurora": {
     "status": "REFUNDED",
@@ -247,7 +254,7 @@
   },
   {
    "id": "0x11333f321d7893103abc3b6a212e1d0a41bbfbe6b44b12cc3635c0d3c5b58370",
-   "checked_at": "2026-11-04T16:10:20.263Z",
+   "checked_at": "2026-11-04T16:47:59.779Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -363,7 +370,7 @@
   },
   {
    "id": "3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35",
-   "checked_at": "2026-11-04T16:10:20.762Z",
+   "checked_at": "2026-11-04T16:48:00.292Z",
    "ok": true,
    "aurora": null,
    "solana": {
@@ -414,7 +421,7 @@
   },
   {
    "id": "0x8e14bae0049ac8491469eac7087793f988bde603b515603095175b291f298379",
-   "checked_at": "2026-11-04T16:10:21.002Z",
+   "checked_at": "2026-11-04T16:48:00.532Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -567,7 +574,7 @@
   },
   {
    "id": "0x041579bb7dfcdc42b09b50b5809f746981a6b4cc8e46de22acca7e571bdd6f52",
-   "checked_at": "2026-11-04T16:10:21.508Z",
+   "checked_at": "2026-11-04T16:48:01.049Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -689,7 +696,7 @@
   },
   {
    "id": "0x926b1cce75dac5750c8cbe0364519987aa3d56d93f7bfaae6bad08fe9084b6ed",
-   "checked_at": "2026-11-04T16:10:22.002Z",
+   "checked_at": "2026-11-04T16:48:01.970Z",
    "ok": true,
    "aurora": {
     "status": "REFUNDED",
@@ -756,7 +763,7 @@
   },
   {
    "id": "0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a",
-   "checked_at": "2026-11-04T16:10:22.517Z",
+   "checked_at": "2026-11-04T16:48:02.278Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -817,7 +824,7 @@
   },
   {
    "id": "0x1f0c7e5f28450751799f7594f0ba5272b4b883c9efdd95b6c2f812017b240852",
-   "checked_at": "2026-11-04T16:10:23.010Z",
+   "checked_at": "2026-11-04T16:48:02.764Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -920,7 +927,7 @@
   },
   {
    "id": "0x4c5789409a649fd11ed158476265c9230beda4104fa595944acfc96651a2e7b9",
-   "checked_at": "2026-11-04T16:10:23.517Z",
+   "checked_at": "2026-11-04T16:48:03.249Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -1023,7 +1030,7 @@
   },
   {
    "id": "0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc",
-   "checked_at": "2026-11-04T16:10:24.027Z",
+   "checked_at": "2026-11-04T16:48:03.712Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",
@@ -1156,7 +1163,7 @@
   },
   {
    "id": "0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708",
-   "checked_at": "2026-11-04T16:10:24.534Z",
+   "checked_at": "2026-11-04T16:48:04.201Z",
    "ok": true,
    "aurora": {
     "status": "SUCCESS",

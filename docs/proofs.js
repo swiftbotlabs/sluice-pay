@@ -26,7 +26,17 @@
     { kind: 'connect', name: 'Intents Connect with order reference', chain: 'arb', dep: '0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc', addr: '0xBE59F73BB339EA403102cDCb17f85Bd807a469fE', sol: '3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs', intermediary: 'Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr', raw: 150000n, note: 'Bridged into the payer\'s Solana account, which paid with the order reference attached' },
     { name: 'API call paid by the CLI', chain: 'base', dep: '0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708', addr: '0x0497bb48C0335f1D22f147B2983ffDC6dA054042', sol: '45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX', raw: 400000n, note: '402, order, deposit, verified, report plus a signed receipt' },
   ];
+  // Row groups, in page order. The page (app.js) and the static copy in index.html (tools/render_static.mjs) both use them.
+  const GROUPS = [
+    { title: 'Run on 4 Nov: a permanent address, two refunds, a second chain, a redemption', has: (p) => !!p.fresh },
+    { title: 'Earlier runs, 29 Oct to 3 Nov', has: (p) => !p.fresh },
+  ];
   const id = (p) => p.dep || p.sol;
+  /** Where a row's record lives on this page (hash routes): the record, the permanent page or the merchant view. */
+  const recordLink = (p) => (p.kind === 'perm' ? { href: `#a=${MERCHANT}`, label: 'Permanent page' } : p.kind === 'redeem' ? { href: `#m=${MERCHANT}`, label: 'Merchant view' }
+    : p.ref ? { href: `#c=${p.ref}.${MERCHANT}`, label: 'Record' } : { href: `#s=${p.addr}`, label: 'Record' });
+  /** What the Solana column says when a row has no Solana transaction. */
+  const noSol = (p) => (p.kind ? '' : p.refund ? 'Solana: none (refunded)' : 'Solana: none');
   const big = (v) => (typeof v === 'string' && /^\d{1,40}$/.test(v) ? BigInt(v) : null);
   // amounts as text; USDC keeps at least two decimals so 0.30 reads as money
   const fmt = (raw, dec) => { const s = C.fromUnits(raw, dec); if (dec !== 6) return s; const [i, f = ''] = s.replace(/^-/, '').split('.'); return (s.startsWith('-') ? '-' : '') + i + '.' + f.padEnd(2, '0'); };
@@ -182,5 +192,5 @@
     return `Verified ${when}`;
   }
 
-  return { PROOF, MERCHANT, id, checkRow, feeBreakdown, solFacts, snapshotLabel };
+  return { PROOF, GROUPS, MERCHANT, id, recordLink, noSol, checkRow, feeBreakdown, solFacts, snapshotLabel };
 });

@@ -1027,7 +1027,9 @@
   // Each row shows the stored verification (docs/proofs-snapshot.json, made by tools/snapshot_proofs.mjs with the same checks)
   // at once; "Check live" re-reads Aurora and Solana from this browser. A slow or failed live check never paints a row red:
   // the row keeps saying what was verified and when, and that the live check is pending.
-  let proofQueue = Promise.resolve(); const checks = []; let SNAP = null;
+  let proofQueue = Promise.resolve(); const checks = []; let SNAP = null; let snapP = null;
+  // The stored verification (docs/proofs-snapshot.json), loaded once and shared by the proof rows and the demo merchant view.
+  const snapshot = () => (snapP = snapP || fetch('proofs-snapshot.json', { signal: AbortSignal.timeout(15000) }).then((r) => (r.ok ? r.json() : null)).catch(() => null));
   // Aurora's list endpoint can stall for a while: give it 25 s and one retry, like the status call.
   const permOnce = (address, type) => fetch(`${AURORA}/api/persistent-deposit-status/${API_KEY}?address=${encodeURIComponent(address)}&type=${type}&limit=20`, { signal: AbortSignal.timeout(25000) })
     .then((x) => x.json()).then((j) => (Array.isArray(j.deposits) ? j.deposits : []));
@@ -1061,6 +1063,9 @@
     out.className = 'out' + (res.ok ? ' ok' : '');
   }
   function renderProof() {
+    // index.html carries a static copy of every row's stored verification (tools/render_static.mjs), so the panel reads the
+    // same with JavaScript off. Keep each row's static result until the snapshot file has loaded.
+    const ssr = new Map([...$('proof-table').querySelectorAll('.proof[data-id]')].map((el) => [el.dataset.id, el.querySelector('.out')]).filter((x) => x[1]));
     const box = (p) => {
       const el = document.createElement('div'); el.className = 'proof' + (p.fresh ? ' fresh' : '');
       const t = document.createElement('b'); t.textContent = p.name;
@@ -1068,18 +1073,21 @@
       const l = document.createElement('div'); l.className = 'links';
       if (p.dep) { const dep = document.createElement('span'); dep.append(`${CHAINS[p.chain].name}: `, txLink(p.chain, p.dep)); l.append(dep); }
       const sol = document.createElement('span');
-      if (p.sol) sol.append('Solana: ', txLink('sol', p.sol)); else sol.textContent = p.kind ? '' : p.refund ? 'Solana: none (refunded)' : 'Solana: none';
+      if (p.sol) sol.append('Solana: ', txLink('sol', p.sol)); else sol.textContent = PR.noSol(p);
       l.append(sol);
       if (p.refund) { const r = document.createElement('span'); r.append('Refund: ', txLink(p.chain, p.refund)); l.append(r); }
-      const rec = document.createElement('a');
-      rec.href = p.kind === 'perm' ? `#a=${MERCHANT_DEMO}` : p.kind === 'redeem' ? `#m=${MERCHANT_DEMO}` : p.ref ? `#c=${p.ref}.${MERCHANT_DEMO}` : `#s=${p.addr}`;
-      rec.textContent = p.kind === 'perm' ? 'Permanent page' : p.kind === 'redeem' ? 'Merchant view' : 'Record';
+      const rl = PR.recordLink(p); const rec = document.createElement('a'); rec.href = rl.href; rec.textContent = rl.label;
       l.append(rec);
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ghost chk'; btn.textContent = 'Check live';
       const out = document.createElement('div'); out.className = 'out';
       const pend = document.createElement('div'); pend.className = 'pending muted';
       const stored = () => (SNAP && SNAP.get(PR.id(p))) || null;
-      const paintStored = () => { const s = stored(); if (s) showResult(out, s, false); else text(out, 'Not checked yet on this page: press Check live.'); };
+      const pre = ssr.get(PR.id(p));
+      const paintStored = () => {
+        const s = stored(); if (s) { showResult(out, s, false); return; }
+        if (pre) { out.replaceChildren(...[...pre.childNodes].map((n) => n.cloneNode(true))); out.className = pre.className; return; }
+        text(out, 'Not checked yet on this page: press Check live.');
+      };
       paintStored();
       const check = async () => {
         try {
@@ -1097,20 +1105,21 @@
         proofQueue = proofQueue.then(check);
       };
       btn.onclick = run; checks.push(run);
+      el.dataset.id = PR.id(p);
       el.append(t, n, l, out, pend, btn);
       el._paint = paintStored;
       return el;
     };
     const head = (s) => Object.assign(document.createElement('h3'), { className: 'proof-head', textContent: s });
-    const fresh = PROOF.filter((p) => p.fresh).map(box); const older = PROOF.filter((p) => !p.fresh).map(box);
-    $('proof-table').replaceChildren(head('Run on 4 Nov: a permanent address, two refunds, a second chain, a redemption'), ...fresh,
-      head('Earlier runs, 29 Oct to 3 Nov'), ...older);
+    const groups = PR.GROUPS.map((g) => ({ title: g.title, rows: PROOF.filter(g.has).map(box) }));
+    const all = groups.flatMap((g) => g.rows);
+    $('proof-table').replaceChildren(...groups.flatMap((g) => (g.rows.length ? [head(g.title), ...g.rows] : [])));
     $('btn-check-all').onclick = () => checks.forEach((f) => f());
-    fetch('proofs-snapshot.json', { signal: AbortSignal.timeout(15000) }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    snapshot().then((j) => {
       if (!j || !Array.isArray(j.rows)) return;
       SNAP = new Map(j.rows.filter((r) => r && typeof r.id === 'string').map((r) => [r.id, r]));
-      for (const el of [...fresh, ...older]) el._paint();
-    }).catch(() => {});
+      for (const el of all) el._paint();
+    });
   }
 
   // ---------- hosted 402 API ----------
@@ -1276,7 +1285,10 @@
     const hist = st.capped ? 'More than 200 transactions in 14 days: only the newest are read, so older payments may be missing from the total.'
       : st.partial ? `Solana's public nodes returned history only ${since ? `back to ${since}` : 'for recent days'} just now, so older payments may be missing from the total. Reload to try again.`
         : 'The history is complete for the last 14 days: it reaches back past them, or to the transaction that opened each account.';
-    text($('m-partial'), !partial ? '' : st.solError ? 'Solana could not be read just now, so no total is shown as complete. Reload to try again.'
+    const snap = st.snap; const raw = (v) => (typeof v === 'string' && /^\d{1,30}$/.test(v) ? BigInt(v) : null);
+    const stored = snap && raw(snap.usdc) !== null && raw(snap.cusdc) !== null
+      ? `Last verified ${PR.snapshotLabel({ checked_at: snap.at }).replace(/^Verified /, '')}: ${pretty(raw(snap.usdc))} USDC in the wallet, ${fromUnits(raw(snap.cusdc), 6)} cUSDC in Kamino, and ${Number(snap.runs) || 0} payments, refunds and redemptions checked under Live proof.` : '';
+    text($('m-partial'), !partial ? '' : st.solError ? `Solana could not be read just now, so no total is shown as complete. Reload to try again.${stored ? ' ' + stored : ''}`
       : st.partial ? hist : `${st.unread} transaction${st.unread === 1 ? '' : 's'} could not be read just now, so the total may be higher. Reload to try again.`);
     if (st.shares === 'error') { text($('m-earn'), 'unavailable'); text($('m-shares'), 'unavailable'); } else if (st.shares !== null) {
       const v = C.earnValue(st.shares, rows); const has = st.shares > 0n;
@@ -1288,14 +1300,17 @@
     paintChart(days, partial);
     const dust = rows.filter((r) => r.dust).length;
     const pays = rows.filter((r) => !r.dust && (r.kind !== 'earn' || r.verified));
-    const wait = st.done ? 'No payments found yet.' : 'Reading Solana…';
+    // The demo merchant also shows its last stored verification while the live read runs, so a slow node never leaves it blank.
+    const snapLine = stored ? `Reading Solana… ${stored}` : 'Reading Solana…';
+    const failed = `Solana could not be read just now. ${stored || 'Reload to try again.'}`;
+    const wait = st.done ? (st.solError ? failed : 'No payments found yet.') : snapLine;
     paintList($('m-latest'), pays.slice(0, 3), wait);
     paintList($('m-rows'), pays, wait);
-    paintList($('m-earn-rows'), rows.filter((r) => r.kind === 'earn' && !r.dust), st.done ? 'No deposits into Kamino yet. Choose "Put it to work" when you make a link.' : 'Reading Solana…');
+    paintList($('m-earn-rows'), rows.filter((r) => r.kind === 'earn' && !r.dust), st.done ? (st.solError ? failed : 'No deposits into Kamino yet. Choose "Put it to work" when you make a link.') : snapLine);
     // Withdrawals are the merchant's own money moving, so they are listed here and never counted as payments.
     const outs = st.credits.filter((c) => c && c.kind === 'withdraw').sort((a, b) => (b.at || 0) - (a.at || 0))
       .map((c) => ({ kind: 'withdraw', verified: true, sig: c.sig, at: c.at, usdc: c.usdc, shares: c.shares }));
-    paintList($('m-out-rows'), outs, st.done ? 'Nothing taken out of Kamino yet.' : 'Reading Solana…');
+    paintList($('m-out-rows'), outs, st.done ? (st.solError ? failed : 'Nothing taken out of Kamino yet.') : snapLine);
     if (st.done) {
       const how = st.solError ? 'Solana could not be read just now, so only what Aurora reports is listed, marked as not checked. Reload to try again.'
         : `Every amount is read from Solana: ${st.scanned} transaction${st.scanned === 1 ? '' : 's'} to your USDC and cUSDC accounts, each checked on its own, so any USDC sent to this wallet shows, not only payments through Sluice. ${hist}${st.unread ? ` ${st.unread} of them could not be read just now and are not shown; reload to try again.` : ''}${dust ? ` ${dust} transfer${dust === 1 ? '' : 's'} under 0.01 USDC ${dust === 1 ? 'is' : 'are'} left out of the list and the totals.` : ''}`;
@@ -1338,6 +1353,15 @@
     const st = { credits: [], aurora: [], records: new Map(), shares: null, done: false, scanned: 0 };
     const paint = () => paintMerchant(addr, st, mine);
     paint();
+    if (addr === MERCHANT_DEMO) {
+      snapshot().then((j) => {
+        const m = j && j.merchant; if (!m || m.address !== addr) return;
+        st.snap = m; paint();
+        const ok = (v) => typeof v === 'string' && /^\d{1,30}$/.test(v);
+        if ($('m-usdc').textContent === '…' && ok(m.usdc)) text($('m-usdc'), `${pretty(BigInt(m.usdc))} USDC`);
+        if ($('m-earn').textContent === '…' && ok(m.cusdc)) text($('m-earn'), `${fromUnits(BigInt(m.cusdc), 6)} cUSDC`);
+      });
+    }
     const [usdcAcct, cusdcAcct] = await Promise.all([C.ata(addr), C.ata(addr, KLEND.cusdc)]);
     const usdcBal = accountAmount(usdcAcct); const cusdcBal = accountAmount(cusdcAcct);
     usdcBal.then((v) => text($('m-usdc'), `${pretty(v === null ? 0n : v)} USDC`), () => text($('m-usdc'), 'unavailable'));
