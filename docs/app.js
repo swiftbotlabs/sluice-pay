@@ -1152,7 +1152,7 @@
       }
       if (roles.deposit) rows.append(row('Deposit', txLink(org ? org.chain : '', roles.deposit)));
       for (const h of roles.topups) rows.append(row('Further deposit', txLink(org ? org.chain : '', h)));
-      if (s.status === 'INCOMPLETE_DEPOSIT' && qq.amountInFormatted) rows.append(row('Short by', `${fromUnits(C.shortfall(qq.amountIn, d.depositedAmount), org ? org.decimals : 6)} ${org ? org.sym : ''}: it goes back to the payer after the deadline unless the rest arrives`));
+      if (s.status === 'INCOMPLETE_DEPOSIT' && /^\d{1,30}$/.test(String(qq.amountIn)) && /^\d{1,30}$/.test(String(d.depositedAmount || '0'))) rows.append(row('Short by', `${fromUnits(C.shortfall(qq.amountIn, d.depositedAmount), org ? org.decimals : 6)} ${org ? org.sym : ''}: it goes back to the payer after the deadline unless the rest arrives`));
       if (roles.refunded) rows.append(row('Refunded', `${d.refundedAmountFormatted} ${org ? org.sym : ''}${d.refundReason ? ` (${humanize(d.refundReason)})` : s.status === 'SUCCESS' ? ' (sent above what the payment needed)' : ''}`));
       for (const h of roles.refunds) rows.append(row('Refund tx', txLink(org ? org.chain : '', h)));
       if (sols[0]) rows.append(row('Solana settlement', txLink('sol', sols[0])));

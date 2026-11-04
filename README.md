@@ -22,7 +22,7 @@ No account, no wallet and no money needed.
 | 1 min | Open a [refunded payment](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0x399E9E3B0013C1D51148F19402d9A5ecC7e0AD56) and a [paid one](https://apps.swiftbotlab.workers.dev/sluice-pay/#s=0xDF4FE7105893cB3BC78579A703b551d65eBa7c54) | Shareable records built only from Aurora and Solana data: what was sent, what came back, and the Solana check. |
 | 1 min | `git clone https://github.com/swiftbotlabs/sluice-pay && cd sluice-pay && python3 cli/simulate_earn.py` | The Intents Connect transaction that settles an invoice into Kamino, run through Solana's simulator on live mainnet state. Standard library only. |
 | 1 min | Open the [merchant view](https://apps.swiftbotlab.workers.dev/sluice-pay/#m=9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR) of the demo merchant | Balances, USDC received per day, every payment with its Solana transaction and record, and the Kamino position, all read live from Solana. |
-| 1 min | `node --test tests/js/core.test.mjs` and, after `pip install -r requirements.txt`, `python3 -m unittest discover -s tests` | 52 checkout tests and 57 server, CLI and parity tests, offline. They include real Intents Connect payloads, real mainnet transactions and refund records, and tampered copies of them. |
+| 1 min | `node --test tests/js/core.test.mjs` and, after `pip install -r requirements.txt`, `python3 -m unittest discover -s tests` | 53 checkout tests and 58 server, CLI and parity tests, offline. They include real Intents Connect payloads, real mainnet transactions and refund records, and tampered copies of them. |
 
 ## How it meets the judging criteria
 
