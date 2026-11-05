@@ -1,22 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-type="software">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://sluice-api.swiftbotlab.workers.dev https://intents-api.aurora.dev https://intents-connect-api.aurora.dev https://1click.chaindefuser.com https://solana-rpc.web.helium.io https://solana-mainnet.gateway.tatum.io https://solana.leorpc.com https://public.rpc.solanavibestation.com; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#0c6b63">
+<meta name="theme-color" content="#ECEFEA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#071A1C" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="page-type" content="software">
+<meta name="site-kind" content="software">
 <title>Sluice Pay</title>
 <meta name="description" content="Get paid in USDC on Solana by customers on 30+ chains. Settlement verified on Solana, refunds automatic, invoices can settle straight into yield.">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
+<script src="early.js"></script>
 </head>
 <body>
 <header class="top">
   <div class="wrap row">
-    <a class="brand" href="./"><img src="icon.svg" alt="" width="24" height="24">Sluice</a>
-    <nav id="nav" aria-label="Sections"><a href="#start">Get started</a><a href="#earn">Earn</a><a href="#agents">APIs</a><a href="#proof">Proof</a></nav>
+    <a class="skip" href="#main">Skip to content</a>
+    <a class="brand" href="./"><img src="icon.svg" alt="" width="28" height="28">Sluice</a>
+    <nav id="nav" aria-label="Sections"><a href="#how">How it works</a><a href="#earn">Earn</a><a href="#agents">APIs</a><a href="#proof">Proof</a><a href="https://github.com/swiftbotlabs/sluice-pay" rel="noopener">Source</a></nav>
     <a id="nav-mine" class="navmine hidden" href="#">My payments</a>
+    <span class="topend">
+      <button id="theme" class="themebtn" type="button" aria-label="Switch to dark mode" title="Switch colour theme"><svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8Z"/></svg></button>
+      <a class="button primary navcta" href="#start">Start accepting payments</a>
+    </span>
   </div>
 </header>
 
@@ -51,7 +62,7 @@
       </div>
 
       <h2>Pay with</h2>
-      <p class="muted hint" id="origin-count">Loading supported assets…</p>
+      <p class="muted hint" id="origin-count">Supported assets appear here from Aurora's live list.</p>
       <div id="origins" class="chips" role="radiogroup" aria-label="Asset to pay with"></div>
       <div id="picked" class="picked hidden"><span>Paying with <b id="picked-name"></b></span><button id="btn-change" class="link" type="button">Change</button></div>
       <button id="btn-more" class="link hidden" type="button" aria-expanded="false"></button>
@@ -140,7 +151,7 @@
     </div>
     <div id="p-pick">
       <h2>What are you sending?</h2>
-      <p class="muted hint" id="p-count">Loading supported assets…</p>
+      <p class="muted hint" id="p-count">Supported assets appear here from Aurora's live list.</p>
       <div id="p-origins" class="chips" role="radiogroup" aria-label="Asset you are sending"></div>
       <div id="p-picked" class="picked hidden"><span>Sending <b id="p-picked-name"></b></span><button id="p-change" class="link" type="button">Change</button></div>
       <button id="p-more" class="link hidden" type="button" aria-expanded="false"></button>
@@ -223,12 +234,12 @@
       <p class="muted hint">Last 14 days, your local time. Only credits read from Solana count. Hover or tap a day.</p>
       <div id="m-chart" class="chart" role="group" aria-label="USDC received per day, last 14 days"></div>
       <div class="row between"><h2>Latest payments</h2><button id="m-all" class="link" type="button">All payments</button></div>
-      <div id="m-latest" class="ledger"><p class="muted">Reading Solana… (this view reads the merchant's account live and needs JavaScript; the stored verification of every run is under Live proof)</p></div>
+      <div id="m-latest" class="ledger"><p class="muted">This list is read live from the merchant's account on Solana, in your browser. The stored verification of every run is under Live proof.</p></div>
     </div>
     <div id="mp-payments" class="card hidden" role="tabpanel" aria-labelledby="mt-payments">
       <h2>Payments received</h2>
       <p class="muted hint" id="m-scan-note">Every amount is read from Solana. Where this checkout routed a payment, Aurora adds what the customer paid with and a record you can share.</p>
-      <div id="m-rows" class="ledger"><p class="muted">Reading Solana… (this view reads the merchant's account live and needs JavaScript; the stored verification of every run is under Live proof)</p></div>
+      <div id="m-rows" class="ledger"><p class="muted">This list is read live from the merchant's account on Solana, in your browser. The stored verification of every run is under Live proof.</p></div>
     </div>
     <div id="mp-earn" class="card hidden" role="tabpanel" aria-labelledby="mt-earn">
       <h2>Your Kamino position</h2>
@@ -238,10 +249,10 @@
       </div>
       <p class="muted hint">cUSDC is Kamino's receipt for USDC supplied to its main-market reserve. Its USDC value only grows as borrowers pay interest, so the rate of your newest deposit gives a floor for today's value.</p>
       <h2>Deposits into Kamino</h2>
-      <div id="m-earn-rows" class="ledger"><p class="muted">Reading Solana… (this view reads the merchant's account live and needs JavaScript; the stored verification of every run is under Live proof)</p></div>
+      <div id="m-earn-rows" class="ledger"><p class="muted">This list is read live from the merchant's account on Solana, in your browser. The stored verification of every run is under Live proof.</p></div>
       <h2>Getting it back</h2>
       <p>Your wallet owns the cUSDC, so only you can redeem it. <code>python3 cli/redeem_earn.py --owner &lt;your address&gt;</code> simulates the withdrawal on mainnet; with <code>--key-file</code> and <code>--send</code> it turns cUSDC back into USDC plus interest, in your own USDC account.</p>
-      <div id="m-out-rows" class="ledger"><p class="muted">Reading Solana… (this view reads the merchant's account live and needs JavaScript; the stored verification of every run is under Live proof)</p></div>
+      <div id="m-out-rows" class="ledger"><p class="muted">This list is read live from the merchant's account on Solana, in your browser. The stored verification of every run is under Live proof.</p></div>
       <p class="muted hint">Kamino is a third-party protocol: smart-contract and liquidity risk apply until you redeem.</p>
     </div>
   </section>
@@ -373,69 +384,200 @@
 
   <!-- HOME -->
   <div id="home">
-    <section class="hero">
-      <h1>Get paid in USDC on Solana, from whatever your customer holds.</h1>
-      <p class="lead">Share a link. Your customer pays with what they already hold. You receive exactly the invoiced USDC in your Solana wallet, or straight into yield, and nothing counts until Solana itself shows it.</p>
-      <p class="muted hint">One exception, by design: a private payment adds a tag of 0.000001 to 0.000999 USDC on top of the invoice, so Sluice can find it on Solana without Aurora's transaction hashes.</p>
-      <div class="row gap">
-        <a class="button primary" href="#start">Start accepting payments</a>
-        <a id="btn-demo" class="button ghost" href="#">See a live invoice</a>
+    <section class="hero" aria-labelledby="hero-h">
+      <div class="hero-copy">
+        <p class="notice">Live on Solana mainnet since 29 Oct</p>
+        <h1 id="hero-h">Get paid in USDC on Solana, from whatever your customer holds.</h1>
+        <p class="lead">Share a link. Your customer pays with what they already hold. You receive exactly the invoiced USDC in your Solana wallet, or straight into yield, and nothing counts until Solana itself shows it.</p>
+        <div class="btn-row">
+          <a class="button primary" href="#start">Start accepting payments</a>
+          <a id="btn-demo" class="button ghost" href="#p=eyJhbXQiOiIwLjUwIiwiZXhwIjoxODAwMDEzMzY3LCJrIjoiOWNZRnpybUhSY3NZekxoQVdzTmVtekN5NzVaaEVUbjJweDRNUzhvRERSZVIiLCJyZWYiOiJkZW1vLWludm9pY2UtMTA0MiIsInMiOiJlYXJuIiwidG8iOiI5Y1lGenJtSFJjc1l6TGhBV3NOZW16Q3k3NVpoRVRuMnB4NE1TOG9ERFJlUiIsInYiOjF9.XDSG4A7YmbS97B2hAIbGSnT3aJ3sOlasUS3qWgHLkXP8qTCp9P3Iqp71OrojPLT19vcn39eOTFU0IcZZ6b3PCQ">See a live invoice</a>
+        </div>
+        <ul class="heroline"><li><b id="stat-assets">210</b> assets</li><li><b id="stat-nets">30+</b> networks</li><li><b>17</b> mainnet runs you can re-check</li><li><b>Refunds</b> automatic</li></ul>
+        <p class="hint footnote">One exception, by design: a private payment adds a tag of 0.000001 to 0.000999 USDC on top of the invoice, so Sluice can find it on Solana without Aurora's transaction hashes.</p>
       </div>
-      <img class="heroart" src="hero.svg" alt="Payments from Base, Arbitrum, Ethereum, Tron and Bitcoin flow through Sluice into the merchant's USDC on Solana, or into Kamino." width="720" height="300">
-      <ul class="heroline"><li><b id="stat-assets">210</b> assets</li><li><b id="stat-nets">30+</b> networks</li><li><b>17</b> mainnet runs you can re-check</li><li><b>Refunds</b> automatic</li></ul>
-      <p class="muted hint">Paid live on mainnet from Base, Arbitrum and Optimism, and from a non-EVM wallet on Tron. Every one of those runs is under Live proof.</p>
-    </section>
 
-    <section class="steps3" aria-label="How it works">
-      <div><b>1. Sign the invoice</b><p>The merchant's Solana wallet signs amount, address and how it settles. Change one character and the checkout refuses the link.</p></div>
-      <div><b>2. Pay with what you hold</b><p>USDC on Base, ETH on Arbitrum, USDT on Tron, BTC and more. Connect a wallet, or scan a QR from any wallet or exchange.</p></div>
-      <div><b>3. Solana has the last word</b><p>The page reads the merchant's balance on Solana itself. A provider's "success" is only a hint. Short, late or failed payments go back to the payer.</p></div>
-    </section>
-
-    <section id="create" class="card">
-      <h2>Your checkout in three steps</h2>
-      <ol class="flow three">
-        <li><b>You</b><span>Your name and Solana address, checked on Solana as you paste it</span></li>
-        <li><b>How you get paid</b><span>USDC in your wallet, or straight into your own Kamino position</span></li>
-        <li><b>Your link</b><span>A pay link or a permanent pay page, with a live preview and a QR</span></li>
-      </ol>
-      <div class="row gap"><a class="button primary" href="#start">Start: about 2 minutes</a></div>
-      <div id="c-back" class="welcomeback hidden">
-        <p><b id="c-back-name"></b>, welcome back.</p>
-        <div class="row gap"><a id="c-back-m" class="button ghost">My merchant view</a><a class="button ghost" href="#start">New link</a></div>
-        <ul id="c-back-links" class="mylinks"></ul>
+      <div class="hero-visual">
+        <div class="channel" aria-hidden="true"><div id="hero-fx" class="channel-fx"></div></div>
+        <div class="app-frame hv" id="hv" role="group" aria-label="Payment record of the 4 Nov invoice: 5.00 USDC from Base into the merchant's Kamino position">
+          <div class="af-bar"><span class="af-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="af-url">sluice-pay / payment record</span></div>
+          <div class="af-body">
+            <div class="hv-head">
+              <div>
+                <span class="hv-k">Invoice paid from Base, 4 Nov</span>
+                <div class="hv-amt"><b>5.00</b> <span>USDC</span></div>
+                <span class="hv-to">into the merchant's own Kamino position</span>
+              </div>
+              <span class="hv-stamp"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.4 3.4 7.6-8"/></svg>Verified on Solana</span>
+            </div>
+            <ol class="hv-steps">
+              <li><b>5.452 USDC sent on Base</b><a href="https://basescan.org/tx/0x02fa3ab5d3011cd79c215a20e285539fc140038ad5dc47a28b97913aed5fdcea" target="_blank" rel="noopener">0x02fa…5fdcea</a></li>
+              <li><b>5.19 USDC in the payer's own Solana account</b><a href="https://solscan.io/tx/6K1VFxxehZikD5rKD4FnaMCmhWVf3MtEdQuczMTpwopLA4szvSiTVixFzuKJ8VpJU8MEs4HCpnxqFYWgJ5RwCdd" target="_blank" rel="noopener">6K1VFx…5RwCdd</a></li>
+              <li><b>One Intents Connect transaction, 17:09:08 UTC</b><a href="https://solscan.io/tx/QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS" target="_blank" rel="noopener">QzqYDz…rvXnxS</a></li>
+              <li><b>Merchant +4.134567 cUSDC, Kamino +5.00 USDC</b><span>read from Solana, not from the provider</span></li>
+            </ol>
+            <div class="hv-split">
+              <p class="hv-split-h">Where the 5.19 USDC went</p>
+              <div class="hv-bar" aria-hidden="true"><i class="s-m"></i><i class="s-c"></i><i class="s-s"></i><i class="s-l"></i></div>
+              <dl class="hv-legend">
+                <div class="k-m"><dt>Kamino, for the merchant</dt><dd>5.00</dd></div>
+                <div class="k-c"><dt>Intents Connect fee</dt><dd>0.149068</dd></div>
+                <div class="k-s"><dt>Sluice's fee, 0.5%</dt><dd>0.025</dd></div>
+                <div class="k-l"><dt>Left with the payer</dt><dd>0.015932</dd></div>
+              </dl>
+            </div>
+            <div class="hv-ctl"><button type="button" class="hv-replay" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10a6 6 0 1 0 1.8-4.3M4 3.5v3.2h3.2"/></svg>Replay the payment</button><a class="link" href="#decode">Read the transaction, decoded</a></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section id="always" class="card">
-      <h2>One page that never expires</h2>
-      <p>For tips, top-ups and a QR on the counter. Each merchant gets a permanent address per network: customers send any amount from whatever they hold, whenever they like, and it arrives as USDC on Solana. Nothing to quote, nothing to connect.</p>
-      <p class="muted hint">Live on mainnet: on 4 Nov, 1.10 USDC sent on Base to a merchant's permanent address arrived as 1.089777 USDC on Solana 14 seconds later, checked on Solana. It is the first row under Live proof.</p>
-      <p><a id="btn-demo-perm" class="button ghost" href="#">See a permanent pay page</a></p>
+    <section id="how" class="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <h2 id="how-h">Four steps through the payment gate</h2>
+        <p class="sub">A sluice lets water through only when the gate opens. Sluice lets a payment count only when Solana shows it, and sends the rest back.</p>
+        <div class="how-grid">
+          <ol class="how-steps">
+            <li data-step="1"><h3>The merchant signs the invoice</h3><p>The merchant's Solana wallet signs amount, address and how it settles. Change one character and the checkout refuses the link.</p></li>
+            <li data-step="2"><h3>The customer pays with what they hold</h3><p>USDC on Base, ETH on Arbitrum, USDT on Tron, BTC and more. Connect a wallet, or scan a QR from any wallet or exchange.</p></li>
+            <li data-step="3"><h3>Solana has the last word</h3><p>The page reads the merchant's balance on Solana itself. A provider's "success" is only a hint.</p></li>
+            <li data-step="4"><h3>Short, late or failed payments go back</h3><p>They return to the payer on the chain they paid from. On 4 Nov, 0.20 USDC sent for a 0.25 invoice came back as 0.1976 USDC, and 0.30 sent for 0.25 returned the 0.037512 excess.</p></li>
+          </ol>
+          <figure class="gate" aria-hidden="true">
+            <svg class="gate-svg" viewBox="0 0 640 520" role="presentation">
+              <defs>
+                <linearGradient id="gw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="w0"/><stop offset="1" class="w1"/></linearGradient>
+                <pattern id="gc" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 10L10 0" class="hatch"/></pattern>
+              </defs>
+              <!-- ground and channel bed -->
+              <path class="bed" d="M20 400H620V430H20Z"/>
+              <path class="bed-h" d="M20 400H620V430H20Z" fill="url(#gc)"/>
+              <!-- upstream water (rises in stage 2) -->
+              <g class="g-up"><rect class="water" x="20" y="214" width="290" height="186" fill="url(#gw)"/><path class="ripple" d="M20 214c24-6 48-6 72 0s48 6 72 0 48-6 72 0 48 6 74 0"/></g>
+              <!-- downstream water (flows in stage 3) -->
+              <g class="g-down"><rect class="water" x="350" y="300" width="270" height="100" fill="url(#gw)"/><path class="ripple" d="M350 300c22-5 44-5 66 0s44 5 66 0 44-5 66 0 44 5 72 0"/></g>
+              <!-- piers -->
+              <rect class="pier" x="300" y="70" width="12" height="330"/>
+              <rect class="pier" x="348" y="70" width="12" height="330"/>
+              <rect class="beam" x="288" y="58" width="84" height="16" rx="2"/>
+              <!-- gauge staff on the right pier -->
+              <g class="gauge"><rect x="372" y="96" width="20" height="200" class="staff"/><path class="ticks" d="M372 116h10M372 136h20M372 156h10M372 176h20M372 196h10M372 216h20M372 236h10M372 256h20M372 276h10"/></g>
+              <!-- the gate plate (lifts in stage 3) -->
+              <g class="g-gate"><rect class="plate" x="312" y="196" width="36" height="206" rx="2"/><path class="plate-r" d="M318 220h24M318 250h24M318 280h24M318 310h24M318 340h24M318 370h24"/></g>
+              <circle class="wheel" cx="330" cy="46" r="14"/><path class="wheel-s" d="M330 32v28M316 46h28"/>
+              <!-- the invoice docking at the gate (stage 1) -->
+              <g class="g-inv"><rect class="inv" x="150" y="98" width="138" height="68" rx="8"/><text x="166" y="124" class="t-s">Invoice, signed</text><text x="166" y="151" class="t-b">5.00 USDC</text><path class="inv-ok" d="M262 115l5 5 9-10"/></g>
+              <!-- source chains upstream (stage 2) -->
+              <g class="g-src">
+                <g><rect x="34" y="250" width="86" height="30" rx="15" class="src"/><text x="77" y="270" class="t-c">Base</text></g>
+                <g><rect x="128" y="250" width="112" height="30" rx="15" class="src"/><text x="184" y="270" class="t-c">Arbitrum</text></g>
+                <g><rect x="34" y="292" width="112" height="30" rx="15" class="src"/><text x="90" y="312" class="t-c">Optimism</text></g>
+                <g><rect x="154" y="292" width="72" height="30" rx="15" class="src"/><text x="190" y="312" class="t-c">Tron</text></g>
+                <g><rect x="34" y="334" width="96" height="30" rx="15" class="src"/><text x="82" y="354" class="t-c">Bitcoin</text></g>
+              </g>
+              <!-- Solana check (stage 3) -->
+              <g class="g-sol"><rect x="404" y="96" width="196" height="64" rx="10" class="sol"/><text x="420" y="122" class="t-s">Merchant, on Solana</text><text x="420" y="146" class="t-b">+5.00 USDC</text></g>
+              <!-- outlets downstream (stage 3) -->
+              <g class="g-out">
+                <g><rect x="404" y="324" width="96" height="30" rx="15" class="out"/><text x="452" y="344" class="t-c">USDC</text></g>
+                <g><rect x="508" y="324" width="96" height="30" rx="15" class="out"/><text x="556" y="344" class="t-c">Kamino</text></g>
+              </g>
+              <!-- spillway back to the payer (stage 4) -->
+              <g class="g-back">
+                <path class="spill-bed" d="M296 412C250 470 120 478 60 452"/>
+                <path class="spill" d="M296 412C250 470 120 478 60 452"/>
+                <path class="spill-head" d="M72 440l-14 12 18 6"/>
+                <text x="96" y="504" class="t-c t-back">back to the payer</text>
+              </g>
+            </svg>
+          </figure>
+        </div>
+      </div>
     </section>
 
-    <section id="earn" class="card">
-      <h2>Invoices that earn from the first second</h2>
-      <p>Payment rails leave money idle until someone moves it. With Sluice a customer on Base can pay an invoice and, in one atomic Solana transaction run through Aurora Intents Connect, the USDC is supplied to Kamino and the yield-bearing cUSDC lands in the <b>merchant's own</b> token account. The payer's account never holds the position, and the order's reference travels with the deposit, so the payment is findable from Solana alone.</p>
-      <p><b>Sluice's fee rides in the same transaction.</b> On these invoices the payer adds 0.5% on top, sent to Sluice's own account in the very transaction that settles into Kamino, so the merchant still gets exactly the invoice. The fee account and the rate are pinned in the checkout, which shows the fee before the wallet opens and refuses a transaction that asks for anything else.</p>
-      <ol class="flow">
-        <li><b>Base</b><span>Payer signs once, sends USDC</span></li>
-        <li><b>NEAR Intents</b><span>Routes it to Solana</span></li>
-        <li><b>Kamino</b><span>Supplies USDC, mints cUSDC</span></li>
-        <li><b>Merchant</b><span>Owns the position</span></li>
-      </ol>
-      <p class="muted hint" id="earn-proof"></p>
+    <section id="create" class="create" aria-labelledby="create-h">
+      <div class="wrap">
+        <h2 id="create-h">Your checkout in three steps</h2>
+        <div class="create-grid">
+          <div>
+            <ol class="flow three">
+              <li><b>You</b><span>Your name and Solana address, checked on Solana as you paste it</span></li>
+              <li><b>How you get paid</b><span>USDC in your wallet, or straight into your own Kamino position</span></li>
+              <li><b>Your link</b><span>A pay link or a permanent pay page, with a live preview and a QR</span></li>
+            </ol>
+            <div class="btn-row"><a class="button primary" href="#start">Start: about 2 minutes</a></div>
+            <div id="c-back" class="welcomeback hidden">
+              <p><b id="c-back-name"></b>, welcome back.</p>
+              <div class="row gap"><a id="c-back-m" class="button ghost">My merchant view</a><a class="button ghost" href="#start">New link</a></div>
+              <ul id="c-back-links" class="mylinks"></ul>
+            </div>
+          </div>
+          <div class="frag" aria-hidden="true">
+            <div class="app-frame small">
+              <div class="af-bar"><span class="af-dots"><i></i><i></i><i></i></span><span class="af-url">sluice-pay / start</span></div>
+              <div class="af-body">
+                <p class="frag-step">Step 2 of 3</p>
+                <p class="frag-h">Where should the money go?</p>
+                <div class="frag-opt"><span class="frag-radio"></span><span><b>USDC in my wallet</b><span>Every payment lands as USDC in your Solana wallet.</span></span></div>
+                <div class="frag-opt on"><span class="frag-radio"></span><span><b>Put it to work in Kamino</b><span>Supplied to Kamino's USDC reserve in the same Solana transaction. The cUSDC goes to your own wallet.</span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="always" class="always">
+          <div>
+            <h3>A permanent pay page that never expires</h3>
+            <p>For tips, top-ups and a QR on the counter. Each merchant gets a permanent address per network: customers send any amount from whatever they hold, whenever they like, and it arrives as USDC on Solana. Nothing to quote, nothing to connect.</p>
+          </div>
+          <div>
+            <p class="hint">Live on mainnet: on 4 Nov, 1.10 USDC sent on Base to a merchant's permanent address arrived as 1.089777 USDC on Solana 14 seconds later, checked on Solana. It is the first row under Live proof.</p>
+            <p><a id="btn-demo-perm" class="button ghost" href="#a=9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">See a permanent pay page</a></p>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section id="agents" class="card">
-      <h2>For APIs and agents</h2>
-      <p>The same rail works without a browser. A Sluice API answers <code>402 Payment Required</code> with its price in USDC on Solana. The buyer pays from any supported chain and calls again. The server delivers exactly once, only after it has read the USDC credit on Solana, and returns a signed receipt.</p>
-      <p>A hosted one is live. Ask it for its price:</p>
-<pre><code>curl -i https://sluice-api.swiftbotlab.workers.dev/api/report/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR</code></pre>
-      <button id="btn-ask-api" class="ghost" type="button">Ask the live API from this page</button>
-      <div id="api-answer" class="apians muted" aria-live="polite"></div>
-      <p>Then create an order with your own refund address, send the exact amount it quotes from your own wallet, and call again with <code>X-Sluice-Order</code>. The receipt key is published at <a href="https://sluice-api.swiftbotlab.workers.dev/.well-known/sluice.json">/.well-known/sluice.json</a>. Every step, with the headless buyer that checks the quote against NEAR Intents' public record before it pays:</p>
-<pre><code>$ python3 cli/sluice_buy.py https://sluice-api.swiftbotlab.workers.dev/api/report/&lt;address&gt; \
+    <section id="earn" class="earn" aria-labelledby="earn-h">
+      <div class="wrap">
+        <h2 id="earn-h">Invoices that earn from the first second</h2>
+        <div class="earn-grid">
+          <div class="earn-copy">
+            <p>Payment rails leave money idle until someone moves it. With Sluice a customer on Base can pay an invoice and, in one atomic Solana transaction run through Aurora Intents Connect, the USDC is supplied to Kamino and the yield-bearing cUSDC lands in the <b>merchant's own</b> token account. The payer's account never holds the position, and the order's reference travels with the deposit, so the payment is findable from Solana alone.</p>
+            <p><b>Sluice's fee rides in the same transaction.</b> On these invoices the payer adds 0.5% on top, sent to Sluice's own account in the very transaction that settles into Kamino, so the merchant still gets exactly the invoice. The fee account and the rate are pinned in the checkout, which shows the fee before the wallet opens and refuses a transaction that asks for anything else.</p>
+            <p class="muted hint" id="earn-proof"></p>
+          </div>
+          <div class="earn-vis">
+            <ol class="flow pipe" aria-label="How a settle-to-earn payment moves">
+              <li><span class="fi"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></g></svg></span><b>Base</b><span>Payer signs once, sends USDC</span></li>
+              <li><span class="fi"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></g></svg></span><b>NEAR Intents</b><span>Routes it to Solana</span></li>
+              <li><span class="fi"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M14 9.536V7a4 4 0 0 1 4-4h1.5a.5.5 0 0 1 .5.5V5a4 4 0 0 1-4 4a4 4 0 0 0-4 4c0 2 1 3 1 5a5 5 0 0 1-1 3M4 9a5 5 0 0 1 8 4a5 5 0 0 1-8-4m1 12h14"/></svg></span><b>Kamino</b><span>Supplies USDC, mints cUSDC</span></li>
+              <li><span class="fi"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5m8.774-10.69a1.12 1.12 0 0 0-1.549 0a2.5 2.5 0 0 1-3.451 0a1.12 1.12 0 0 0-1.548 0a2.5 2.5 0 0 1-3.452 0a1.12 1.12 0 0 0-1.549 0a2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/></g></svg></span><b>Merchant</b><span>Owns the position</span></li>
+            </ol>
+            <div class="two-tx">
+              <h3>Why the 4 Nov run took two transactions</h3>
+              <p>Its payer authorised Intents Connect with a Solana wallet, which signs ed25519, while the USDC sat on Base. Asked for a Connect execution funded from Base with a Solana signer, Aurora's API refused it (400, "refundTo is not valid"). So the USDC moved first, with a plain Aurora swap into the payer's own Connect account on Solana. Then the Solana wallet signed one Connect transaction that supplied Kamino, paid both fees and attached the reference.</p>
+              <p>An EVM wallet holding the USDC on Base does both with one signature, as in the <a class="link" href="https://solscan.io/tx/558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv" target="_blank" rel="noopener">1 Nov run</a>. The checkout connects EVM wallets; Solana wallets pay by QR.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="agents" class="agents" aria-labelledby="agents-h">
+      <div class="wrap">
+        <h2 id="agents-h">For APIs and agents</h2>
+        <div class="agents-grid">
+          <div>
+            <p>The same rail works without a browser. A Sluice API answers <code>402 Payment Required</code> with its price in USDC on Solana. The buyer pays from any supported chain and calls again. The server delivers exactly once, only after it has read the USDC credit on Solana, and returns a signed receipt.</p>
+            <p>A hosted one is live. Ask it for its price:</p>
+<pre class="term"><code>curl -i https://sluice-api.swiftbotlab.workers.dev/api/report/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR</code></pre>
+            <button id="btn-ask-api" class="ghost" type="button">Ask the live API from this page</button>
+            <div id="api-answer" class="apians muted" aria-live="polite"></div>
+            <p>Then create an order with your own refund address, send the exact amount it quotes from your own wallet, and call again with <code>X-Sluice-Order</code>. The receipt key is published at <a class="link" href="https://sluice-api.swiftbotlab.workers.dev/.well-known/sluice.json">/.well-known/sluice.json</a>. Every step, with the headless buyer that checks the quote against NEAR Intents' public record before it pays:</p>
+          </div>
+          <div class="term-win">
+            <div class="af-bar"><span class="af-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="af-url">cli/sluice_buy.py</span></div>
+<pre class="term big"><code>$ python3 cli/sluice_buy.py https://sluice-api.swiftbotlab.workers.dev/api/report/&lt;address&gt; \
     --pay base:USDC --key-file payer.key --max-usd 0.30
 402: price 0.2 USDC on Solana -&gt; 9cYF…DReR
 order ord_…: send 0.2121… via base:USDC to 0x…
@@ -444,13 +586,115 @@ deposit ok: https://basescan.org/tx/0x…
   SETTLED: Paid: verified on Solana
 receipt signature valid: True; body hash matches: True
 Solana settlement re-verified: True</code></pre>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section id="proof" class="card">
-      <h2>Live proof on mainnet</h2>
-      <p class="muted">Seventeen real payments, refunds and redemptions from Base, Arbitrum, Optimism and Tron. Each row shows what was verified on 4 Nov, read from Aurora and Solana, and where every unit of the payment went, Sluice's own fee included. Press Check live to read both again from your browser, right now.</p>
-      <button id="btn-check-all" class="ghost" type="button">Re-check all</button>
-      <div id="proof-table">
+    <section id="proof" class="proofsec" aria-labelledby="proof-h">
+      <div class="wrap">
+        <h2 id="proof-h">Live proof on mainnet</h2>
+        <p class="muted">Seventeen real payments, refunds and redemptions from Base, Arbitrum, Optimism and Tron. Each row shows what was verified on 4 Nov, read from Aurora and Solana, and where every unit of the payment went, Sluice's own fee included. Press Check live to read both again from your browser, right now.</p>
+
+        <div id="decode" class="decode">
+          <div class="decode-head">
+            <h3>The Kamino transactions, decoded</h3>
+            <p>Each instruction of the two supplies into Kamino and the two redemptions by the merchant's own key, as Solana mainnet returns them (getTransaction, finalized, read 5 Nov). Token amounts are the raw on-chain integers over the 6 decimals of USDC and cUSDC. Every account links to Solscan.</p>
+          </div>
+<!-- decode:start (built from the four finalized transactions; see tools note in STATUS) -->
+<div class="dx-tabs" role="tablist" aria-label="Kamino transactions">
+<button type="button" role="tab" id="dxt-earn5" aria-controls="dx-earn5" aria-selected="true">Supply 5.00<span> 4 Nov</span></button>
+<button type="button" role="tab" id="dxt-redeem5" aria-controls="dx-redeem5" aria-selected="false" tabindex="-1">Redeem 5.00<span> 4 Nov</span></button>
+<button type="button" role="tab" id="dxt-earn015" aria-controls="dx-earn015" aria-selected="false" tabindex="-1">Supply 0.15<span> 1 Nov</span></button>
+<button type="button" role="tab" id="dxt-redeem015" aria-controls="dx-redeem015" aria-selected="false" tabindex="-1">Redeem 0.15<span> 4 Nov</span></button>
+</div>
+<article class="dx-panel" id="dx-earn5" role="tabpanel" aria-labelledby="dxt-earn5">
+<p class="dx-meta"><a href="https://solscan.io/tx/QzqYDzy2hh34HkzUGFwrMbVKxanc6tC4qQPxnrsiubfEVPi59dt52dSHd5zJ9UNZnAhSm5vgxHN8zDLQqrvXnxS" target="_blank" rel="noopener">QzqYDz…rvXnxS</a> <span>4 Nov 2026, 17:09:08 UTC</span> <span>slot 465,380,341</span> <span>8 instructions</span> <span>network fee 15,000 lamports</span> <span>82,113 compute units</span> <span>status: success</span></p>
+<p class="dx-signers">Signed by the fee payer <a class="addr-l" href="https://solscan.io/account/4QyuRL5EHUpEnu9aAwJwvpx6CES7iEs1qwSkgGghQfat" target="_blank" rel="noopener" title="4QyuRL5EHUpEnu9aAwJwvpx6CES7iEs1qwSkgGghQfat">4Qyu…Qfat</a>, the nonce authority <a class="addr-l" href="https://solscan.io/account/6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n" target="_blank" rel="noopener" title="6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n">6J48…G67n</a>, the payer&#x27;s Connect account <a class="addr-l" href="https://solscan.io/account/HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt" target="_blank" rel="noopener" title="HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt">HbeG…r8yt</a>.</p>
+<ol class="dx-ix">
+<li><span class="dx-prog">System</span> <code class="dx-name">advance nonce</code><p>Durable nonce <a class="addr-l" href="https://solscan.io/account/AUDutf9dniM6SScYBd8Yosv3rRbYEAKMFTbBzRCUjZwU" target="_blank" rel="noopener" title="AUDutf9dniM6SScYBd8Yosv3rRbYEAKMFTbBzRCUjZwU">AUDu…jZwU</a>, signed by the nonce authority <a class="addr-l" href="https://solscan.io/account/6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n" target="_blank" rel="noopener" title="6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n">6J48…G67n</a>.</p></li>
+<li><span class="dx-prog">Compute Budget</span> <code class="dx-name">set unit limit</code><p>200,000 compute units.</p></li>
+<li><span class="dx-prog">Compute Budget</span> <code class="dx-name">set unit price</code><p>0 micro-lamports per unit (no priority fee).</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">refresh_reserve</code><p>Refreshes Kamino&#x27;s USDC reserve <a class="addr-l" href="https://solscan.io/account/D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59" target="_blank" rel="noopener" title="D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59">D6q6…gJ59</a> in Kamino Main Market <a class="addr-l" href="https://solscan.io/account/7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF" target="_blank" rel="noopener" title="7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF">7u3H…5PfF</a>, so the next instruction works from current reserve values.</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">deposit_reserve_liquidity</code><p>Argument <b>5,000,000</b> (= 5 USDC), signed by the payer&#x27;s Connect account <a class="addr-l" href="https://solscan.io/account/HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt" target="_blank" rel="noopener" title="HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt">HbeG…r8yt</a>. Inside it Kamino moved <b>5 USDC</b> from the payer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F" target="_blank" rel="noopener" title="EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F">EaWy…qK1F</a> into the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a> and minted <b>4.134567 cUSDC</b> into the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a>. One extra read-only account rides along: the order reference <a class="addr-l" href="https://solscan.io/account/BWV6FR7fQhFgwinCuDUBBuLtzexQVPMFPw9kyVq8ntF" target="_blank" rel="noopener" title="BWV6FR7fQhFgwinCuDUBBuLtzexQVPMFPw9kyVq8ntF">BWV6…8ntF</a>, derived from the order id, so the payment can be found from Solana alone.</p></li>
+<li><span class="dx-prog">Associated Token Account</span> <code class="dx-name">create if missing</code><p>USDC account Sluice&#x27;s fee account <a class="addr-l" href="https://solscan.io/account/3eThcJmUpfamiG61qSiUEyLUbQQgZFCJ4aCBKJp1y7CE" target="_blank" rel="noopener" title="3eThcJmUpfamiG61qSiUEyLUbQQgZFCJ4aCBKJp1y7CE">3eTh…y7CE</a> for Sluice&#x27;s fee wallet <a class="addr-l" href="https://solscan.io/account/8b9QYitFTUMoqZhGTZXX43fND4CLTQXkgxX45mwRFEY8" target="_blank" rel="noopener" title="8b9QYitFTUMoqZhGTZXX43fND4CLTQXkgxX45mwRFEY8">8b9Q…FEY8</a>. Opened it now: 0.00148844 SOL rent, paid by the fee payer <a class="addr-l" href="https://solscan.io/account/4QyuRL5EHUpEnu9aAwJwvpx6CES7iEs1qwSkgGghQfat" target="_blank" rel="noopener" title="4QyuRL5EHUpEnu9aAwJwvpx6CES7iEs1qwSkgGghQfat">4Qyu…Qfat</a>.</p></li>
+<li><span class="dx-prog">Token</span> <code class="dx-name">transfer checked</code><p><b>0.025 USDC</b> from the payer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F" target="_blank" rel="noopener" title="EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F">EaWy…qK1F</a> to Sluice&#x27;s fee account <a class="addr-l" href="https://solscan.io/account/3eThcJmUpfamiG61qSiUEyLUbQQgZFCJ4aCBKJp1y7CE" target="_blank" rel="noopener" title="3eThcJmUpfamiG61qSiUEyLUbQQgZFCJ4aCBKJp1y7CE">3eTh…y7CE</a>, authorised by the payer&#x27;s Connect account <a class="addr-l" href="https://solscan.io/account/HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt" target="_blank" rel="noopener" title="HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt">HbeG…r8yt</a>.</p></li>
+<li><span class="dx-prog">Token</span> <code class="dx-name">transfer</code><p><b>0.149068 USDC</b> from the payer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F" target="_blank" rel="noopener" title="EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F">EaWy…qK1F</a> to the Connect relayer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X" target="_blank" rel="noopener" title="G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X">G9jW…pA3X</a>, authorised by the payer&#x27;s Connect account <a class="addr-l" href="https://solscan.io/account/HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt" target="_blank" rel="noopener" title="HbeGcxBxbKuuNffJuhzwpGjFBdq5eFLmD6uUMCHrr8yt">HbeG…r8yt</a>.</p></li>
+</ol>
+<table class="dx-bal"><caption>Token balances this transaction changed</caption><tbody>
+<tr><td>the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a></td><td class="up">+4.134567 cUSDC</td></tr>
+<tr><td>Sluice&#x27;s fee account <a class="addr-l" href="https://solscan.io/account/3eThcJmUpfamiG61qSiUEyLUbQQgZFCJ4aCBKJp1y7CE" target="_blank" rel="noopener" title="3eThcJmUpfamiG61qSiUEyLUbQQgZFCJ4aCBKJp1y7CE">3eTh…y7CE</a></td><td class="up">+0.025 USDC</td></tr>
+<tr><td>the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a></td><td class="up">+5 USDC</td></tr>
+<tr><td>the payer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F" target="_blank" rel="noopener" title="EaWy6honjYaafzWwHr3NrYNJsczpmqFePJmCkYdMqK1F">EaWy…qK1F</a></td><td class="down">−5.174068 USDC</td></tr>
+<tr><td>the Connect relayer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X" target="_blank" rel="noopener" title="G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X">G9jW…pA3X</a></td><td class="up">+0.149068 USDC</td></tr>
+</tbody></table>
+<p class="dx-not">The payer's wallet authorised this transaction off-chain, with one ed25519 signature to Intents Connect (execution f69749a7); that signature is not part of the Solana record. Not checked here: who runs the fee payer and the nonce authority, which co-sign Intents Connect's transactions.</p></article>
+<article class="dx-panel" id="dx-redeem5" role="tabpanel" aria-labelledby="dxt-redeem5" data-dx-hide>
+<p class="dx-meta"><a href="https://solscan.io/tx/4XnJMN2q36Yw3mvE2S4ULGaA76hU8hp81EmnR2Rc8bXpg64qeLjdepLz4oyQHBLB86255iVu4JTr72QKN6PdgWqv" target="_blank" rel="noopener">4XnJMN…PdgWqv</a> <span>4 Nov 2026, 17:33:57 UTC</span> <span>slot 465,387,272</span> <span>3 instructions</span> <span>network fee 5,000 lamports</span> <span>55,604 compute units</span> <span>status: success</span></p>
+<p class="dx-signers">Signed by the merchant&#x27;s wallet <a class="addr-l" href="https://solscan.io/account/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR" target="_blank" rel="noopener" title="9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">9cYF…DReR</a>.</p>
+<ol class="dx-ix">
+<li><span class="dx-prog">Associated Token Account</span> <code class="dx-name">create if missing</code><p>USDC account the merchant&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9" target="_blank" rel="noopener" title="AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9">AuUe…6yH9</a> for the merchant&#x27;s wallet <a class="addr-l" href="https://solscan.io/account/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR" target="_blank" rel="noopener" title="9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">9cYF…DReR</a>. It existed already, so nothing was created.</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">refresh_reserve</code><p>Refreshes Kamino&#x27;s USDC reserve <a class="addr-l" href="https://solscan.io/account/D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59" target="_blank" rel="noopener" title="D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59">D6q6…gJ59</a> in Kamino Main Market <a class="addr-l" href="https://solscan.io/account/7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF" target="_blank" rel="noopener" title="7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF">7u3H…5PfF</a>, so the next instruction works from current reserve values.</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">redeem_reserve_collateral</code><p>Argument <b>4,134,567</b> (= 4.134567 cUSDC), signed by the merchant&#x27;s wallet <a class="addr-l" href="https://solscan.io/account/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR" target="_blank" rel="noopener" title="9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">9cYF…DReR</a>. Inside it Kamino burned <b>4.134567 cUSDC</b> from the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a> and paid <b>5.000006 USDC</b> from the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a> into the merchant&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9" target="_blank" rel="noopener" title="AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9">AuUe…6yH9</a>.</p></li>
+</ol>
+<table class="dx-bal"><caption>Token balances this transaction changed</caption><tbody>
+<tr><td>the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a></td><td class="down">−4.134567 cUSDC</td></tr>
+<tr><td>the merchant&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9" target="_blank" rel="noopener" title="AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9">AuUe…6yH9</a></td><td class="up">+5.000006 USDC</td></tr>
+<tr><td>the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a></td><td class="down">−5.000006 USDC</td></tr>
+</tbody></table>
+<p class="dx-not">One signer: the merchant's own key, which also paid the network fee. Nobody else can move the position.</p></article>
+<article class="dx-panel" id="dx-earn015" role="tabpanel" aria-labelledby="dxt-earn015" data-dx-hide>
+<p class="dx-meta"><a href="https://solscan.io/tx/558Qh7GUjopxDNUfzDib42h7CwtAhDfCvDBAAwCCAc9zNWHaayHaSq3GUuUtzN6SEWBZwr8CWsBaCvJfqFCThgrv" target="_blank" rel="noopener">558Qh7…CThgrv</a> <span>1 Nov 2026, 12:48:15 UTC</span> <span>slot 464,097,698</span> <span>7 instructions</span> <span>network fee 15,000 lamports</span> <span>83,061 compute units</span> <span>status: success</span></p>
+<p class="dx-signers">Signed by the fee payer <a class="addr-l" href="https://solscan.io/account/4j3frhd96xMfM9hYjpxEHQUfpDctZdgzg861FC9Ay4NG" target="_blank" rel="noopener" title="4j3frhd96xMfM9hYjpxEHQUfpDctZdgzg861FC9Ay4NG">4j3f…y4NG</a>, the nonce authority <a class="addr-l" href="https://solscan.io/account/6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n" target="_blank" rel="noopener" title="6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n">6J48…G67n</a>, the payer&#x27;s Connect account <a class="addr-l" href="https://solscan.io/account/Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr" target="_blank" rel="noopener" title="Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr">Eg6b…dvcr</a>.</p>
+<ol class="dx-ix">
+<li><span class="dx-prog">System</span> <code class="dx-name">advance nonce</code><p>Durable nonce <a class="addr-l" href="https://solscan.io/account/13jDMuCtD5YoDFsGye1P3foJpwPXoG3PP2BXrs1ffrhe" target="_blank" rel="noopener" title="13jDMuCtD5YoDFsGye1P3foJpwPXoG3PP2BXrs1ffrhe">13jD…frhe</a>, signed by the nonce authority <a class="addr-l" href="https://solscan.io/account/6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n" target="_blank" rel="noopener" title="6J489cNVJuyNuUA2wotmbQnc8dbYZkKM6hEXDpeiG67n">6J48…G67n</a>.</p></li>
+<li><span class="dx-prog">Compute Budget</span> <code class="dx-name">set unit limit</code><p>200,000 compute units.</p></li>
+<li><span class="dx-prog">Compute Budget</span> <code class="dx-name">set unit price</code><p>0 micro-lamports per unit (no priority fee).</p></li>
+<li><span class="dx-prog">Associated Token Account</span> <code class="dx-name">create if missing</code><p>cUSDC account the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a> for the merchant&#x27;s wallet <a class="addr-l" href="https://solscan.io/account/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR" target="_blank" rel="noopener" title="9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">9cYF…DReR</a>. Opened it now: 0.00148844 SOL rent, paid by the fee payer <a class="addr-l" href="https://solscan.io/account/4j3frhd96xMfM9hYjpxEHQUfpDctZdgzg861FC9Ay4NG" target="_blank" rel="noopener" title="4j3frhd96xMfM9hYjpxEHQUfpDctZdgzg861FC9Ay4NG">4j3f…y4NG</a>.</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">refresh_reserve</code><p>Refreshes Kamino&#x27;s USDC reserve <a class="addr-l" href="https://solscan.io/account/D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59" target="_blank" rel="noopener" title="D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59">D6q6…gJ59</a> in Kamino Main Market <a class="addr-l" href="https://solscan.io/account/7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF" target="_blank" rel="noopener" title="7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF">7u3H…5PfF</a>, so the next instruction works from current reserve values.</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">deposit_reserve_liquidity</code><p>Argument <b>150,000</b> (= 0.15 USDC), signed by the payer&#x27;s Connect account <a class="addr-l" href="https://solscan.io/account/Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr" target="_blank" rel="noopener" title="Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr">Eg6b…dvcr</a>. Inside it Kamino moved <b>0.15 USDC</b> from the payer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb" target="_blank" rel="noopener" title="FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb">FELa…e4Sb</a> into the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a> and minted <b>0.124074 cUSDC</b> into the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a>. One extra read-only account rides along: the order reference <a class="addr-l" href="https://solscan.io/account/Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s" target="_blank" rel="noopener" title="Cg13sKZkqtvmJUmUVqH6GHWzMDNdsNnQfLyRWAWYNy9s">Cg13…Ny9s</a>, derived from the order id, so the payment can be found from Solana alone.</p></li>
+<li><span class="dx-prog">Token</span> <code class="dx-name">transfer</code><p><b>0.14683 USDC</b> from the payer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb" target="_blank" rel="noopener" title="FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb">FELa…e4Sb</a> to the Connect relayer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X" target="_blank" rel="noopener" title="G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X">G9jW…pA3X</a>, authorised by the payer&#x27;s Connect account <a class="addr-l" href="https://solscan.io/account/Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr" target="_blank" rel="noopener" title="Eg6brpDagWxXdYNDmsFpDUb3wjyrCZeHhBfu6jxndvcr">Eg6b…dvcr</a>.</p></li>
+</ol>
+<table class="dx-bal"><caption>Token balances this transaction changed</caption><tbody>
+<tr><td>the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a></td><td class="up">+0.124074 cUSDC</td></tr>
+<tr><td>the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a></td><td class="up">+0.15 USDC</td></tr>
+<tr><td>the payer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb" target="_blank" rel="noopener" title="FELa4TUdvJBuBDCgNfnUXjBF2TqVXK7LomS2cLcre4Sb">FELa…e4Sb</a></td><td class="down">−0.29683 USDC</td></tr>
+<tr><td>the Connect relayer&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X" target="_blank" rel="noopener" title="G9jWhbCRcFy9paMRU9rnXAK7y8Q6iGWBwQjkwFN1pA3X">G9jW…pA3X</a></td><td class="up">+0.14683 USDC</td></tr>
+</tbody></table>
+<p class="dx-not">This run's payer signed once, on Base, with an EVM wallet; the bridge-in and this transaction came from that one signature. The merchant's cUSDC account was opened here, and its rent is part of the 0.14683 USDC Connect fee. Not checked here: who runs the fee payer and the nonce authority.</p></article>
+<article class="dx-panel" id="dx-redeem015" role="tabpanel" aria-labelledby="dxt-redeem015" data-dx-hide>
+<p class="dx-meta"><a href="https://solscan.io/tx/3PoYZEFgy4XaJEhKPB3gmrNjnMKNoiKtNDvekybz45JnDRxtvBm7263FPct2EiaLC75fUpsQQtqjL1yi8BtfeK35" target="_blank" rel="noopener">3PoYZE…tfeK35</a> <span>4 Nov 2026, 11:05:35 UTC</span> <span>slot 465,278,771</span> <span>3 instructions</span> <span>network fee 5,000 lamports</span> <span>57,682 compute units</span> <span>status: success</span></p>
+<p class="dx-signers">Signed by the merchant&#x27;s wallet <a class="addr-l" href="https://solscan.io/account/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR" target="_blank" rel="noopener" title="9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">9cYF…DReR</a>.</p>
+<ol class="dx-ix">
+<li><span class="dx-prog">Associated Token Account</span> <code class="dx-name">create if missing</code><p>USDC account the merchant&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9" target="_blank" rel="noopener" title="AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9">AuUe…6yH9</a> for the merchant&#x27;s wallet <a class="addr-l" href="https://solscan.io/account/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR" target="_blank" rel="noopener" title="9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">9cYF…DReR</a>. It existed already, so nothing was created.</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">refresh_reserve</code><p>Refreshes Kamino&#x27;s USDC reserve <a class="addr-l" href="https://solscan.io/account/D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59" target="_blank" rel="noopener" title="D6q6wuQSrifJKZYpR1M8R4YawnLDtDsMmWM1NbBmgJ59">D6q6…gJ59</a> in Kamino Main Market <a class="addr-l" href="https://solscan.io/account/7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF" target="_blank" rel="noopener" title="7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF">7u3H…5PfF</a>, so the next instruction works from current reserve values.</p></li>
+<li><span class="dx-prog">Kamino Lend</span> <code class="dx-name">redeem_reserve_collateral</code><p>Argument <b>124,074</b> (= 0.124074 cUSDC), signed by the merchant&#x27;s wallet <a class="addr-l" href="https://solscan.io/account/9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR" target="_blank" rel="noopener" title="9cYFzrmHRcsYzLhAWsNemzCy75ZhETn2px4MS8oDDReR">9cYF…DReR</a>. Inside it Kamino burned <b>0.124074 cUSDC</b> from the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a> and paid <b>0.150041 USDC</b> from the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a> into the merchant&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9" target="_blank" rel="noopener" title="AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9">AuUe…6yH9</a>.</p></li>
+</ol>
+<table class="dx-bal"><caption>Token balances this transaction changed</caption><tbody>
+<tr><td>the merchant&#x27;s cUSDC account <a class="addr-l" href="https://solscan.io/account/578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD" target="_blank" rel="noopener" title="578GjgBqwHCDREqiayzKJ1aYC6NEwY4j1p2U2StGKUD">578G…GKUD</a></td><td class="down">−0.124074 cUSDC</td></tr>
+<tr><td>the merchant&#x27;s USDC account <a class="addr-l" href="https://solscan.io/account/AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9" target="_blank" rel="noopener" title="AuUeb7gBsUca1aDXJV1D8XsEDjWYRC4ctx8qdHMm6yH9">AuUe…6yH9</a></td><td class="up">+0.150041 USDC</td></tr>
+<tr><td>the reserve&#x27;s USDC supply <a class="addr-l" href="https://solscan.io/account/Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6" target="_blank" rel="noopener" title="Bgq7trRgVMeq33yt235zM2onQ4bRDBsY5EWiTetF4qw6">Bgq7…4qw6</a></td><td class="down">−0.150041 USDC</td></tr>
+</tbody></table>
+<p class="dx-not">One signer: the merchant's own key, which also paid the network fee.</p></article>
+<!-- decode:end -->
+        </div>
+
+        <div id="private-check" class="privcheck">
+          <h3>What a merchant can check on a private payment</h3>
+          <p>Confidential Intents hides which wallet paid. For the 29 Oct run, Aurora's status says success and lists no hashes and no amounts. Three things stay checkable:</p>
+          <ul class="checks">
+            <li><b>The credit, on Solana.</b> 0.50 USDC reached the merchant's own USDC account in <a href="https://solscan.io/tx/44GN5eYQhed3UHLkwCXxi2nJU53xeHot1Ff5x4YQNNZn9PG4vy8XVMhrvof6V4fJ9C2SEKCJ9ev8dAXUDZtuB6Cj" target="_blank" rel="noopener">44GN5e…tuB6Cj</a>, read by Sluice from Solana, not from Aurora.</li>
+            <li><b>The payment, on Arbitrum.</b> 0.000222930139609761 ETH went from the payer's wallet to the order's deposit address in <a href="https://arbiscan.io/tx/0x51fdff2ad7247d23f443f9611bd333d8b7398766b57d1e6cde8983d5ac94564a" target="_blank" rel="noopener">0x51fd…94564a</a>, exactly the amount the quote asked for.</li>
+            <li><b>The quote, made before the deposit.</b> 0.000222930139609761 ETH, which Aurora valued at $0.5201, for exactly 0.50 USDC, with 0.010005 USDC of Solana delivery and 45 bps of app fees listed. It is saved in the repository's evidence.</li>
+          </ul>
+          <p>What stays hidden is how the difference splits between the solver, Aurora and the fees. For the merchant that is acceptable: the hidden part changes only what the payer spends, which the payer saw in the quote before sending, never what the merchant receives, which Solana shows. If less than the invoice arrives, nothing counts as paid. Before a payer picks a private payment, the checkout says its quotes cannot be cross-checked in public.</p>
+        </div>
+
+        <div class="ledger-head">
+          <h3>All 17 runs, unit by unit</h3>
+          <button id="btn-check-all" class="ghost" type="button">Re-check all</button>
+        </div>
+        <div id="proof-table">
 <!-- static:proof:start (tools/render_static.mjs writes this from proofs-snapshot.json; app.js replaces it) -->
 <p class="muted snapnote">Verified 4 Nov, 17:36 UTC: all 17 rows read from Aurora and Solana mainnet. Every hash opens the explorer. With JavaScript on, Check live reads both again from your browser.</p>
 <h3 class="proof-head">One invoice, start to finish (4 Nov): 5.00 USDC from Base into the merchant's Kamino position, Sluice's fee in the same transaction, then redeemed</h3>
@@ -474,14 +718,40 @@ Solana settlement re-verified: True</code></pre>
 <div class="proof" data-id="0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc"><b>Intents Connect with order reference</b><div class="note">Bridged into the payer's Solana account, which paid with the order reference attached</div><div class="links"><span>Arbitrum: <a href="https://arbiscan.io/tx/0xb990e1e3b603c01bd25baa4d768c1ec3206f24c36938ca23d604fc1460fe91fc" target="_blank" rel="noopener">0xb990…fe91fc</a></span><span>Solana: <a href="https://solscan.io/tx/3za9WNavihGUH9SxoTkA5USHp7BA6T61CA55sZXUi9X7PsowSuZeWRzS9RT8CwZgPbFZkM2np8md8Tnh7YMW9zCs" target="_blank" rel="noopener">3za9WN…MW9zCs</a></span><a href="#s=0xBE59F73BB339EA403102cDCb17f85Bd807a469fE">Record</a></div><div class="out ok"><span class="when">Verified 4 Nov, 17:36 UTC: </span>Aurora: success · Solana: merchant +0.15 USDC ✓<div class="fees"><p class="feeline">0.000071028266525738 ETH sent, 0.00000067162053299 left over, too small to refund. The 0.000070356645992748 ETH swapped became 0.153555 USDC in the payer's own Solana account, after 0.009983 USDC Solana delivery and about $0.0003 Aurora's 10 bps fee and the solver's price. That account paid the merchant 0.15 USDC with the order reference, paid a 0.001556 USDC Intents Connect fee and kept 0.001999.</p><details><summary>Where every unit went</summary><table class="feetab"><tr class="tot"><td>Sent on Arbitrum</td><td>0.000071028266525738<span class="u"> ETH</span></td></tr><tr><td>swapped</td><td>0.000070356645992748<span class="u"> ETH</span></td></tr><tr class="k-fee"><td>left over after the swap, not refunded (less than the 0.0000012 ETH refund fee)</td><td>0.00000067162053299<span class="u"> ETH</span></td></tr></table><table class="feetab"><tr class="tot"><td>Swapped (Aurora values it at $0.1637)</td><td>0.000070356645992748<span class="u"> ETH</span></td></tr><tr><td>to the payer's own Solana account (Intents Connect)</td><td>0.153555<span class="u"> USDC</span></td></tr><tr class="k-fee"><td>Solana delivery fee (from the quote)</td><td>0.009983<span class="u"> USDC</span></td></tr><tr class="k-fee"><td>Aurora's 10 bps fee and the solver's price</td><td>≈$0.0003<span class="u"></span></td></tr></table><table class="feetab"><tr class="tot"><td>Reached the payer's own Solana account, which then ran one transaction</td><td>0.153555<span class="u"> USDC</span></td></tr><tr class="k-merchant"><td>paid to the merchant, with the order reference (read from Solana)</td><td>0.15<span class="u"> USDC</span></td></tr><tr class="k-fee"><td>Intents Connect fee, to its relayer (pinned in the audit)</td><td>0.001556<span class="u"> USDC</span></td></tr><tr><td>left in the payer's own Solana account</td><td>0.001999<span class="u"> USDC</span></td></tr></table></details></div></div></div>
 <div class="proof" data-id="0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708"><b>API call paid by the CLI</b><div class="note">402, order, deposit, verified, report plus a signed receipt</div><div class="links"><span>Base: <a href="https://basescan.org/tx/0x7fb6497012291c7da94c4998f151c4c6740cd9d0df4b2f59bc3619b8105a0708" target="_blank" rel="noopener">0x7fb6…5a0708</a></span><span>Solana: <a href="https://solscan.io/tx/45WMgPZthD5cn8RNdrEBKVDD95a8pzZ7sDrU7rZMyAabJBwDSCbZ8oHhhtgioGB4G8jQcitgypadhpTWTtURcMaX" target="_blank" rel="noopener">45WMgP…URcMaX</a></span><a href="#s=0x0497bb48C0335f1D22f147B2983ffDC6dA054042">Record</a></div><div class="out ok"><span class="when">Verified 4 Nov, 17:36 UTC: </span>Aurora: success, 0.001639 returned to the payer · refund <a href="https://basescan.org/tx/0x8afbd277cb504d8b6637f8e18732855ba396298ec38c0b7cfc9684e7c6df8a88" target="_blank" rel="noopener">0x8afb…df8a88</a> · Solana: merchant +0.4 USDC ✓<div class="fees"><p class="feeline">0.414193 sent = 0.40 to the merchant + 0.001639 refunded + 0.012554 USDC in fees (0.0024 refund gas, 0.010028 Solana delivery, 0.000126 Aurora's 2 bps fee and the solver's price).</p><details><summary>Where every unit went</summary><table class="feetab"><tr class="tot"><td>Sent on Base</td><td>0.414193<span class="u"> USDC</span></td></tr><tr><td>swapped</td><td>0.410154<span class="u"> USDC</span></td></tr><tr class="k-refund"><td>refunded to the payer (the excess)</td><td>0.001639<span class="u"> USDC</span></td></tr><tr class="k-fee"><td>refund fee (gas for the refund transaction)</td><td>0.0024<span class="u"> USDC</span></td></tr></table><table class="feetab"><tr class="tot"><td>Swapped</td><td>0.410154<span class="u"> USDC</span></td></tr><tr class="k-merchant"><td>to the merchant on Solana (read from Solana)</td><td>0.40<span class="u"> USDC</span></td></tr><tr class="k-fee"><td>Solana delivery fee (from the quote)</td><td>0.010028<span class="u"> USDC</span></td></tr><tr class="k-fee"><td>Aurora's 2 bps fee and the solver's price</td><td>0.000126<span class="u"> USDC</span></td></tr></table></details></div></div></div>
 <!-- static:proof:end -->
+        </div>
       </div>
     </section>
   </div>
 </main>
-<footer class="wrap muted">Sluice by Swift Bot Labs. Routing by Aurora Intents, powered by NEAR Intents. Settlement verified on Solana mainnet. <a href="https://github.com/swiftbotlabs/sluice-pay">Open source</a>.</footer>
+<footer class="closing">
+  <div class="wrap">
+    <div class="close-row" id="close">
+      <div class="close-copy">
+        <h2>Take USDC on Solana from any chain</h2>
+        <p>Three steps, about 2 minutes: your name and Solana address, how you get paid, then a pay link or a permanent pay page with a QR.</p>
+        <div class="btn-row"><a class="button primary" href="#start">Start accepting payments</a><a class="button ghost" href="https://youtu.be/_ZwvKTsjK_8" rel="noopener">Watch the 3 min demo</a></div>
+      </div>
+      <svg class="close-gate" viewBox="0 0 360 260" aria-hidden="true"><path class="cg-bed" d="M0 220H360V236H0Z"/><rect class="cg-w" x="0" y="120" width="150" height="100"/><rect class="cg-w" x="190" y="168" width="170" height="52"/><rect class="cg-p" x="150" y="24" width="10" height="196"/><rect class="cg-p" x="180" y="24" width="10" height="196"/><rect class="cg-b" x="140" y="14" width="60" height="12" rx="2"/><rect class="cg-g" x="160" y="44" width="20" height="104" rx="2"/><path class="cg-f" d="M150 196c20 0 30 4 44 8s30 4 46 0"/><path class="cg-r" d="M140 236c-30 18-80 20-118 4"/></svg>
+    </div>
+    <div class="foot-row">
+      <div class="foot-brand">
+        <a class="brand" href="./"><img src="icon.svg" alt="" width="28" height="28" loading="lazy">Sluice</a>
+        <p>Sluice by Swift Bot Labs. Routing by Aurora Intents, powered by NEAR Intents. Settlement verified on Solana mainnet. <a href="https://github.com/swiftbotlabs/sluice-pay">Open source</a>.</p>
+      </div>
+      <ul class="foot-links">
+        <li><a href="https://github.com/swiftbotlabs/sluice-pay">Source code</a></li>
+        <li><a href="https://sluice-api.swiftbotlab.workers.dev/.well-known/sluice.json">Hosted API</a></li>
+        <li><a href="deck.html">Slides</a></li>
+      </ul>
+      <p class="canon">Source: github.com/swiftbotlabs/sluice-pay (swiftbotlabs, with an s) is the one repository. Links to github.com/swiftbotlab/sluice-pay or swiftbotlab.github.io/sluice-pay are from an older account and no longer resolve.</p>
+    </div>
+  </div>
+</footer>
+<nav class="actionbar" aria-label="Get started"><a class="button primary" href="#start">Start accepting payments</a></nav>
 <script src="qrcode.min.js"></script>
 <script src="core.js"></script>
 <script src="proofs.js"></script>
 <script src="app.js"></script>
+<script type="module" src="home.js"></script>
 </body>
 </html>

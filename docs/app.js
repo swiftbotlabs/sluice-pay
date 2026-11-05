@@ -1149,6 +1149,10 @@
   // ---------- views ----------
   function view(name) {
     for (const v of ['pay', 'perm', 'receipt', 'merchant', 'home', 'setup']) show($(v), v === name);
+    // early.js hid the landing for a routed link (#p=, #a=, ...) so it never flashes first; the view is up now
+    const root = document.documentElement;
+    if (root.classList.contains('routed')) { root.classList.remove('routed'); if (name !== 'home') window.scrollTo(0, 0); }
+    root.dataset.view = name;
     show($('nav'), name === 'home');
     for (const el of [$('main'), document.querySelector('.top .wrap'), document.querySelector('footer')]) el.classList.toggle('wide', name === 'setup');
     const me = profile(); const mine = $('nav-mine');
@@ -1512,6 +1516,7 @@
     };
     $('p-more').onclick = () => { const on = $('p-more-box').classList.contains('hidden'); show($('p-more-box'), on); $('p-more').setAttribute('aria-expanded', String(on)); if (on) $('p-search').focus(); };
     $('p-search').oninput = search;
+    text($('p-count'), 'Loading supported assets…');
     try {
       await loadTokens();
       if (C.settlementIncident(incidents)) { text($('banner'), 'Aurora reports an incident on Solana delivery. Please wait until it clears before sending anything.'); show($('banner')); show($('p-pick'), false); return; }
@@ -1566,6 +1571,7 @@
       if (order.rail === 'swap' && !order.confidential) aurora('/api/deposit/submit', { txHash: h, depositAddress: order.quote.depositAddress }).catch(() => {});
       else if (order.rail === 'connect') cx('POST', '/api/v1/executions/deposit/submit', { txHash: h, depositAddress: order.quote.depositAddress }).catch(() => {});
     };
+    text($('origin-count'), 'Loading supported assets…');
     try { await loadTokens(); renderOrigins(); if (wallet && !choice) preselect(); } catch (e) { text($('origin-count'), 'Could not load assets: ' + e.message); }
     if (C.settlementIncident(incidents)) {
       blocked = true; text($('banner'), 'Aurora reports an incident on Solana delivery. Payments are paused here until it clears, so no funds get stuck.'); show($('banner'));
