@@ -453,4 +453,4 @@ evidence/           records of the mainnet runs
   through Aurora's quote for that order. Anything sent above the quote comes back to the refund address minus the refund gas, and
   a leftover smaller than the refund gas is not refunded (see the fee table above).
 
-See [SECURITY.md](SECURITY.md). License: MIT.
+See [SECURITY.md](SECURITY.md). License: MIT. Third-party parts (the taste-skill effects runtime, MIT; Lucide icons, ISC) are credited in [docs/CREDITS.md](docs/CREDITS.md).

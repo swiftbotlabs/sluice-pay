@@ -1,3 +1,4 @@
+// From taste-skill (MIT, (c) 2026 Leonxlnx), see docs/fx/LICENSE
 // caustics: sunlight through rippling water on the floor of a pool. One slowly shifting net of curved
 // light lines (the edges of an animated Voronoi grid, F2 - F1, on a noise-warped plane). The lines are
 // uneven: where the light gathers (a slow focus field) they are bright and thick and the knots where
